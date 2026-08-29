@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="klozerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1754" />
+      <stop offset="100%" stop-color="#2545ff" />
+    </linearGradient>
+  </defs>
+  <!-- Rounded Base Canvas -->
+  <rect width="32" height="32" rx="7.5" fill="url(#klozerGrad)" />
+  
+  <!-- Modern Geometric Letter K in Crisp Pure White -->
+  <path d="M9 7.5 H13 V14.2 L18.8 7.5 H23.8 L16.4 15.6 L24.5 24.5 H19.2 L13 17.5 V24.5 H9 V7.5 Z" fill="#ffffff" />
+  
+  <!-- Signature Electric Cobalt Accent Dot -->
+  <circle cx="25.5" cy="7.5" r="2.5" fill="#38bdf8" />
+</svg>

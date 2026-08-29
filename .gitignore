@@ -1,0 +1,107 @@
+# ==============================================================================
+# KLOZER PRODUCTION-SAFE GITIGNORE
+# Prevents any sensitive API Keys, .env secrets, logs, and build artifacts from leaking
+# ==============================================================================
+
+# 1. Environment & Secret Keys (CRITICAL SECURITY)
+.env
+.env.*
+!.env.example
+*.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# 2. Dependency Directories
+node_modules/
+*/node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# 3. Production Build & Output Artifacts
+.next/
+*/.next/
+out/
+*/out/
+build/
+*/build/
+dist/
+*/dist/
+.vercel
+.turbo
+
+# 4. Logs & Debugging Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+*.log.*
+
+# 5. Security Certificates, Tokens & Keystores
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.jks
+*.keystore
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# 6. Database Backups, Local Dumps & Sensitive Data
+*.dump
+*.sql.gz
+*.sql.tar
+*.sql.bak
+dump.sql
+local_backup.sql
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# 7. Operating System & Editor Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+desktop.ini
+
+# 8. IDE & Tool Configuration
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.bak
+*~
+
+# 9. AI Agents, System Logs & Scratchpads
+.system_generated/
+.gemini/
+.agents/
+scratch/
+*/scratch/
+tmp/
+temp/
+coverage/
+.nyc_output/

@@ -1,0 +1,49 @@
+# ==============================================================================
+# KLOZER FRONTEND GITIGNORE
+# ==============================================================================
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js Build Outputs
+/.next/
+/out/
+/build
+/dist
+.vercel
+.turbo
+
+# Environment Secrets
+.env
+.env.*
+!.env.example
+*.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Testing & Coverage
+/coverage
+.nyc_output
+
+# Debug & Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+*.pem
+*.tsbuildinfo
+next-env.d.ts
