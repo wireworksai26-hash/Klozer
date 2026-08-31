@@ -14,14 +14,18 @@ export async function runMigration() {
     const pool = await getDbPool();
 
     if (pool) {
+      await pool.query("SET FOREIGN_KEY_CHECKS = 0;");
       const statements = schemaSql
         .split(";")
         .map((s) => s.trim())
         .filter((s) => s.length > 0 && !s.startsWith("--"));
 
       for (const statement of statements) {
-        await pool.query(statement);
+        if (statement.length > 5) {
+          await pool.query(statement);
+        }
       }
+      await pool.query("SET FOREIGN_KEY_CHECKS = 1;");
       console.log("[Migration] All 17 MySQL tables created successfully!");
     } else {
       console.log("[Migration] Initializing in-memory resilient tables...");

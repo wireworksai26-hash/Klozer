@@ -345,6 +345,7 @@ export async function runSeeds() {
     if (pool) {
       const seedsSqlPath = path.join(__dirname, "seeds.sql");
       if (fs.existsSync(seedsSqlPath)) {
+        await pool.query("SET FOREIGN_KEY_CHECKS = 0;");
         const sqlContent = fs.readFileSync(seedsSqlPath, "utf-8");
         const statements = sqlContent
           .split(";")
@@ -352,12 +353,15 @@ export async function runSeeds() {
           .filter((s) => s.length > 0 && !s.startsWith("--"));
 
         for (const statement of statements) {
-          try {
-            await pool.query(statement);
-          } catch (stmtErr) {
-            console.warn(`[MySQL Seed Notice] ${stmtErr.message.slice(0, 100)}`);
+          if (statement.length > 5) {
+            try {
+              await pool.query(statement);
+            } catch (stmtErr) {
+              console.warn(`[MySQL Seed Notice] ${stmtErr.message.slice(0, 100)}`);
+            }
           }
         }
+        await pool.query("SET FOREIGN_KEY_CHECKS = 1;");
         console.log("[MySQL Seed] Seeds.sql successfully imported into MySQL database!");
       }
     }
