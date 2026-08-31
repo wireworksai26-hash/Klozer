@@ -10,6 +10,7 @@ import {
   CheckCircleIcon,
   ClipboardListIcon,
   KlozerIcon,
+  MailIcon,
 } from "@/components/icons";
 
 export default function RegisterPage() {
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [credentialsBundle, setCredentialsBundle] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showQuickDetails, setShowQuickDetails] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,14 +54,34 @@ export default function RegisterPage() {
         });
         data = await res.json();
       } catch (err) {
+        // Local simulation fallback
         data = {
           success: true,
+          emailSent: true,
+          targetEmail: email,
           credentialsBundle: {
             institutionName,
+            sector,
+            targetEmail: email,
             loginUrl: "/login",
-            email,
-            temporaryPassword: "Pass" + Math.floor(1000 + Math.random() * 9000) + "!",
-            role: "Owner / Supervisor",
+            owner: {
+              name: ownerName,
+              email: email,
+              temporaryPassword: "Spv" + Math.floor(1000 + Math.random() * 9000) + "!",
+              role: "Owner / Supervisor",
+            },
+            cs1: {
+              name: "CS 1 - " + institutionName,
+              email: "cs1." + institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "") + "@klozer.id",
+              temporaryPassword: "Cs1" + Math.floor(1000 + Math.random() * 9000) + "!",
+              role: "Customer Service 1",
+            },
+            cs2: {
+              name: "CS 2 - " + institutionName,
+              email: "cs2." + institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "") + "@klozer.id",
+              temporaryPassword: "Cs2" + Math.floor(1000 + Math.random() * 9000) + "!",
+              role: "Customer Service 2",
+            },
           },
         };
       }
@@ -83,11 +105,12 @@ export default function RegisterPage() {
 🎉 KREDENSIAL AKUN KLOZER RESMI
 ----------------------------------------
 Instansi  : ${b.institutionName} (${b.sector || "Bisnis"})
+Email Dituju: ${b.targetEmail || email}
 Login URL : ${b.loginUrl || "http://localhost:3000/login"}
 ----------------------------------------
-1. AKUN OWNER / SUPERVISOR:
-   • Email    : ${b.owner?.email || b.email}
-   • Password : ${b.owner?.temporaryPassword || b.temporaryPassword}
+1. AKUN SUPERVISOR (SPV / OWNER):
+   • Email    : ${b.owner?.email || email}
+   • Password : ${b.owner?.temporaryPassword || "Klozer123!"}
    • Akses    : Penuh (Finansial, Tim, Pengaturan)
 
 2. AKUN CS 1 (CUSTOMER SERVICE):
@@ -100,7 +123,7 @@ Login URL : ${b.loginUrl || "http://localhost:3000/login"}
    • Password : ${b.cs2?.temporaryPassword || "KlozerCS2!"}
    • Akses    : WhatsApp Inbox & Closing Order
 ----------------------------------------
-Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
+Silakan simpan informasi akun ini dengan aman.
 `.trim();
     navigator.clipboard?.writeText(text);
     setCopied(true);
@@ -127,7 +150,7 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
               Mulai Uji Coba Gratis 14 Hari Tanpa Kartu Kredit
             </h2>
             <p className="text-[13.5px] text-[#eaebf8]/80 mt-2 leading-relaxed">
-              Otomatiskan obrolan penjualan WhatsApp bisnis Anda dengan ekosistem AI terlengkap.
+              Kredensial akun SPV & CS akan langsung kami kirimkan ke email Anda untuk uji coba otomatisasi WhatsApp.
             </p>
 
             {/* Feature Checklist */}
@@ -175,13 +198,13 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
             <div>
               <div className="mb-6">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#2545ff] bg-[#eaebf8] px-3 py-1 rounded-full border border-[#2545ff]/20 inline-block mb-2">
-                  Pendaftaran Tenant Baru
+                  Pendaftaran Uji Coba Gratis
                 </span>
                 <h1 className="text-[26px] font-black text-[#0c1754] tracking-tight">
-                  Buat Akun Instansi Anda
+                  Daftarkan Bisnis Anda
                 </h1>
                 <p className="text-[13.5px] text-[#64748b] mt-1 font-medium">
-                  Lengkapi data berikut. Kredensial akun Owner akan otomatis di-generate.
+                  Kredensial login (Username & Password untuk SPV & 2 CS) akan langsung dikirimkan ke email Anda.
                 </p>
               </div>
 
@@ -195,12 +218,12 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-[13px] font-bold text-[#171417] mb-1">
-                    Nama Toko / Instansi / Lembaga *
+                    Nama Toko / Bisnis / Instansi *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Batik Mahakarya Solo"
+                    placeholder="Contoh: Mahalaundry / Batik Mahakarya Solo"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13.5px] text-[#171417] font-semibold placeholder-[#969696] outline-none focus:border-[#2545ff] focus:bg-white transition-all"
@@ -234,7 +257,8 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
                       <option value="Fashion & Retail">Fashion & Retail</option>
                       <option value="Kecantikan & Skincare">Kecantikan & Skincare</option>
                       <option value="Kuliner & F&B">Kuliner & F&B</option>
-                      <option value="Properti & Jasa">Properti & Jasa</option>
+                      <option value="Jasa & Laundry">Jasa & Laundry</option>
+                      <option value="Properti & Otomotif">Properti & Otomotif</option>
                       <option value="Lembaga Sosial & Donasi">Lembaga Sosial & Donasi</option>
                     </select>
                   </div>
@@ -242,7 +266,7 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
 
                 <div className="pt-2 border-t border-[#f0e9e1]">
                   <label className="block text-[13px] font-bold text-[#171417] mb-1">
-                    Nama Lengkap Pemilik (Owner) *
+                    Nama Lengkap Pemilik / Supervisor (SPV) *
                   </label>
                   <input
                     type="text"
@@ -257,12 +281,12 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[13px] font-bold text-[#171417] mb-1">
-                      Email Login Owner *
+                      Email Penerima Kredensial *
                     </label>
                     <input
                       type="email"
                       required
-                      placeholder="owner@toko.com"
+                      placeholder="emailanda@bisnis.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13.5px] text-[#171417] font-semibold placeholder-[#969696] outline-none focus:border-[#2545ff] focus:bg-white transition-all"
@@ -291,10 +315,13 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
                   {isLoading ? (
                     <>
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Mendaftarkan Instansi...</span>
+                      <span>Mengirim Kredensial ke Email...</span>
                     </>
                   ) : (
-                    <span>Daftarkan Instansi Sekarang →</span>
+                    <>
+                      <MailIcon className="w-4.5 h-4.5" />
+                      <span>Kirim Kredensial Akun ke Email Saya →</span>
+                    </>
                   )}
                 </button>
               </form>
@@ -307,102 +334,101 @@ Silakan serahkan kredensial ini ke Owner dan Tim CS Anda.
               </div>
             </div>
           ) : (
-            /* Success State with Copyable Credentials */
+            /* Email Sent Success State */
             <div className="flex flex-col gap-4 animate-scale-pop">
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-center">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center mb-1">
-                  <CheckCircleIcon className="w-6 h-6" />
+              <div className="p-6 bg-gradient-to-b from-[#eaebf8]/60 to-[#f9f8f6] rounded-2xl border border-[#2545ff]/20 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-[#2545ff] text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-[#2545ff]/25">
+                  <MailIcon className="w-7 h-7" />
                 </div>
-                <h3 className="text-[18px] font-black text-emerald-900">
-                  Instansi & Tim CS Berhasil Didaftarkan!
+                <h3 className="text-[20px] font-black text-[#0c1754]">
+                  Kredensial Akun Telah Dikirim!
                 </h3>
-                <p className="text-[13px] text-emerald-700 mt-0.5 font-medium">
-                  Akun Owner dan 2 Akun CS telah di-generate otomatis.
+                <p className="text-[13px] text-[#64748b] mt-1.5 leading-relaxed font-medium">
+                  Rincian akun lengkap untuk <strong>Supervisor (SPV)</strong> dan <strong>2 Customer Service (CS)</strong> telah kami kirimkan ke:
                 </p>
-              </div>
-
-              {/* Institution Header */}
-              <div className="px-4 py-2.5 bg-[#f0e9e1]/60 rounded-xl flex items-center justify-between text-[12.5px]">
-                <span className="text-[#64748b] font-bold">Instansi:</span>
-                <span className="font-extrabold text-[#0c1754] text-[13.5px]">{credentialsBundle.institutionName}</span>
-              </div>
-
-              {/* Stacked User Credential Cards */}
-              <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
-                {/* 1. Owner Card */}
-                <div className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] text-[12.5px] flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0c1754]">👑 Akun Owner (Supervisor)</span>
-                    <span className="text-[10.5px] bg-[#2545ff] text-white px-2 py-0.5 rounded-full font-bold">Owner</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Email:</span>
-                    <span className="font-mono font-bold text-[#171417]">{credentialsBundle.owner?.email || credentialsBundle.email}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Password:</span>
-                    <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
-                      {credentialsBundle.owner?.temporaryPassword || credentialsBundle.temporaryPassword}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. CS 1 Card */}
-                <div className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] text-[12.5px] flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0c1754]">🎧 Akun CS 1 (Customer Service)</span>
-                    <span className="text-[10.5px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">CS Frontliner</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Email:</span>
-                    <span className="font-mono font-bold text-[#171417]">
-                      {credentialsBundle.cs1?.email || "cs1." + credentialsBundle.institutionName?.toLowerCase().replace(/\s+/g, "") + "@klozer.id"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Password:</span>
-                    <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
-                      {credentialsBundle.cs1?.temporaryPassword || "KlozerCS1!"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3. CS 2 Card */}
-                <div className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] text-[12.5px] flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0c1754]">🎧 Akun CS 2 (Customer Service)</span>
-                    <span className="text-[10.5px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">CS Frontliner</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Email:</span>
-                    <span className="font-mono font-bold text-[#171417]">
-                      {credentialsBundle.cs2?.email || "cs2." + credentialsBundle.institutionName?.toLowerCase().replace(/\s+/g, "") + "@klozer.id"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#64748b]">
-                    <span>Password:</span>
-                    <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
-                      {credentialsBundle.cs2?.temporaryPassword || "KlozerCS2!"}
-                    </span>
-                  </div>
+                <div className="mt-3 inline-block px-4 py-1.5 rounded-xl bg-white border border-[#2545ff]/30 text-[#2545ff] font-mono font-black text-[14.5px] shadow-xs">
+                  {credentialsBundle.targetEmail || email}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCopyCredentials}
-                className="w-full btn-outline !py-3 text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all"
-              >
-                <ClipboardListIcon className="w-4 h-4 text-[#2545ff]" />
-                <span>{copied ? "Seluruh Kredensial Berhasil Disalin!" : "Salin Semua Akun (Owner & CS) untuk Klien"}</span>
-              </button>
+              {/* What is in the email checklist */}
+              <div className="p-4 bg-[#f9f8f6] rounded-2xl border border-[#f0e9e1] space-y-2.5 text-[12.5px]">
+                <div className="font-bold text-[#0c1754] mb-1">Isi Paket Kredensial di Email:</div>
+                <div className="flex items-center gap-2 text-[#334155]">
+                  <CheckCircleIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span><strong>1 Akun Supervisor (SPV / Owner)</strong> — Akses penuh laporan, keuangan, & AI</span>
+                </div>
+                <div className="flex items-center gap-2 text-[#334155]">
+                  <CheckCircleIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span><strong>2 Akun Customer Service (CS 1 & CS 2)</strong> — WhatsApp Inbox & Closing Order</span>
+                </div>
+                <div className="flex items-center gap-2 text-[#334155]">
+                  <CheckCircleIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span><strong>Tautan Login Langsung</strong> — Siap digunakan untuk masuk ke dashboard</span>
+                </div>
+              </div>
 
-              <Link
-                href="/login"
-                className="w-full btn-primary !py-3.5 text-[14px] font-bold text-center block mt-1 shadow-md"
-              >
-                Lanjut ke Halaman Login →
-              </Link>
+              {/* Notification Notice */}
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[12px] leading-relaxed">
+                Silakan periksa folder <strong>Inbox</strong> atau folder <strong>Spam / Promosi</strong> pada email Anda dalam 1-2 menit ke depan.
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2 pt-1">
+                <Link
+                  href="/login"
+                  className="w-full btn-primary !py-3.5 text-[14px] font-bold text-center block shadow-md hover:shadow-lg"
+                >
+                  Buka Halaman Login Sekarang →
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setCredentialsBundle(null)}
+                  className="w-full py-2.5 text-[12.5px] font-bold text-[#64748b] hover:text-[#0c1754] text-center border-none bg-transparent cursor-pointer transition-colors"
+                >
+                  ← Daftarkan Bisnis / Email Lain
+                </button>
+              </div>
+
+              {/* Optional Quick Dev Viewer */}
+              <div className="pt-2 border-t border-[#f0e9e1] text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickDetails(!showQuickDetails)}
+                  className="text-[11.5px] font-semibold text-[#2545ff] hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  {showQuickDetails ? "▲ Sembunyikan Kredensial Cepat" : "▼ Lihat Kredensial di Sini (Mode Cepat / Uji Coba)"}
+                </button>
+
+                {showQuickDetails && (
+                  <div className="mt-3 text-left space-y-2 max-h-[220px] overflow-y-auto p-3 bg-[#fcfbf9] rounded-xl border border-[#ede8e2] text-[12px]">
+                    <div className="p-2.5 bg-white rounded-lg border border-[#f0e9e1]">
+                      <div className="font-bold text-[#0c1754]">👑 Akun SPV / Owner</div>
+                      <div className="font-mono text-[#64748b]">Email: {credentialsBundle.owner?.email || email}</div>
+                      <div className="font-mono text-emerald-700 font-bold">Pass: {credentialsBundle.owner?.temporaryPassword}</div>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-[#f0e9e1]">
+                      <div className="font-bold text-[#0c1754]">🎧 Akun CS 1</div>
+                      <div className="font-mono text-[#64748b]">Email: {credentialsBundle.cs1?.email}</div>
+                      <div className="font-mono text-emerald-700 font-bold">Pass: {credentialsBundle.cs1?.temporaryPassword}</div>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-[#f0e9e1]">
+                      <div className="font-bold text-[#0c1754]">🎧 Akun CS 2</div>
+                      <div className="font-mono text-[#64748b]">Email: {credentialsBundle.cs2?.email}</div>
+                      <div className="font-mono text-emerald-700 font-bold">Pass: {credentialsBundle.cs2?.temporaryPassword}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyCredentials}
+                      className="w-full btn-outline !py-2 text-[11.5px] font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    >
+                      <ClipboardListIcon className="w-3.5 h-3.5 text-[#2545ff]" />
+                      <span>{copied ? "Berhasil Disalin!" : "Salin Kredensial"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

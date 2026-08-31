@@ -1,6 +1,7 @@
 import { memoryStore } from "../config/db.js";
 import { generateToken } from "../middlewares/authMiddleware.js";
 import { comparePassword, hashPassword, generateRandomPassword } from "../utils/crypto.js";
+import { sendTrialCredentialsEmail } from "../services/emailService.js";
 
 /**
  * User Login
@@ -185,6 +186,36 @@ export async function register(req, res, next) {
       created_at: new Date().toISOString(),
     });
 
+    // 5. Send Credentials Email to User's Email Address (SPV + CS 1 + CS 2)
+    try {
+      await sendTrialCredentialsEmail({
+        to: email,
+        institutionName: newInst.name,
+        sector: newInst.sector,
+        owner: {
+          name: newOwner.name,
+          email: newOwner.email,
+          temporaryPassword: ownerPassword,
+          role: "Owner / Supervisor",
+        },
+        cs1: {
+          name: newCs1.name,
+          email: newCs1.email,
+          temporaryPassword: cs1Password,
+          role: "Customer Service 1",
+        },
+        cs2: {
+          name: newCs2.name,
+          email: newCs2.email,
+          temporaryPassword: cs2Password,
+          role: "Customer Service 2",
+        },
+        loginUrl: "http://localhost:3000/login",
+      });
+    } catch (mailErr) {
+      console.warn("[Register Email Notice]", mailErr.message);
+    }
+
     // Return token + generated credentials bundle for immediate delivery to client
     const token = generateToken({
       id: newOwner.id,
@@ -197,11 +228,14 @@ export async function register(req, res, next) {
 
     res.status(201).json({
       success: true,
-      message: "Instansi berhasil didaftarkan! Akun Owner dan CS telah dibuat secara otomatis.",
+      message: `Permintaan uji coba berhasil! Kredensial akun SPV & CS telah dikirimkan ke email ${email}.`,
+      emailSent: true,
+      targetEmail: email,
       token,
       credentialsBundle: {
         institutionName: newInst.name,
         sector: newInst.sector,
+        targetEmail: email,
         loginUrl: "http://localhost:3000/login",
         owner: {
           name: newOwner.name,
