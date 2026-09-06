@@ -8,6 +8,7 @@ import {
   QrIcon,
   ShoppingCartIcon,
   SparklesIcon,
+  CheckIcon,
 } from "@/components/icons";
 
 export default function SupervisorEtalasePage() {
@@ -70,7 +71,14 @@ export default function SupervisorEtalasePage() {
             onClick={handleCopy}
             className="px-4 py-2 bg-[#f5f4f2] hover:bg-[#edeffe] text-[#1e2640] hover:text-[#2545ff] rounded-xl text-[13px] font-bold border border-[#ede8e2] cursor-pointer transition-all"
           >
-            {copied ? "✓ Tersalin!" : "Salin Link Bio"}
+            {copied ? (
+              <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                <CheckIcon className="w-3.5 h-3.5" />
+                <span>Tersalin!</span>
+              </span>
+            ) : (
+              "Salin Link Bio"
+            )}
           </button>
         </div>
       </div>

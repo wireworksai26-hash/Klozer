@@ -1,45 +1,39 @@
 "use client";
 import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
 import {
   BanIcon,
   CrownIcon,
   CheckCircleIcon,
   AlertTriangleIcon,
   ShieldCheckIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function SupervisorBlockedContactsPage() {
+  const { currentUser, activeInstitution } = useDashboard();
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
+  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPhone, setNewPhone] = useState("");
   const [newName, setNewName] = useState("");
   const [newReason, setNewReason] = useState("Spam / Promosi Tak Dikenal");
 
-  const [blockedList, setBlockedList] = useState([
-    {
-      id: "BLK-01",
-      phone: "+62 899-0011-2233",
-      name: "Nomor Spam Pinjol",
-      reason: "Spam / Penawaran Ilegal",
-      blockedAt: "28 Agu 2026",
-      blockedBy: "Rian Supervisor",
-    },
-    {
-      id: "BLK-02",
-      phone: "+62 877-5544-3322",
-      name: "Pelanggan Palsu Struk",
-      reason: "Penipuan Struk Bukti Transfer Palsu (Terdeteksi AI)",
-      blockedAt: "25 Agu 2026",
-      blockedBy: "Sistem AI Auto-Shield",
-    },
-    {
-      id: "BLK-03",
-      phone: "+62 813-9900-8877",
-      name: "Akun Abusive / Kata Kasar",
-      reason: "Pelecehan & Kata Kasar kepada Staf CS",
-      blockedAt: "20 Agu 2026",
-      blockedBy: "Sarah Amalia (CS)",
-    },
-  ]);
+  const [blockedList, setBlockedList] = useState(
+    isDefaultDemo
+      ? [
+          {
+            id: "BLK-01",
+            phone: "+62 899-0011-2233",
+            name: "Nomor Spam",
+            reason: "Spam / Penawaran Ilegal",
+            blockedAt: "28 Agu 2026",
+            blockedBy: "Rian Supervisor",
+          },
+        ]
+      : []
+  );
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -48,20 +42,21 @@ export default function SupervisorBlockedContactsPage() {
     const newEntry = {
       id: `BLK-0${blockedList.length + 1}`,
       phone: newPhone,
-      name: newName || "Kontak Tanpa Nama",
+      name: newName || "Kontak Diblokir",
       reason: newReason,
       blockedAt: "Hari ini",
-      blockedBy: "Supervisor",
+      blockedBy: currentUser?.name || "Supervisor",
     };
-    setBlockedList([newEntry, ...blockedList]);
+    setBlockedList([...blockedList, newEntry]);
     setShowAddModal(false);
     setNewPhone("");
     setNewName("");
   };
 
   const handleUnblock = (id) => {
-    setBlockedList((prev) => prev.filter((b) => b.id !== id));
-    alert("Nomor berhasil dipulihkan dan dihapus dari blacklist.");
+    if (confirm("Apakah Anda yakin ingin membuka blokir nomor ini?")) {
+      setBlockedList(blockedList.filter((b) => b.id !== id));
+    }
   };
 
   return (
@@ -72,91 +67,110 @@ export default function SupervisorBlockedContactsPage() {
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-[11px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full border border-rose-200 flex items-center gap-1.5">
               <BanIcon className="w-3.5 h-3.5" />
-              <span>Keamanan & Blacklist</span>
+              <span>Anti-Fraud & Blacklist Filter</span>
             </span>
           </div>
           <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
-            Daftar Kontak Diblokir (Blacklist)
+            Blacklist & Nomor Diblokir
           </h1>
           <p className="text-[13.5px] text-[#64748b]">
-            Kelola nomor WhatsApp yang diblokir dari sistem (bot AI tidak akan merespon dan pesan tidak masuk ke CS).
+            Daftar nomor WhatsApp yang diblokir oleh supervisor atau terdeteksi bot spam / bukti transfer palsu.
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[13px] font-bold flex items-center gap-2 border-none cursor-pointer self-start sm:self-auto shadow-xs"
+          className="btn-primary !bg-rose-600 hover:!bg-rose-700 !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <BanIcon className="w-4 h-4" />
           <span>+ Blokir Nomor Baru</span>
         </button>
       </div>
 
-      {/* Metrics */}
+      {/* Dynamic Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Total Nomor Diblokir</div>
-          <div className="text-[28px] font-extrabold text-rose-600">{blockedList.length} Nomor</div>
-          <span className="text-[11.5px] font-bold text-rose-600">Blacklist Terverifikasi</span>
+          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Total Nomor Terblokir</div>
+          <div className="text-[28px] font-extrabold text-rose-700">{blockedList.length} Nomor</div>
+          <span className={`text-[11.5px] font-bold ${blockedList.length > 0 ? "text-rose-600" : "text-[#8f95a8]"}`}>
+            {blockedList.length > 0 ? "Otomatis di-reject bot" : "Belum ada nomor di-blacklist"}
+          </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Spam Otomatis Dicegah</div>
-          <div className="text-[28px] font-extrabold text-[#1e2640]">1,420 Pesan</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">AI Shield Filter Aktif</span>
+          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Deteksi AI Anti-Fraud</div>
+          <div className="text-[28px] font-extrabold text-emerald-700">Aktif (100%)</div>
+          <span className="text-[11.5px] font-bold text-emerald-600">Scan OCR Struk & Nomor COD</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Status Proteksi Staf CS</div>
-          <div className="text-[28px] font-extrabold text-emerald-700">100% Aman</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Filter Kata Kasar Aktif</span>
+          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Efisiensi CS</div>
+          <div className="text-[28px] font-extrabold text-[#2545ff]">Bebas Spam</div>
+          <span className="text-[11.5px] font-bold text-[#2545ff]">CS fokus melayani pembeli riil</span>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Blocked List Table */}
       <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
-        <div className="table-wrapper">
-          <table>
+        <h2 className="text-[17px] font-extrabold text-[#1e2640] mb-4">Daftar Nomor Blacklist</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-[13.5px]">
             <thead>
-              <tr>
-                <th>Nomor WhatsApp</th>
-                <th>Nama / Label</th>
-                <th>Alasan Pemblokiran</th>
-                <th>Waktu & Pemblokir</th>
-                <th>Aksi</th>
+              <tr className="bg-[#f9f8f6] border-b border-[#ede8e2] text-[12px] font-bold uppercase text-[#64748b]">
+                <th className="py-3 px-4">Nomor WhatsApp</th>
+                <th className="py-3 px-4">Nama / Label</th>
+                <th className="py-3 px-4">Alasan Pemblokiran</th>
+                <th className="py-3 px-4">Waktu & Pemblokir</th>
+                <th className="py-3 px-4 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody>
-              {blockedList.map((b) => (
-                <tr key={b.id} className="hover:bg-[#fcfbf9] transition-colors">
-                  <td>
-                    <span className="font-mono font-bold text-[#1e2640] text-[13.5px]">{b.phone}</span>
-                  </td>
-                  <td>
-                    <span className="font-semibold text-[#1e2640] text-[13px]">{b.name}</span>
-                  </td>
-                  <td>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
-                      <AlertTriangleIcon className="w-3 h-3" />
-                      <span>{b.reason}</span>
-                    </span>
-                  </td>
-                  <td>
-                    <div className="text-[12.5px] font-bold text-[#1e2640]">{b.blockedAt}</div>
-                    <div className="text-[11px] text-[#8f95a8]">Oleh: {b.blockedBy}</div>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleUnblock(b.id)}
-                      className="px-3 py-1.5 text-[11.5px] font-bold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
-                    >
-                      Buka Blokir (Unblock)
-                    </button>
+            <tbody className="divide-y divide-[#ede8e2]">
+              {blockedList.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-[#64748b]">
+                    <div className="flex flex-col items-center justify-center max-w-[340px] mx-auto">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                        <ShieldCheckIcon className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="font-extrabold text-[#0c1754] text-[14px]">Tidak Ada Nomor di Blacklist</div>
+                      <p className="text-[12px] text-[#64748b] mt-1">
+                        Nomor kontak yang terindikasi spam atau penipuan dapat ditambahkan ke daftar blacklist toko.
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                blockedList.map((b) => (
+                  <tr key={b.id} className="hover:bg-[#fcfbf9] transition-colors">
+                    <td className="py-3.5 px-4">
+                      <span className="font-mono font-bold text-[#1e2640] text-[13.5px]">{b.phone}</span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="font-semibold text-[#1e2640] text-[13px]">{b.name}</span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                        <AlertTriangleIcon className="w-3 h-3" />
+                        <span>{b.reason}</span>
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="text-[12.5px] font-bold text-[#1e2640]">{b.blockedAt}</div>
+                      <div className="text-[11px] text-[#8f95a8]">Oleh: {b.blockedBy}</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleUnblock(b.id)}
+                        className="px-3 py-1.5 text-[11.5px] font-bold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                      >
+                        Buka Blokir (Unblock)
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -170,60 +184,70 @@ export default function SupervisorBlockedContactsPage() {
               <h3 className="text-[17px] font-extrabold text-rose-700">Blokir Nomor WhatsApp Baru</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleAddSubmit} className="flex flex-col gap-4 text-[13px]">
               <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Nomor WhatsApp *</label>
+                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                  Nomor WhatsApp (dengan kode negara) *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="+62 812-xxxx-xxxx"
+                  placeholder="Contoh: +62 812-3456-7890"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] font-mono outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] font-mono text-[13.5px] outline-none focus:border-rose-500"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Nama Kontak / Identitas</label>
+                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                  Label / Nama Pemilik Nomor
+                </label>
                 <input
                   type="text"
-                  placeholder="Contoh: Akun Spam Promo"
+                  placeholder="Contoh: Akun Fake Order"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-rose-500"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Alasan Pemblokiran</label>
+                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                  Alasan Pemblokiran *
+                </label>
                 <select
                   value={newReason}
                   onChange={(e) => setNewReason(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13px] outline-none focus:border-rose-500 bg-white"
                 >
                   <option value="Spam / Promosi Tak Dikenal">Spam / Promosi Tak Dikenal</option>
-                  <option value="Penipuan Struk Bukti Transfer Palsu">Penipuan Struk Bukti Transfer Palsu</option>
-                  <option value="Pelecehan & Kata Kasar kepada CS">Pelecehan & Kata Kasar kepada CS</option>
-                  <option value="Order Palsu COD Berulang (RTS Fraud)">Order Palsu COD Berulang (RTS Fraud)</option>
+                  <option value="Penipuan Bukti Transfer Palsu">Penipuan Bukti Transfer Palsu</option>
+                  <option value="Pelecehan / Kata Kasar">Pelecehan / Kata Kasar</option>
+                  <option value="Fake COD / Paket Sengaja Ditolak">Fake COD / Paket Sengaja Ditolak</option>
+                  <option value="Lainnya">Lainnya</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#ede8e2] mt-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
+                  className="flex-1 py-2.5 text-[13px] font-bold text-[#5a6380] bg-[#f5f4f2] hover:bg-[#ede8e2] rounded-xl border-none cursor-pointer"
                 >
                   Batal
                 </button>
-                <button type="submit" className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-[13px] border-none cursor-pointer">
-                  Blokir Sekarang
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 text-[13px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl border-none cursor-pointer"
+                >
+                  Simpan ke Blacklist
                 </button>
               </div>
             </form>

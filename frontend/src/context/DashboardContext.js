@@ -415,6 +415,9 @@ export function DashboardProvider({ children }) {
         const parsed = JSON.parse(savedUser);
         setCurrentUser(parsed);
         if (parsed.role) setRole(parsed.role);
+        
+        const isDefaultDemoTenant = !parsed.institutionName || parsed.institutionName.toLowerCase() === "batik mahakarya solo" || parsed.institutionId === 1;
+
         if (parsed.institutionName) {
           setInstitutions((prev) => {
             const exists = prev.some((i) => i.name?.toLowerCase() === parsed.institutionName?.toLowerCase() || i.id === parsed.institutionId);
@@ -438,20 +441,75 @@ export function DashboardProvider({ children }) {
           });
           setActiveInstitutionId(parsed.institutionId || `INST-${parsed.institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
         }
+
+        // Strict Tenant Data Isolation:
+        // If this is a newly registered business, clear all dummy data so they start 100% clean!
+        if (!isDefaultDemoTenant && parsed.role !== "superadmin") {
+          const tenantKey = `klozer_inst_${parsed.institutionId || parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
+          const savedPrd = localStorage.getItem(`${tenantKey}_products`);
+          setProducts(savedPrd ? JSON.parse(savedPrd) : []);
+          
+          const savedOrd = localStorage.getItem(`${tenantKey}_orders`);
+          setOrders(savedOrd ? JSON.parse(savedOrd) : []);
+          
+          const savedLeads = localStorage.getItem(`${tenantKey}_leads`);
+          setLeads(savedLeads ? JSON.parse(savedLeads) : []);
+          
+          const cleanSlug = parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis";
+          const defaultTeam = [
+            {
+              id: "SPV-01",
+              name: parsed.name || `SPV - ${parsed.institutionName}`,
+              email: parsed.email || `spv@${cleanSlug}.id`,
+              role: "Owner / Supervisor",
+              status: "active",
+              csClosingRate: "0%",
+              revenueGen: "Rp 0",
+              phone: parsed.phone_number || "+62 812-xxxx-xxxx",
+              permissions: { qrisGenerate: true, voiceAiManage: true, mutationApproval: true, exportReports: true, productEdit: true },
+            },
+            {
+              id: "CS-01",
+              name: `CS 1 - ${parsed.institutionName}`,
+              email: `cs1@${cleanSlug}.id`,
+              role: "Customer Service Senior",
+              status: "active",
+              csClosingRate: "0%",
+              revenueGen: "Rp 0",
+              phone: "+62 812-xxxx-0001",
+              permissions: { qrisGenerate: true, voiceAiManage: false, mutationApproval: false, exportReports: false, productEdit: false },
+            },
+            {
+              id: "CS-02",
+              name: `CS 2 - ${parsed.institutionName}`,
+              email: `cs2@${cleanSlug}.id`,
+              role: "Customer Service Junior",
+              status: "active",
+              csClosingRate: "0%",
+              revenueGen: "Rp 0",
+              phone: "+62 812-xxxx-0002",
+              permissions: { qrisGenerate: true, voiceAiManage: false, mutationApproval: false, exportReports: false, productEdit: false },
+            },
+          ];
+          const savedTeam = localStorage.getItem(`${tenantKey}_team`);
+          setTeamMembers(savedTeam ? JSON.parse(savedTeam) : defaultTeam);
+        } else {
+          // Default demo data for original seed tenant (Batik Mahakarya / Superadmin)
+          const savedPrd = localStorage.getItem("klozer_products");
+          if (savedPrd) setProducts(JSON.parse(savedPrd));
+          const savedOrd = localStorage.getItem("klozer_orders");
+          if (savedOrd) setOrders(JSON.parse(savedOrd));
+          const savedLeads = localStorage.getItem("klozer_leads");
+          if (savedLeads) setLeads(JSON.parse(savedLeads));
+          const savedTeam = localStorage.getItem("klozer_team");
+          if (savedTeam) setTeamMembers(JSON.parse(savedTeam));
+        }
       } else {
         const savedRole = localStorage.getItem("klozer_role");
         if (savedRole) setRole(savedRole);
       }
       const savedInst = localStorage.getItem("klozer_institutions");
       if (savedInst) setInstitutions(JSON.parse(savedInst));
-      const savedPrd = localStorage.getItem("klozer_products");
-      if (savedPrd) setProducts(JSON.parse(savedPrd));
-      const savedOrd = localStorage.getItem("klozer_orders");
-      if (savedOrd) setOrders(JSON.parse(savedOrd));
-      const savedLeads = localStorage.getItem("klozer_leads");
-      if (savedLeads) setLeads(JSON.parse(savedLeads));
-      const savedTeam = localStorage.getItem("klozer_team");
-      if (savedTeam) setTeamMembers(JSON.parse(savedTeam));
       const savedAi = localStorage.getItem("klozer_ai_config");
       if (savedAi) setAiConfig(JSON.parse(savedAi));
     } catch (e) {
@@ -638,6 +696,42 @@ export function DashboardProvider({ children }) {
     saveToStorage("klozer_products", updated);
   };
 
+  const importProducts = (newItems, mode = "append") => {
+    const formatted = newItems.map((prd, idx) => ({
+      id: `PRD-${Date.now()}-${idx}`,
+      name: prd.name,
+      sku: prd.sku || `KLZ-PRD-${Math.floor(100 + Math.random() * 900)}`,
+      category: prd.category || "Umum",
+      price: Number(prd.price) || 0,
+      hpp: Number(prd.hpp) || 0,
+      stock: Number(prd.stock) || 0,
+      lowStock: Number(prd.lowStock) || 5,
+      variants: Array.isArray(prd.variants) ? prd.variants : (typeof prd.variants === "string" ? prd.variants.split(",").map((v) => v.trim()) : ["Standard"]),
+      active: true,
+    }));
+    const updated = mode === "replace" ? formatted : [...formatted, ...products];
+    setProducts(updated);
+    saveToStorage("klozer_products", updated);
+    return updated;
+  };
+
+  const importStock = (stockList) => {
+    const skuMap = new Map();
+    stockList.forEach((s) => {
+      if (s.sku) skuMap.set(String(s.sku).trim().toUpperCase(), Number(s.newStock));
+    });
+    const updated = products.map((p) => {
+      const pSku = String(p.sku || "").trim().toUpperCase();
+      if (skuMap.has(pSku)) {
+        return { ...p, stock: skuMap.get(pSku) };
+      }
+      return p;
+    });
+    setProducts(updated);
+    saveToStorage("klozer_products", updated);
+    return updated;
+  };
+
   // ==================== CRUD: ORDERS ====================
   const addOrder = (newOrder) => {
     const id = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -703,6 +797,25 @@ export function DashboardProvider({ children }) {
     const updated = leads.filter((l) => l.id !== id);
     setLeads(updated);
     saveToStorage("klozer_leads", updated);
+  };
+
+  const importContacts = (contactList, mode = "append") => {
+    const formatted = contactList.map((c, idx) => ({
+      id: `LEAD-${Date.now()}-${idx}`,
+      name: c.name,
+      phone: c.phone,
+      email: c.email || "-",
+      city: c.city || "Indonesia",
+      category: c.category || "Lead Baru",
+      totalSpent: Number(c.totalSpent) || 0,
+      codScore: 85,
+      codRisk: "low",
+      lastInteraction: "Diimpor CSV",
+    }));
+    const updated = mode === "replace" ? formatted : [...formatted, ...leads];
+    setLeads(updated);
+    saveToStorage("klozer_leads", updated);
+    return updated;
   };
 
   // ==================== CRUD: TEAM ====================
@@ -806,6 +919,8 @@ export function DashboardProvider({ children }) {
         updateProduct,
         toggleProductStatus,
         deleteProduct,
+        importProducts,
+        importStock,
         orders,
         addOrder,
         updateOrderStatus,
@@ -814,6 +929,7 @@ export function DashboardProvider({ children }) {
         addLead,
         updateLead,
         deleteLead,
+        importContacts,
         teamMembers,
         addTeamMember,
         updateTeamMemberPermissions,

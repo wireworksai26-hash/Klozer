@@ -18,6 +18,7 @@ import {
   BotIcon,
   UserIcon,
   CrownIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function SettingsPage() {
@@ -1060,9 +1061,9 @@ export default function SettingsPage() {
               <h3 className="text-[17px] font-extrabold text-[#0c1754]">Tambah Anggota Tim Baru</h3>
               <button
                 onClick={() => setShowAddTeamModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer text-[13px] font-bold"
+                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

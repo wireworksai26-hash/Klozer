@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SparklesIcon, KlozerIcon } from "@/components/icons";
+import { SparklesIcon, KlozerIcon, XIcon } from "@/components/icons";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -157,11 +157,11 @@ export default function ChatWidget() {
                 e.stopPropagation();
                 setIsOpen(false);
               }}
-              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white border-none cursor-pointer text-[14px] font-bold transition-colors active:scale-90"
+              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white border-none cursor-pointer transition-colors active:scale-90"
               aria-label="Tutup panel chat"
               title="Tutup Chat"
             >
-              ✕
+              <XIcon className="w-4 h-4" />
             </button>
           </div>
 

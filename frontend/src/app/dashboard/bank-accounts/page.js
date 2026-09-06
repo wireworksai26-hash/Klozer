@@ -1,57 +1,59 @@
 "use client";
 import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
 import {
   BuildingIcon,
   CrownIcon,
   CheckCircleIcon,
   ShieldCheckIcon,
   QrIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function SupervisorBankAccountsPage() {
+  const { currentUser, activeInstitution } = useDashboard();
   const [showAddModal, setShowAddModal] = useState(false);
   const [bankName, setBankName] = useState("BCA");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
 
-  const [banks, setBanks] = useState([
-    {
-      id: "BNK-01",
-      bankName: "Bank Central Asia (BCA)",
-      accountNumber: "8809123847",
-      accountHolder: "PT Batik Mahakarya Indonesia",
-      type: "Rekening Operasional Utama",
-      autoMutation: true,
-      status: "active",
-    },
-    {
-      id: "BNK-02",
-      bankName: "Bank Mandiri",
-      accountNumber: "1370019284710",
-      accountHolder: "PT Batik Mahakarya Indonesia",
-      type: "Rekening Grosir & B2B",
-      autoMutation: true,
-      status: "active",
-    },
-    {
-      id: "BNK-03",
-      bankName: "Bank Syariah Indonesia (BSI)",
-      accountNumber: "7109283741",
-      accountHolder: "Batik Mahakarya Solo",
-      type: "Rekening Donasi & CSR",
-      autoMutation: false,
-      status: "active",
-    },
-    {
-      id: "BNK-04",
-      bankName: "QRIS Dinamis (Xendit Settlement)",
-      accountNumber: "NMID: ID1029384756102",
-      accountHolder: "BATIK MAHAKARYA SOLO",
-      type: "Payment Gateway In-Chat",
-      autoMutation: true,
-      status: "active",
-    },
-  ]);
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko / Instansi";
+  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+
+  const [banks, setBanks] = useState(
+    isDefaultDemo
+      ? [
+          {
+            id: "BNK-01",
+            bankName: "Bank Central Asia (BCA)",
+            accountNumber: "8809123847",
+            accountHolder: "PT Batik Mahakarya Indonesia",
+            type: "Rekening Operasional Utama",
+            autoMutation: true,
+            status: "active",
+          },
+          {
+            id: "BNK-02",
+            bankName: "QRIS Dinamis (Xendit Settlement)",
+            accountNumber: "NMID: ID1029384756102",
+            accountHolder: "BATIK MAHAKARYA SOLO",
+            type: "Payment Gateway In-Chat",
+            autoMutation: true,
+            status: "active",
+          },
+        ]
+      : [
+          {
+            id: "BNK-01",
+            bankName: "In-Chat Dynamic QRIS (Settlement Otomatis)",
+            accountNumber: `NMID: ID${Math.floor(1000000000000 + Math.random() * 9000000000000)}`,
+            accountHolder: cleanInstName.toUpperCase(),
+            type: "Payment Gateway WhatsApp In-Chat",
+            autoMutation: true,
+            status: "active",
+          },
+        ]
+  );
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -150,9 +152,9 @@ export default function SupervisorBankAccountsPage() {
               <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Rekening Bank Resmi</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

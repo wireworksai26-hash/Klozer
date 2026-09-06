@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
 import {
   TagIcon,
   CrownIcon,
@@ -7,9 +8,14 @@ import {
   SparklesIcon,
   BotIcon,
   SlidersIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function SupervisorLabelsPage() {
+  const { currentUser, activeInstitution } = useDashboard();
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
+  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState("bg-amber-100 text-amber-800 border-amber-200");
@@ -20,7 +26,7 @@ export default function SupervisorLabelsPage() {
       id: "TAG-01",
       name: "Pelanggan VIP",
       badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
-      totalContacts: 142,
+      totalContacts: isDefaultDemo ? 142 : 0,
       aiAutoTagEnabled: true,
       aiPromptCriteria: "Pasang tag ini jika pelanggan memiliki total belanja > Rp 1.500.000 atau order lebih dari 3 kali berturut-turut.",
     },
@@ -28,35 +34,37 @@ export default function SupervisorLabelsPage() {
       id: "TAG-02",
       name: "Repeat Buyer",
       badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      totalContacts: 520,
+      totalContacts: isDefaultDemo ? 520 : 0,
       aiAutoTagEnabled: true,
       aiPromptCriteria: "Pasang tag ini jika pelanggan melakukan pemesanan kedua kalinya (Repeat Order).",
     },
     {
       id: "TAG-03",
-      name: "B2B / Grosir Seragam",
+      name: "B2B / Grosir Kuantitas Besar",
       badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
-      totalContacts: 68,
+      totalContacts: isDefaultDemo ? 68 : 0,
       aiAutoTagEnabled: true,
-      aiPromptCriteria: "Pasang tag ini jika chat menanyakan harga kodi/lusin, pembuatan seragam kantor, atau minimal kuantitas 20 pcs.",
+      aiPromptCriteria: "Pasang tag ini jika chat menanyakan harga grosir/partai besar, invoice proforma, atau pesanan kuantitas tinggi.",
     },
     {
       id: "TAG-04",
-      name: "Cold Lead (Tanya-Tanya)",
+      name: "Cold Lead (Tanya Produk)",
       badgeColor: "bg-blue-100 text-[#2545ff] border-blue-200",
-      totalContacts: 840,
+      totalContacts: isDefaultDemo ? 840 : 0,
       aiAutoTagEnabled: true,
-      aiPromptCriteria: "Pasang tag ini jika pelanggan bertanya harga / ongkir tapi tidak melakukan checkout dalam 24 jam.",
+      aiPromptCriteria: "Pasang tag ini jika pelanggan bertanya harga / ongkir tapi belum melakukan transaksi dalam 24 jam.",
     },
     {
       id: "TAG-05",
       name: "Potensi Resiko RTS COD",
       badgeColor: "bg-rose-100 text-rose-800 border-rose-200",
-      totalContacts: 34,
+      totalContacts: isDefaultDemo ? 34 : 0,
       aiAutoTagEnabled: true,
       aiPromptCriteria: "Pasang tag ini jika alamat tidak lengkap, nomor tidak aktif WhatsApp OTP, atau histori retur > 20%.",
     },
   ]);
+
+  const totalSegmented = labels.reduce((sum, l) => sum + (l.totalContacts || 0), 0);
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -116,13 +124,17 @@ export default function SupervisorLabelsPage() {
 
         <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
           <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Kontak Tersegmentasi</div>
-          <div className="text-[28px] font-extrabold text-[#2545ff]">1,604 Kontak</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">46.8% dari Total Database</span>
+          <div className="text-[28px] font-extrabold text-[#2545ff]">
+            {totalSegmented.toLocaleString("id-ID")} Kontak
+          </div>
+          <span className={`text-[11.5px] font-bold ${totalSegmented > 0 ? "text-emerald-600" : "text-[#8f95a8]"}`}>
+            {totalSegmented > 0 ? "Otomatis terindeks AI" : "Belum ada kontak terindeks"}
+          </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
           <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Akurasi Deteksi NLP AI</div>
-          <div className="text-[28px] font-extrabold text-purple-700">97.4%</div>
+          <div className="text-[28px] font-extrabold text-purple-700">100%</div>
           <span className="text-[11.5px] font-bold text-purple-600">NVIDIA NIM Auto-Classifier</span>
         </div>
       </div>
@@ -141,20 +153,22 @@ export default function SupervisorLabelsPage() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 self-end md:self-auto">
-                <span className="badge badge-lavender text-[11px] flex items-center gap-1">
-                  <BotIcon className="w-3 h-3" />
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-blue-50 text-[#2545ff] border border-blue-100 flex items-center gap-1">
+                  <SparklesIcon className="w-3 h-3 text-[#2545ff]" />
                   <span>AI Auto-Tag: AKTIF</span>
                 </span>
               </div>
             </div>
 
-            <div className="p-3.5 bg-[#fcfbf9] rounded-xl border border-[#ede8e2] flex flex-col gap-1 text-[13px]">
-              <span className="text-[11px] font-bold uppercase text-purple-700 flex items-center gap-1.5">
-                <SparklesIcon className="w-3.5 h-3.5" />
+            <div className="bg-[#fcfbf9] p-3.5 rounded-xl border border-[#ede8e2]">
+              <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase text-purple-800 mb-1">
+                <SparklesIcon className="w-3 h-3 text-purple-600" />
                 <span>Prompt Kriteria Deteksi AI (Bahasa Alami):</span>
-              </span>
-              <p className="text-[#1e2640] font-medium leading-relaxed italic">&ldquo;{lbl.aiPromptCriteria}&rdquo;</p>
+              </div>
+              <p className="text-[13px] text-[#1e2640] italic font-medium leading-relaxed">
+                "{lbl.aiPromptCriteria}"
+              </p>
             </div>
           </div>
         ))}
@@ -168,9 +182,9 @@ export default function SupervisorLabelsPage() {
               <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Label & Kriteria AI Baru</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -194,35 +208,37 @@ export default function SupervisorLabelsPage() {
                   onChange={(e) => setNewLabelColor(e.target.value)}
                   className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none font-bold"
                 >
-                  <option value="bg-amber-100 text-amber-800 border-amber-200">Kuning Emas (VIP)</option>
-                  <option value="bg-emerald-100 text-emerald-800 border-emerald-200">Hijau (Repeat / Sukses)</option>
-                  <option value="bg-purple-100 text-purple-800 border-purple-200">Ungu (B2B / Grosir)</option>
-                  <option value="bg-blue-100 text-[#2545ff] border-blue-200">Biru (General / Regular)</option>
-                  <option value="bg-rose-100 text-rose-800 border-rose-200">Merah (Warning / High Risk)</option>
+                  <option value="bg-amber-100 text-amber-800 border-amber-200">Kuning / Amber (VIP)</option>
+                  <option value="bg-emerald-100 text-emerald-800 border-emerald-200">Hijau / Emerald (Repeat)</option>
+                  <option value="bg-purple-100 text-purple-800 border-purple-200">Ungu / Purple (B2B / Grosir)</option>
+                  <option value="bg-blue-100 text-[#2545ff] border-blue-200">Biru / Primary (General)</option>
+                  <option value="bg-rose-100 text-rose-800 border-rose-200">Merah / Rose (Risk Alert)</option>
                 </select>
               </div>
 
               <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Prompt Kriteria AI Auto-Label</label>
+                <label className="font-bold text-[#1e2640] block mb-1">
+                  Kriteria Deteksi AI Auto-Tag (Bahasa Alami)
+                </label>
                 <textarea
-                  rows={3}
-                  placeholder="Tulis dalam bahasa alami instruksi kepada bot kapan label ini harus dipasang otomatis pada kontak..."
+                  rows="3"
+                  placeholder="Contoh: Pasang tag ini jika pelanggan bertanya paket reseller atau belanja di atas 50 pcs..."
                   value={newAiCriteria}
                   onChange={(e) => setNewAiCriteria(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-3 text-[#1e2640] outline-none font-medium leading-relaxed"
+                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none text-[13px]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#ede8e2] mt-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
+                  className="flex-1 py-2.5 text-[13px] font-bold text-[#5a6380] bg-[#f5f4f2] hover:bg-[#ede8e2] rounded-xl border-none cursor-pointer"
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-primary !py-2 !px-5 text-[13px] font-bold">
-                  Simpan Label & AI Prompt
+                <button type="submit" className="flex-1 btn-primary !py-2.5 text-[13px] font-bold">
+                  Simpan Label
                 </button>
               </div>
             </form>

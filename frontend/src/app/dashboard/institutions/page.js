@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { BuildingIcon, CrownIcon, AlertTriangleIcon, CheckCircleIcon } from "@/components/icons";
+import { BuildingIcon, CrownIcon, AlertTriangleIcon, CheckCircleIcon, XIcon } from "@/components/icons";
 
 export default function InstitutionsPage() {
   const { institutions, addInstitution, updateInstitution, toggleInstitutionModule, deleteInstitution } = useDashboard();
@@ -301,9 +301,9 @@ export default function InstitutionsPage() {
                   setShowAddModal(false);
                   setEditingInst(null);
                 }}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer text-[13px] font-bold"
+                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
 import {
   CreditCardIcon,
   CrownIcon,
@@ -7,9 +8,14 @@ import {
   QrIcon,
   RadioIcon,
   ZapIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function CsCreditsPage() {
+  const { currentUser, activeInstitution } = useDashboard();
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
+  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState("pack-2");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,9 +27,14 @@ export default function CsCreditsPage() {
   ];
 
   const [history, setHistory] = useState([
-    { id: "CRD-101", date: "29 Agu 2026, 10:15", type: "PENGGUNAAN", desc: "Broadcast Flash Promo Weekend", qty: -120, balance: 1450 },
-    { id: "CRD-102", date: "25 Agu 2026, 14:00", type: "TOPUP", desc: "Top-Up Mandiri via QRIS", qty: +500, balance: 1570 },
-    { id: "CRD-103", date: "20 Agu 2026, 09:30", type: "PENGGUNAAN", desc: "Follow-Up Pelanggan Keranjang Belum Beli", qty: -80, balance: 1070 },
+    {
+      id: "CRD-001",
+      date: "Hari ini",
+      type: "BONUS",
+      desc: `Bonus Kuota Selamat Datang (${cleanInstName})`,
+      qty: 1000,
+      balance: 1000,
+    },
   ]);
 
   const handleTopupSubmit = () => {
@@ -151,9 +162,9 @@ export default function CsCreditsPage() {
               <h3 className="text-[17px] font-extrabold text-[#1e2640]">Top-Up Kuota Pesan Broadcast</h3>
               <button
                 onClick={() => setShowTopupModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

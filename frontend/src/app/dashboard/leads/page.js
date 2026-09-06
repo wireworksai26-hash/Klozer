@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { ShieldCheckIcon, AlertTriangleIcon } from "@/components/icons";
+import { ShieldCheckIcon, AlertTriangleIcon, UsersIcon, XIcon } from "@/components/icons";
 
 export default function LeadsPage() {
   const { leads, addLead, updateLead, deleteLead } = useDashboard();
@@ -257,44 +257,68 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0e9e1] text-[13.5px]">
-                {filtered.map((l) => (
-                  <tr key={l.id} className="hover:bg-[#fcfbf9] transition-colors">
-                    <td className="py-4 px-5">
-                      <div className="font-bold text-[#0c1754]">{l.name}</div>
-                      <div className="text-[11.5px] text-[#64748b]">{l.phone}</div>
-                    </td>
-                    <td className="py-4 px-5 text-[12.5px] text-[#171417]">{l.source}</td>
-                    <td className="py-4 px-5">
-                      <div className="font-bold text-[#0c1754] text-[13px]">{l.interest}</div>
-                      <div className="text-[11px] text-[#969696]">Est: Rp {l.estValue.toLocaleString()}</div>
-                    </td>
-                    <td className="py-4 px-5">
-                      {getRiskBadge(l.codScore, l.codRisk)}
-                    </td>
-                    <td className="py-4 px-5">
-                      <span className="font-bold text-[12px] bg-[#eaebf8] text-[#2545ff] px-2.5 py-0.5 rounded-full capitalize">
-                        {l.status.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 font-medium text-[#171417]">{l.cs}</td>
-                    <td className="py-4 px-5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 px-4 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-[360px] mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
+                          <UsersIcon className="w-6 h-6 text-[#2545ff]" />
+                        </div>
+                        <div className="font-extrabold text-[#0c1754] text-[15px]">Belum Ada Lead / Kontak</div>
+                        <p className="text-[12.5px] text-[#64748b] mt-1 mb-4">
+                          Kontak calon pembeli dari Meta Ads CAPI atau chat WhatsApp baru akan otomatis tercatat di sini.
+                        </p>
                         <button
-                          onClick={() => handleOpenEdit(l)}
-                          className="px-2.5 py-1 text-[12px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                          type="button"
+                          onClick={handleOpenAdd}
+                          className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
                         >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(l.id)}
-                          className="px-2.5 py-1 text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
-                        >
-                          Hapus
+                          + Tambah Lead Pertama
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((l) => (
+                    <tr key={l.id} className="hover:bg-[#fcfbf9] transition-colors">
+                      <td className="py-4 px-5">
+                        <div className="font-bold text-[#0c1754] text-[14px]">{l.name}</div>
+                        <span className="font-mono text-[11px] font-bold text-[#64748b]">{l.phone}</span>
+                      </td>
+                      <td className="py-4 px-5">
+                        <span className="text-[12px] font-bold bg-[#eaebf8] text-[#2545ff] px-2.5 py-1 rounded-full">
+                          {l.source}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-[#0c1754] font-medium">{l.interest}</td>
+                      <td className="py-4 px-5">
+                        {getRiskBadge(l.codScore, l.codRisk)}
+                      </td>
+                      <td className="py-4 px-5">
+                        <span className="font-bold text-[12px] bg-[#eaebf8] text-[#2545ff] px-2.5 py-0.5 rounded-full capitalize">
+                          {l.status.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 font-medium text-[#171417]">{l.cs}</td>
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenEdit(l)}
+                            className="px-2.5 py-1 text-[12px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(l.id)}
+                            className="px-2.5 py-1 text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -314,9 +338,9 @@ export default function LeadsPage() {
                   setShowAddModal(false);
                   setEditingLead(null);
                 }}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer text-[13px] font-bold"
+                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

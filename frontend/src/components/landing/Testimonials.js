@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { StarIcon } from "@/components/icons";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -117,7 +118,7 @@ export default function Testimonials() {
               <div>
                 {/* Rating score header */}
                 <div className="flex items-center gap-1.5 font-bold text-[14px] text-[#171417] mb-4">
-                  <span className="text-amber-600">★</span>
+                  <StarIcon className="w-4 h-4 text-amber-500 fill-amber-500" />
                   <span>{t.score}</span>
                 </div>
 

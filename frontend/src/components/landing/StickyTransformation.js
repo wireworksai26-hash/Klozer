@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CheckCircleIcon } from "@/components/icons";
+import { CheckCircleIcon, SparklesIcon, CheckIcon } from "@/components/icons";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -52,7 +52,10 @@ const stages = [
     cardContent: (
       <div className="flex flex-col gap-3">
         <div className="bg-[#eaebf8] p-3.5 sm:p-4 rounded-xl border border-[#2545ff]/20 text-[#0c1754] text-[12.5px] sm:text-[13px]">
-          <div className="font-bold text-[#2545ff] mb-1">✦ QRIS Rp 312.000 Terbit Otomatis</div>
+          <div className="font-bold text-[#2545ff] mb-1 flex items-center gap-1.5">
+            <SparklesIcon className="w-4 h-4 text-[#2545ff]" />
+            <span>QRIS Rp 312.000 Terbit Otomatis</span>
+          </div>
           <div>Kode QRIS langsung dikirim ke WhatsApp pembeli dengan batas waktu pembayaran 15 menit.</div>
         </div>
         <div className="bg-[#f9f8f6] p-3 rounded-xl border border-[#f0e9e1] text-[11.5px] sm:text-[12px] flex items-center justify-between">
@@ -77,8 +80,8 @@ const stages = [
     cardContent: (
       <div className="flex flex-col gap-3">
         <div className="bg-emerald-50 p-3.5 sm:p-4 rounded-xl border border-emerald-200 text-emerald-800 text-[12.5px] sm:text-[13px]">
-          <div className="font-bold mb-1 flex items-center gap-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
+          <div className="font-bold mb-1 flex items-center gap-1.5 text-emerald-800">
+            <CheckIcon className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>64 Pesanan Lunas Hari Ini</span>
           </div>
           <div>Omzet Rp 18.750.000 tercapai secara otomatis tanpa kendala salah kirim.</div>

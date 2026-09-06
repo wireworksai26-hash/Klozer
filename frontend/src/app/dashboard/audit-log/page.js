@@ -11,55 +11,35 @@ import {
 } from "@/components/icons";
 
 export default function SupervisorAuditLogPage() {
+  const { currentUser, activeInstitution } = useDashboard();
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
+  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+
   const [filterAction, setFilterAction] = useState("all");
 
-  const logs = [
-    {
-      id: "LOG-901",
-      staff: "Rian Supervisor",
-      role: "Supervisor (SPV)",
-      action: "TAKEOVER_CHAT",
-      details: "Mengambil alih percakapan WhatsApp dari AI (Pelanggan B2B Seragam #GL-901)",
-      ip: "103.119.214.12",
-      timestamp: "29 Agu 2026, 17:45",
-    },
-    {
-      id: "LOG-902",
-      staff: "Sarah Amalia",
-      role: "CS Senior",
-      action: "UPDATE_STATUS_ORDER",
-      details: "Mengubah status pesanan #ORD-8801 menjadi 'Shipped' (Resi J&T: JT9812498)",
-      ip: "182.253.110.84",
-      timestamp: "29 Agu 2026, 16:30",
-    },
-    {
-      id: "LOG-903",
-      staff: "Dewi Finance",
-      role: "Finance",
-      action: "MANUAL_SETTLEMENT_APPROVAL",
-      details: "Menyetujui approval pembayaran transfer manual BCA Rp 650.000",
-      ip: "114.122.90.18",
-      timestamp: "29 Agu 2026, 15:20",
-    },
-    {
-      id: "LOG-904",
-      staff: "Budi Santoso",
-      role: "CS Junior",
-      action: "EXPORT_LEADS",
-      details: "Mengekspor 45 kontak berlabel 'Cold Lead' ke format CSV",
-      ip: "182.253.110.99",
-      timestamp: "28 Agu 2026, 11:15",
-    },
-    {
-      id: "LOG-905",
-      staff: "Rian Supervisor",
-      role: "Supervisor (SPV)",
-      action: "UPDATE_STOCK",
-      details: "Menambah mutasi stok masuk +25 Pcs Kain Batik Tulis Solo",
-      ip: "103.119.214.12",
-      timestamp: "28 Agu 2026, 09:00",
-    },
-  ];
+  const logs = isDefaultDemo
+    ? [
+        {
+          id: "LOG-901",
+          staff: "Rian Supervisor",
+          role: "Supervisor (SPV)",
+          action: "TAKEOVER_CHAT",
+          details: "Mengambil alih percakapan WhatsApp dari AI",
+          ip: "103.119.214.12",
+          timestamp: "29 Agu 2026, 17:45",
+        },
+      ]
+    : [
+        {
+          id: "LOG-001",
+          staff: currentUser?.name || "Supervisor",
+          role: "Supervisor (SPV)",
+          action: "TENANT_INITIALIZATION",
+          details: `Inisialisasi akun workspace bisnis ${cleanInstName} berhasil`,
+          ip: "127.0.0.1",
+          timestamp: "Hari ini",
+        },
+      ];
 
   const filtered = logs.filter((l) => {
     if (filterAction === "all") return true;

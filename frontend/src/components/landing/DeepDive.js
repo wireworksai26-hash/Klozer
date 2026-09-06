@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircleIcon, QrIcon, TruckIcon } from "@/components/icons";
+import { CheckCircleIcon, QrIcon, TruckIcon, CheckIcon } from "@/components/icons";
 
 const stepsData = {
   1: {
@@ -178,7 +178,7 @@ export default function DeepDive() {
                     {paidStep2 ? (
                       <div className="py-2 animate-scale-pop">
                         <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-1.5 font-bold">
-                          ✓
+                          <CheckIcon className="w-5 h-5" />
                         </div>
                         <div className="text-[14px] font-bold text-emerald-700">Pembayaran Rp 312.000 Lunas!</div>
                         <div className="text-[11px] text-[#969696]">Mutasi rekening BCA cocok 100%</div>

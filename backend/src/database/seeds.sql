@@ -8,7 +8,8 @@
 INSERT INTO `institutions` (`id`, `name`, `slug`, `mode`, `sector`, `phone_number`, `email`, `address`, `subscription_tier`, `blast_credit_quota`, `ai_token_quota`, `features_json`, `is_active`) VALUES
 (1, 'Batik Mahakarya Solo', 'batik-mahakarya-solo', 'business', 'Fashion & Retail', '+62 812-3344-5566', 'owner@batikmahakarya.id', 'Jl. Slamet Riyadi No. 142, Surakarta, Jawa Tengah', 'pro', 5000, 1500000, '{"aiPersona": true, "aiAutoLabel": true, "printInvoice": true, "baileys": true, "instagram": true, "csBlast": true, "publicBooking": true, "stockManagement": true, "picFeature": true, "qrisPayment": true, "voiceNoteAi": true, "fraudOcr": true, "metaCapi": true}', 1),
 (2, 'Lumiere Skincare Clinic', 'lumiere-skincare-clinic', 'business', 'Kecantikan & Skincare', '+62 819-8877-6655', 'admin@lumiereskin.com', 'Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan', 'enterprise', 12000, 3000000, '{"aiPersona": true, "aiAutoLabel": true, "printInvoice": true, "baileys": true, "instagram": true, "csBlast": true, "publicBooking": true, "stockManagement": true, "picFeature": true, "qrisPayment": true, "voiceNoteAi": true, "fraudOcr": true, "metaCapi": true}', 1),
-(3, 'Yayasan ZISWAF Peduli Umat', 'ziswaf-peduli-umat', 'ngo', 'Lembaga Sosial & ZISWAF', '+62 821-4455-6677', 'lazis@peduliumat.org', 'Jl. Teuku Umar No. 12, Bandung, Jawa Barat', 'enterprise', 25000, 5000000, '{"aiPersona": true, "aiAutoLabel": true, "printInvoice": true, "baileys": true, "instagram": true, "csBlast": true, "publicBooking": true, "stockManagement": false, "picFeature": true, "qrisPayment": true, "voiceNoteAi": true, "fraudOcr": true, "metaCapi": true}', 1)
+(3, 'Yayasan ZISWAF Peduli Umat', 'ziswaf-peduli-umat', 'ngo', 'Lembaga Sosial & ZISWAF', '+62 821-4455-6677', 'lazis@peduliumat.org', 'Jl. Teuku Umar No. 12, Bandung, Jawa Barat', 'enterprise', 25000, 5000000, '{"aiPersona": true, "aiAutoLabel": true, "printInvoice": true, "baileys": true, "instagram": true, "csBlast": true, "publicBooking": true, "stockManagement": false, "picFeature": true, "qrisPayment": true, "voiceNoteAi": true, "fraudOcr": true, "metaCapi": true}', 1),
+(4, 'Geprek Juara', 'geprek-juara', 'business', 'Kuliner & F&B', '+62 812-9900-8800', 'spv@geprekjuara.id', 'Jl. Merdeka No. 45, Jakarta', 'pro', 5000, 1500000, '{"aiPersona": true, "aiAutoLabel": true, "printInvoice": true, "baileys": true, "instagram": true, "csBlast": true, "publicBooking": true, "stockManagement": true, "picFeature": true, "qrisPayment": true, "voiceNoteAi": true, "fraudOcr": true, "metaCapi": true}', 1)
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
 -- 2. USERS (Password: Klozer123! -> bcrypt hash: $2b$10$7ZkZfP0pP2oQz7.yT3q7ceBsm8O.zPz3WfO1GfZL8Cskq8z7DkLqK)
@@ -17,7 +18,10 @@ INSERT INTO `users` (`id`, `institution_id`, `name`, `email`, `password_hash`, `
 (2, 1, 'Hendra Wijaya (Owner)', 'owner@batikmahakarya.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'owner', '+62 812-3344-5566', 0.00, 1, 1),
 (3, 1, 'Siti Rahma (CS 1)', 'siti@batikmahakarya.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'cs', '+62 857-1122-3344', 5.00, 1, 1),
 (4, 1, 'Budi Pratama (CS 2)', 'budi@batikmahakarya.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'cs', '+62 858-9988-7766', 5.00, 1, 1),
-(5, 1, 'Ratna Sari (Finance)', 'finance@batikmahakarya.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'finance', '+62 813-7766-5544', 0.00, 0, 1)
+(5, 1, 'Ratna Sari (Finance)', 'finance@batikmahakarya.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'finance', '+62 813-7766-5544', 0.00, 0, 1),
+(6, 4, 'SPV - Geprek Juara', 'spv@geprekjuara.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'owner', '+62 812-9900-8800', 0.00, 1, 1),
+(7, 4, 'CS 1 - Geprek Juara', 'cs1@geprekjuara.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'cs', '+62 812-9900-8801', 5.00, 1, 1),
+(8, 4, 'CS 2 - Geprek Juara', 'cs2@geprekjuara.id', '$2b$10$Jg755LqZfT7Ua70.y18KueO3v4d8K.P6F5N.M2x.Y8UeG8x6Z6W8q', 'cs', '+62 812-9900-8802', 5.00, 1, 1)
 ON DUPLICATE KEY UPDATE `email`=VALUES(`email`);
 
 -- 3. PRODUCTS

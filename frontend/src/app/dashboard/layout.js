@@ -687,7 +687,7 @@ function DashboardContent({ children }) {
                 </div>
                 <div className="text-left hidden sm:block">
                   <div className="leading-tight text-[12px] text-[#1e2640] font-extrabold">
-                    {currentUser?.name || "Hendra Wijaya"}
+                    {currentUser?.name || currentRoleConfig.name}
                   </div>
                   <div className="text-[10px] text-[#64748b] font-medium leading-none">
                     {currentRoleConfig.label}
@@ -702,10 +702,10 @@ function DashboardContent({ children }) {
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl p-2.5 shadow-2xl border border-[#ede8e2] z-50 animate-scale-pop">
                   <div className="p-3 bg-[#fcfbf9] rounded-xl border border-[#ede8e2] mb-2">
                     <div className="font-extrabold text-[13px] text-[#1e2640] truncate">
-                      {currentUser?.name || "Hendra Wijaya"}
+                      {currentUser?.name || currentRoleConfig.name}
                     </div>
                     <div className="text-[11.5px] text-[#64748b] font-mono truncate">
-                      {currentUser?.email || "owner@batikmahakarya.id"}
+                      {currentUser?.email || (role === "superadmin" ? "superadmin@klozer.id" : "spv@klozer.id")}
                     </div>
                     <div className="mt-2 inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-[#edeffe] text-[#2545ff]">
                       {currentRoleConfig.icon}

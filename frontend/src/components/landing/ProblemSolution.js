@@ -1,5 +1,5 @@
 "use client";
-import { XCircleIcon, CheckCircleIcon, ArrowRightIcon } from "@/components/icons";
+import { XCircleIcon, CheckCircleIcon, ArrowRightIcon, CheckIcon, XIcon } from "@/components/icons";
 import Link from "next/link";
 
 const comparisons = [
@@ -58,8 +58,8 @@ export default function ProblemSolution() {
               <ul className="flex flex-col gap-4">
                 {comparisons.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-3 text-[14px] leading-relaxed text-[#334155]">
-                    <span className="w-5 h-5 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-[12px]">
-                      ✕
+                    <span className="w-5 h-5 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <XIcon className="w-3 h-3" />
                     </span>
                     <span>{item.problem}</span>
                   </li>
@@ -83,8 +83,8 @@ export default function ProblemSolution() {
               <ul className="flex flex-col gap-4">
                 {comparisons.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-3 text-[14px] leading-relaxed text-[#eef2ff]/90">
-                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-[12px]">
-                      ✓
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckIcon className="w-3 h-3" />
                     </span>
                     <span>{item.solution}</span>
                   </li>

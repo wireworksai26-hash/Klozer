@@ -7,6 +7,8 @@ import {
   CheckCircleIcon,
   SparklesIcon,
   ZapIcon,
+  CheckIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function CsTemplatesPage() {
@@ -30,9 +32,9 @@ export default function CsTemplatesPage() {
     {
       id: "TPL-02",
       shortcut: "/rekening",
-      title: "Instruksi Pembayaran BCA Resmi & QRIS",
+      title: "Instruksi Pembayaran Rekening Resmi & QRIS",
       category: "Pembayaran",
-      body: "Pembayaran dapat dilakukan melalui Rekening Resmi BCA: 8809123847 an. PT Batik Mahakarya Indonesia, atau scan QRIS terlampir ya kak. Total: {{total_bayar}}.",
+      body: "Pembayaran dapat dilakukan melalui Rekening Resmi Toko an. {{nama_toko}}, atau scan QRIS Dinamis terlampir ya kak. Total: {{total_bayar}}.",
     },
     {
       id: "TPL-03",
@@ -161,7 +163,14 @@ export default function CsTemplatesPage() {
                 onClick={() => handleCopy(t.id, t.body)}
                 className="px-3.5 py-1.5 rounded-xl text-[12px] font-bold bg-[#f5f4f2] hover:bg-[#edeffe] text-[#1e2640] hover:text-[#2545ff] border border-[#ede8e2] cursor-pointer transition-all"
               >
-                {copiedId === t.id ? "✓ Tersalin!" : "Salin Pesan"}
+                {copiedId === t.id ? (
+                  <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                    <CheckIcon className="w-3.5 h-3.5" />
+                    <span>Tersalin!</span>
+                  </span>
+                ) : (
+                  "Salin Pesan"
+                )}
               </button>
             </div>
           </div>
@@ -176,9 +185,9 @@ export default function CsTemplatesPage() {
               <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Template Quick Reply</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

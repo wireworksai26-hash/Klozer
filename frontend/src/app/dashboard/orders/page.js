@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { CheckCircleIcon, AlertTriangleIcon } from "@/components/icons";
+import { CheckCircleIcon, AlertTriangleIcon, PackageIcon, XIcon } from "@/components/icons";
 
 export default function OrdersPage() {
   const { orders, addOrder, updateOrderStatus, deleteOrder, products, role } = useDashboard();
@@ -180,96 +180,118 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0e9e1] text-[13.5px]">
-              {filtered.map((o) => (
-                <tr key={o.id} className="hover:bg-[#fcfbf9] transition-colors">
-                  <td className="py-4 px-5">
-                    <div className="font-bold text-[#0c1754] font-mono text-[14px]">{o.id}</div>
-                    <div className="text-[11px] text-[#969696]">{o.date}</div>
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <div className="font-bold text-[#0c1754]">{o.customer}</div>
-                    <div className="text-[11.5px] text-[#64748b]">{o.phone}</div>
-                    <div className="text-[11px] text-[#969696]">{o.city}</div>
-                  </td>
-
-                  <td className="py-4 px-5 max-w-[200px]">
-                    {o.items.map((it, idx) => (
-                      <div key={idx} className="text-[12.5px] font-medium text-[#171417]">
-                        {it.qty}x {it.name}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 px-4 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-[360px] mx-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
+                        <PackageIcon className="w-6 h-6 text-[#2545ff]" />
                       </div>
-                    ))}
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <div className="font-extrabold text-[#0c1754]">Rp {o.total.toLocaleString()}</div>
-                    <div className="text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] px-2 py-0.5 rounded-full inline-block mt-0.5">
-                      {o.paymentMethod}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-5">
-                    {getStatusBadge(o.status)}
-                  </td>
-
-                  <td className="py-4 px-5">
-                    <div className="font-medium text-[#171417] text-[12.5px]">{o.courier}</div>
-                    {o.awb ? (
-                      <span className="font-mono text-[11px] text-emerald-600 font-bold">Resi: {o.awb}</span>
-                    ) : (
-                      <span className="text-[11px] text-[#969696] italic">Belum ada resi</span>
-                    )}
-                  </td>
-
-                  <td className="py-4 px-5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {o.status === "waiting_payment" && (
-                        <button
-                          onClick={() => updateOrderStatus(o.id, "paid")}
-                          className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors border border-emerald-200 cursor-pointer"
-                        >
-                          Set Lunas
-                        </button>
-                      )}
-                      {o.status === "paid" && (
-                        <button
-                          onClick={() => updateOrderStatus(o.id, "processing")}
-                          className="px-2.5 py-1 text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border border-[#2545ff]/20 cursor-pointer"
-                        >
-                          Proses
-                        </button>
-                      )}
-                      {o.status === "processing" && (
-                        <button
-                          onClick={() =>
-                            updateOrderStatus(o.id, "shipped", {
-                              awb: `JX${Math.floor(100000000 + Math.random() * 900000000)}`,
-                            })
-                          }
-                          className="px-2.5 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-600 hover:text-white rounded-lg transition-colors border border-purple-200 cursor-pointer"
-                        >
-                          Kirim Resi
-                        </button>
-                      )}
-
+                      <div className="font-extrabold text-[#0c1754] text-[15px]">Belum Ada Pesanan Masuk</div>
+                      <p className="text-[12.5px] text-[#64748b] mt-1 mb-4">
+                        Pesanan baru yang dibuat manual atau dikonfirmasi via WhatsApp QRIS akan otomatis tampil di sini.
+                      </p>
                       <button
-                        onClick={() => setSelectedInvoice(o)}
-                        className="px-2.5 py-1 text-[11px] font-bold text-[#0c1754] bg-[#f9f8f6] hover:bg-[#0c1754] hover:text-white rounded-lg transition-colors border border-[#f0e9e1] cursor-pointer"
+                        type="button"
+                        onClick={handleOpenAdd}
+                        className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
                       >
-                        Invoice
-                      </button>
-
-                      <button
-                        onClick={() => setDeleteConfirmId(o.id)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded-md border-none cursor-pointer"
-                        title="Batalkan / Hapus"
-                      >
-                        ✕
+                        + Buat Pesanan Manual Pertama
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((o) => (
+                  <tr key={o.id} className="hover:bg-[#fcfbf9] transition-colors">
+                    <td className="py-4 px-5">
+                      <div className="font-bold text-[#0c1754] font-mono text-[14px]">{o.id}</div>
+                      <div className="text-[11px] text-[#969696]">{o.date}</div>
+                    </td>
+
+                    <td className="py-4 px-5">
+                      <div className="font-bold text-[#0c1754]">{o.customer}</div>
+                      <div className="text-[11.5px] text-[#64748b]">{o.phone}</div>
+                      <div className="text-[11px] text-[#969696]">{o.city}</div>
+                    </td>
+
+                    <td className="py-4 px-5 max-w-[200px]">
+                      {o.items.map((it, idx) => (
+                        <div key={idx} className="text-[12.5px] font-medium text-[#171417]">
+                          {it.qty}x {it.name}
+                        </div>
+                      ))}
+                    </td>
+
+                    <td className="py-4 px-5">
+                      <div className="font-extrabold text-[#0c1754]">Rp {o.total.toLocaleString()}</div>
+                      <div className="text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] px-2 py-0.5 rounded-full inline-block mt-0.5">
+                        {o.paymentMethod}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-5">
+                      {getStatusBadge(o.status)}
+                    </td>
+
+                    <td className="py-4 px-5">
+                      <div className="font-medium text-[#171417] text-[12.5px]">{o.courier}</div>
+                      {o.awb ? (
+                        <span className="font-mono text-[11px] text-emerald-600 font-bold">Resi: {o.awb}</span>
+                      ) : (
+                        <span className="text-[11px] text-[#969696] italic">Belum ada resi</span>
+                      )}
+                    </td>
+
+                    <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {o.status === "waiting_payment" && (
+                          <button
+                            onClick={() => updateOrderStatus(o.id, "paid")}
+                            className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors border border-emerald-200 cursor-pointer"
+                          >
+                            Set Lunas
+                          </button>
+                        )}
+                        {o.status === "paid" && (
+                          <button
+                            onClick={() => updateOrderStatus(o.id, "processing")}
+                            className="px-2.5 py-1 text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border border-[#2545ff]/20 cursor-pointer"
+                          >
+                            Proses
+                          </button>
+                        )}
+                        {o.status === "processing" && (
+                          <button
+                            onClick={() => {
+                              const awb = prompt("Masukkan nomor resi ekspedisi:", "JX" + Math.floor(10000000 + Math.random() * 90000000));
+                              if (awb) updateOrderStatus(o.id, "shipped", { awb });
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-600 hover:text-white rounded-lg transition-colors border border-purple-200 cursor-pointer"
+                          >
+                            Kirim Resi
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setSelectedInvoice(o)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-[#0c1754] bg-[#f9f8f6] hover:bg-[#0c1754] hover:text-white rounded-lg transition-colors border border-[#f0e9e1] cursor-pointer"
+                        >
+                          Invoice
+                        </button>
+
+                        <button
+                          onClick={() => setDeleteConfirmId(o.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded-md border-none cursor-pointer"
+                          title="Batalkan / Hapus"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -283,9 +305,9 @@ export default function OrdersPage() {
               <h3 className="text-[18px] font-extrabold text-[#0c1754]">Buat Pesanan Baru (Kasir Manual)</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer text-[13px] font-bold"
+                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -436,9 +458,9 @@ export default function OrdersPage() {
               </div>
               <button
                 onClick={() => setSelectedInvoice(null)}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer text-[13px] font-bold"
+                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { QrIcon, MicIcon, ShieldCheckIcon } from "@/components/icons";
+import { QrIcon, MicIcon, ShieldCheckIcon, SparklesIcon } from "@/components/icons";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -292,7 +292,7 @@ export default function Hero() {
                   <path d="M5 19c6-2 10-7 12-14M17 5l-5 2M17 5l-2 5" />
                 </svg>
                 <div className="bg-[#0c1754] hover:bg-[#15236b] transition-colors text-white px-4 sm:px-5 py-2.5 rounded-full text-[12px] sm:text-[13px] font-bold flex items-center gap-2 shadow-md cursor-pointer max-w-full truncate">
-                  <span className="text-amber-300">✦</span>
+                  <SparklesIcon className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                   <span className="truncate">Analisis performa closing WhatsApp otomatis</span>
                 </div>
               </div>

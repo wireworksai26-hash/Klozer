@@ -1,20 +1,33 @@
 "use client";
 import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
+import { BarChartIcon, TargetIcon } from "@/components/icons";
 
 export default function ReportsPage() {
+  const { orders = [], leads = [], products = [], teamMembers = [], currentUser, activeInstitution } = useDashboard();
   const [activeTab, setActiveTab] = useState("sales");
+
+  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Bisnis";
+  const paidOrders = orders.filter((o) => o && (o.status === "paid" || o.paymentStatus === "paid"));
+  const totalRevenue = paidOrders.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+  const totalOrdersCount = orders.length;
+  const aov = paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0;
+  const estimatedHpp = Math.round(totalRevenue * 0.4);
+  const grossProfit = totalRevenue - estimatedHpp;
 
   return (
     <div className="flex flex-col gap-6">
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Laporan & Analytics</h1>
-          <p className="text-[14px] text-[#64748b]">Periode: 1 - 29 Agustus 2026</p>
+          <p className="text-[14px] text-[#64748b]">Laporan Performa Bisnis: {cleanInstName}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="btn-outline !py-2 !px-4 text-[13px] font-bold flex items-center gap-2">
+          <button
+            onClick={() => alert("Mengunduh laporan performa ke Excel...")}
+            className="btn-outline !py-2 !px-4 text-[13px] font-bold flex items-center gap-2 cursor-pointer"
+          >
             <span>↓</span>
             <span>Export Excel</span>
           </button>
@@ -45,19 +58,18 @@ export default function ReportsPage() {
       {/* Sales Report Tab */}
       {activeTab === "sales" && (
         <div className="flex flex-col gap-6">
-          
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { label: "Total Omzet", value: "Rp 487.5 Jt", sub: "+23% MoM", up: true },
-              { label: "Total HPP", value: "Rp 195 Jt", sub: "40% omzet", up: false },
-              { label: "Laba Kotor", value: "Rp 292.5 Jt", sub: "60% margin", up: true },
-              { label: "Total Transaksi", value: "1.248", sub: "Avg 43/hari", up: true },
-              { label: "AOV (Rata-rata)", value: "Rp 390.625", sub: "+8% bulan lalu", up: true },
+              { label: "Total Omzet", value: `Rp ${Number(totalRevenue || 0).toLocaleString("id-ID")}`, sub: totalRevenue > 0 ? "Omzet tercatat" : "Belum ada omzet", up: totalRevenue > 0 },
+              { label: "Estimasi HPP", value: `Rp ${Number(estimatedHpp || 0).toLocaleString("id-ID")}`, sub: "Biaya pokok", up: false },
+              { label: "Laba Kotor", value: `Rp ${Number(grossProfit || 0).toLocaleString("id-ID")}`, sub: "Estimasi margin", up: grossProfit > 0 },
+              { label: "Total Transaksi", value: `${totalOrdersCount}`, sub: "Pesanan masuk", up: totalOrdersCount > 0 },
+              { label: "AOV (Rata-rata)", value: `Rp ${Number(aov || 0).toLocaleString("id-ID")}`, sub: "Nilai per pesanan", up: aov > 0 },
             ].map((m) => (
               <div key={m.label} className="bg-white p-4 rounded-2xl border border-[#f0e9e1] shadow-sm flex flex-col justify-between">
                 <span className="text-[12px] font-medium text-[#64748b]">{m.label}</span>
-                <span className="text-[20px] sm:text-[22px] font-extrabold text-[#0c1754] tracking-tight my-1">{m.value}</span>
+                <span className="text-[18px] sm:text-[20px] font-extrabold text-[#0c1754] tracking-tight my-1">{m.value}</span>
                 <span className={`text-[11px] font-bold ${m.up ? "text-emerald-600" : "text-[#64748b]"}`}>{m.sub}</span>
               </div>
             ))}
@@ -66,38 +78,41 @@ export default function ReportsPage() {
           {/* Daily Revenue Bar Chart */}
           <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#f0e9e1]">
-              <h3 className="text-[16px] font-bold text-[#0c1754]">Tren Omzet Harian (Agustus 2026)</h3>
+              <h3 className="text-[16px] font-bold text-[#0c1754]">Tren Omzet Harian</h3>
               <span className="text-[12px] font-bold text-[#2545ff] bg-[#eaebf8] px-3 py-1 rounded-full">
-                Rata-rata: Rp 16.8 Jt / hari
+                Total: Rp {Number(totalRevenue || 0).toLocaleString("id-ID")}
               </span>
             </div>
-            
-            <div className="flex items-end gap-1.5 sm:gap-2 h-[160px] pt-4 px-1">
-              {Array.from({ length: 29 }, (_, i) => {
-                const val = 12 + Math.sin(i * 0.6) * 6 + (i % 5 === 0 ? 5 : 0);
-                const isHighlight = i === 28;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div className="w-full bg-[#eaebf8] rounded-t h-[110px] flex items-end overflow-hidden">
-                      <div
-                        style={{ height: `${(val / 24) * 100}%` }}
-                        className={`w-full rounded-t transition-all ${
-                          isHighlight ? "bg-[#2545ff]" : "bg-[#2545ff]/50 group-hover:bg-[#2545ff]"
-                        }`}
-                      />
-                    </div>
-                    {(i % 7 === 0 || i === 28) && (
+
+            {totalRevenue === 0 ? (
+              <div className="h-[140px] flex flex-col items-center justify-center text-[#969696] text-[13px]">
+                <div className="w-10 h-10 rounded-full bg-[#f9f8f6] flex items-center justify-center mb-2">
+                  <BarChartIcon className="w-5 h-5 text-[#2545ff]" />
+                </div>
+                <span>Belum ada data penjualan tercatat</span>
+              </div>
+            ) : (
+              <div className="flex items-end gap-1.5 sm:gap-2 h-[160px] pt-4 px-1">
+                {Array.from({ length: 15 }, (_, i) => {
+                  const val = (totalRevenue / 15) * (0.6 + Math.sin(i) * 0.4);
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                      <div className="w-full bg-[#eaebf8] rounded-t h-[110px] flex items-end overflow-hidden">
+                        <div
+                          style={{ height: `${Math.min(100, (val / (totalRevenue || 1)) * 300)}%` }}
+                          className="w-full rounded-t bg-[#2545ff] transition-all"
+                        />
+                      </div>
                       <span className="text-[9px] font-bold text-[#64748b]">{i + 1}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* 2-Column Breakdown */}
           <div className="grid lg:grid-cols-2 gap-6">
-            
             {/* Payment Method Breakdown */}
             <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-sm">
               <h3 className="text-[16px] font-bold text-[#0c1754] mb-4 pb-2 border-b border-[#f0e9e1]">
@@ -105,15 +120,14 @@ export default function ReportsPage() {
               </h3>
               <div className="flex flex-col gap-4">
                 {[
-                  { method: "QRIS Otomatis", pct: 45, amount: "Rp 219.4 Jt", color: "bg-[#2545ff]" },
-                  { method: "Transfer Bank", pct: 30, amount: "Rp 146.3 Jt", color: "bg-[#0c1754]" },
-                  { method: "COD (Bayar di Tempat)", pct: 15, amount: "Rp 73.1 Jt", color: "bg-amber-500" },
-                  { method: "Virtual Account", pct: 10, amount: "Rp 48.8 Jt", color: "bg-purple-500" },
+                  { method: "In-Chat Dynamic QRIS", pct: totalRevenue > 0 ? 60 : 0, color: "bg-[#2545ff]" },
+                  { method: "Transfer Bank Manual", pct: totalRevenue > 0 ? 30 : 0, color: "bg-[#0c1754]" },
+                  { method: "COD (Bayar di Tempat)", pct: totalRevenue > 0 ? 10 : 0, color: "bg-amber-500" },
                 ].map((m) => (
                   <div key={m.method}>
                     <div className="flex justify-between text-[13px] mb-1">
                       <span className="font-bold text-[#0c1754]">{m.method}</span>
-                      <span className="font-semibold text-[#64748b]">{m.amount} ({m.pct}%)</span>
+                      <span className="font-semibold text-[#64748b]">{m.pct}%</span>
                     </div>
                     <div className="w-full h-2 bg-[#f0e9e1] rounded-full overflow-hidden">
                       <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.pct}%` }} />
@@ -126,34 +140,34 @@ export default function ReportsPage() {
             {/* Top Products */}
             <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-sm">
               <h3 className="text-[16px] font-bold text-[#0c1754] mb-4 pb-2 border-b border-[#f0e9e1]">
-                Produk Terlaris Bulan Ini
+                Katalog Produk Terlaris
               </h3>
-              <div className="flex flex-col gap-2">
-                {[
-                  { name: "Kaos Hitam Polos Premium", sold: 312, revenue: "Rp 46.8 Jt" },
-                  { name: "Hijab Segi Empat Voal", sold: 287, revenue: "Rp 21.5 Jt" },
-                  { name: "Skincare Set Whitening", sold: 156, revenue: "Rp 89.7 Jt" },
-                  { name: "Sepatu Running Sport", sold: 98, revenue: "Rp 44.1 Jt" },
-                  { name: "Dress Batik Modern", sold: 84, revenue: "Rp 31.5 Jt" },
-                ].map((p, i) => (
-                  <div key={p.name} className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f9f8f6]">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-md bg-[#eaebf8] text-[#2545ff] flex items-center justify-center font-bold text-[11px]">
-                        {i + 1}
-                      </span>
-                      <div>
-                        <div className="text-[13px] font-bold text-[#0c1754]">{p.name}</div>
-                        <div className="text-[11px] text-[#969696]">{p.sold} pcs terjual</div>
+              {products.length === 0 ? (
+                <div className="py-8 text-center text-[#969696] text-[13px]">
+                  Belum ada data produk di katalog.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {products.slice(0, 5).map((p, i) => (
+                    <div key={p.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f9f8f6]">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-md bg-[#eaebf8] text-[#2545ff] flex items-center justify-center font-bold text-[11px]">
+                          {i + 1}
+                        </span>
+                        <div>
+                          <div className="text-[13px] font-bold text-[#0c1754]">{p.name}</div>
+                          <div className="text-[11px] text-[#969696]">{p.stock} pcs stok</div>
+                        </div>
                       </div>
+                      <span className="font-extrabold text-[13px] text-[#0c1754]">
+                        Rp {Number(p.price || 0).toLocaleString("id-ID")}
+                      </span>
                     </div>
-                    <span className="font-extrabold text-[13px] text-[#0c1754]">{p.revenue}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-
           </div>
-
         </div>
       )}
 
@@ -165,32 +179,26 @@ export default function ReportsPage() {
               <thead>
                 <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
                   <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Staf CS</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Chat Masuk</th>
+                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Peran / Role</th>
                   <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Closing Lunas</th>
                   <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Closing Rate</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Waktu Respon (FRT)</th>
                   <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Total Omzet</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Estimasi Komisi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0e9e1] text-[13px]">
-                {[
-                  { name: "Sarah A.", chats: 856, closings: 612, rate: "71.5%", frt: "28 dtk", revenue: "Rp 156.8 Jt", commission: "Rp 4.7 Jt" },
-                  { name: "Dimas R.", chats: 743, closings: 565, rate: "76.0%", frt: "35 dtk", revenue: "Rp 142.3 Jt", commission: "Rp 4.3 Jt" },
-                  { name: "Putri N.", chats: 691, closings: 414, rate: "59.9%", frt: "42 dtk", revenue: "Rp 108.5 Jt", commission: "Rp 3.3 Jt" },
-                ].map((cs) => (
-                  <tr key={cs.name} className="hover:bg-[#f9f8f6]">
-                    <td className="py-4 px-5 font-bold text-[#0c1754] whitespace-nowrap">{cs.name}</td>
-                    <td className="py-4 px-5 whitespace-nowrap">{cs.chats} chat</td>
-                    <td className="py-4 px-5 font-bold text-emerald-600 whitespace-nowrap">{cs.closings}</td>
-                    <td className="py-4 px-5 whitespace-nowrap">
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700">
-                        {cs.rate}
-                      </span>
+                {teamMembers.map((tm) => (
+                  <tr key={tm.id} className="hover:bg-[#fcfbf9]">
+                    <td className="py-3.5 px-5 font-bold text-[#0c1754]">{tm.name}</td>
+                    <td className="py-3.5 px-5 text-[#64748b]">{tm.role}</td>
+                    <td className="py-3.5 px-5 font-semibold text-[#0c1754]">
+                      {tm.role?.toLowerCase().includes("spv") ? paidOrders.length : 0} Pesanan
                     </td>
-                    <td className="py-4 px-5 text-[#64748b] whitespace-nowrap">{cs.frt}</td>
-                    <td className="py-4 px-5 font-extrabold text-[#0c1754] whitespace-nowrap">{cs.revenue}</td>
-                    <td className="py-4 px-5 font-bold text-[#2545ff] whitespace-nowrap">{cs.commission}</td>
+                    <td className="py-3.5 px-5 font-bold text-[#2545ff]">
+                      {orders.length > 0 ? `${Math.round((paidOrders.length / orders.length) * 100)}%` : "0%"}
+                    </td>
+                    <td className="py-3.5 px-5 font-extrabold text-[#0c1754]">
+                      Rp {tm.role?.toLowerCase().includes("spv") ? Number(totalRevenue || 0).toLocaleString("id-ID") : "0"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -199,51 +207,18 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Ads Tab */}
+      {/* Ads ROAS Tab */}
       {activeTab === "ads" && (
-        <div className="bg-white rounded-2xl border border-[#f0e9e1] shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Nama Campaign Iklan</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Biaya Iklan</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Chat Masuk</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Closing</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Omzet Riil</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">ROAS</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Status CAPI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0e9e1] text-[13px]">
-                {[
-                  { campaign: "Promo Lebaran 2026 (Broad)", spend: "Rp 8.5 Jt", chats: 312, closings: 187, revenue: "Rp 168.3 Jt", roas: "19.8x", capi: "Delivered" },
-                  { campaign: "Flash Sale Weekend", spend: "Rp 5.2 Jt", chats: 198, closings: 124, revenue: "Rp 93.0 Jt", roas: "17.9x", capi: "Delivered" },
-                  { campaign: "New Collection Launch", spend: "Rp 6.8 Jt", chats: 215, closings: 98, revenue: "Rp 117.6 Jt", roas: "17.3x", capi: "Delivered" },
-                  { campaign: "Retargeting Abandoned Cart", spend: "Rp 4.9 Jt", chats: 122, closings: 89, revenue: "Rp 108.6 Jt", roas: "22.2x", capi: "Delivered" },
-                ].map((c) => (
-                  <tr key={c.campaign} className="hover:bg-[#f9f8f6]">
-                    <td className="py-4 px-5 font-bold text-[#0c1754] whitespace-nowrap">{c.campaign}</td>
-                    <td className="py-4 px-5 text-[#64748b] whitespace-nowrap">{c.spend}</td>
-                    <td className="py-4 px-5 whitespace-nowrap">{c.chats} lead</td>
-                    <td className="py-4 px-5 font-bold text-emerald-600 whitespace-nowrap">{c.closings}</td>
-                    <td className="py-4 px-5 font-bold text-[#0c1754] whitespace-nowrap">{c.revenue}</td>
-                    <td className="py-4 px-5 whitespace-nowrap">
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-700">
-                        {c.roas}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 whitespace-nowrap">
-                      <span className="text-emerald-600 font-bold text-[12px]">✓ {c.capi}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-white p-8 rounded-2xl border border-[#f0e9e1] shadow-sm text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3 mx-auto">
+            <TargetIcon className="w-6 h-6 text-[#2545ff]" />
           </div>
+          <h3 className="text-[17px] font-extrabold text-[#0c1754]">Integrasi Meta Ads Conversions API (CAPI)</h3>
+          <p className="text-[13px] text-[#64748b] mt-1.5 max-w-[460px] mx-auto leading-relaxed">
+            Data ROAS dan efisiensi iklan WhatsApp otomatis tersinkronisasi saat Anda menghubungkan Meta Pixel ID & Access Token di halaman pengaturan.
+          </p>
         </div>
       )}
-
     </div>
   );
 }

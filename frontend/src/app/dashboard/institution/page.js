@@ -8,22 +8,27 @@ import {
   UsersIcon,
   ClockIcon,
   ShieldCheckIcon,
+  XIcon,
 } from "@/components/icons";
 
 export default function SupervisorInstitutionPage() {
-  const { activeInstitution, teamMembers, addTeamMember, deleteTeamMember } = useDashboard();
+  const { activeInstitution, teamMembers, addTeamMember, deleteTeamMember, currentUser } = useDashboard();
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState("Customer Service Junior");
 
+  const cleanName = currentUser?.institutionName || activeInstitution?.name || "Bisnis Saya";
+  const cleanEmail = currentUser?.email || activeInstitution?.email || "kontak@bisnis.id";
+  const cleanOwner = currentUser?.name || activeInstitution?.owner || "Owner / Pengelola";
+
   const [institutionData, setInstitutionData] = useState({
-    name: activeInstitution?.name || "Batik Mahakarya Solo",
-    sector: activeInstitution?.sector || "Fashion & Retail",
-    owner: activeInstitution?.owner || "Bambang Santoso",
-    email: activeInstitution?.email || "owner@batikmahakarya.id",
-    phone: activeInstitution?.phone || "+62 812-3344-5566",
-    address: "Jl. Slamet Riyadi No. 142, Laweyan, Surakarta, Jawa Tengah",
+    name: cleanName,
+    sector: activeInstitution?.sector || "Retail & Perdagangan",
+    owner: cleanOwner,
+    email: cleanEmail,
+    phone: activeInstitution?.phone || "+62 812-xxxx-xxxx",
+    address: "Lokasi Kantor / Toko Utama",
     operatingHoursStart: "08:00",
     operatingHoursEnd: "21:00",
     outOfHoursAiMode: true,
@@ -201,9 +206,9 @@ export default function SupervisorInstitutionPage() {
               <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Anggota Tim Baru</h3>
               <button
                 onClick={() => setShowAddUserModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center font-bold border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
               >
-                ✕
+                <XIcon className="w-4 h-4" />
               </button>
             </div>
 

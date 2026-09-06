@@ -123,6 +123,9 @@ export default function DashboardPage() {
 
   // ==================== 2. SUPERVISOR (SPV) OPERATIONAL OVERVIEW ====================
   if (role === "spv") {
+    const spvClosingRate = leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%";
+    const csList = teamMembers.filter((t) => t.role?.includes("CS") || t.role?.toLowerCase()?.includes("customer service"));
+
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -139,7 +142,7 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-2">
             <Link href="/dashboard/orders" className="btn-primary !py-2 !px-4 text-[13px]">
-              + Approval Pesanan
+              + Buat Pesanan Manual
             </Link>
           </div>
         </div>
@@ -151,29 +154,37 @@ export default function DashboardPage() {
             <div className="text-[28px] font-extrabold text-amber-600 mt-1">
               {orders.filter((o) => o.status === "waiting_payment" || o.status === "processing").length} Pesanan
             </div>
-            <span className="text-[11.5px] font-bold text-[#2545ff]">Butuh Verifikasi / Kirim</span>
+            <span className="text-[11.5px] font-bold text-[#2545ff]">
+              {orders.length > 0 ? "Butuh Verifikasi / Kirim" : "Belum ada pesanan masuk"}
+            </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
             <span className="text-[12.5px] font-medium text-[#64748b]">Lead Belum Ditugaskan</span>
             <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
-              {leads.filter((l) => l.cs.includes("Belum")).length} Lead
+              {leads.filter((l) => l.cs?.includes("Belum") || !l.cs).length} Lead
             </div>
-            <span className="text-[11.5px] font-bold text-amber-600">Siap dibagi ke CS</span>
+            <span className="text-[11.5px] font-bold text-amber-600">
+              {leads.length > 0 ? "Siap dibagi ke CS" : "Belum ada kontak baru"}
+            </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
             <span className="text-[12.5px] font-medium text-[#64748b]">Stok Gudang Kritis</span>
             <div className="text-[28px] font-extrabold text-red-600 mt-1">
-              {products.filter((p) => p.stock <= p.lowStock).length} Produk
+              {products.filter((p) => (p.stock || 0) <= (p.lowStock || 5)).length} Produk
             </div>
-            <span className="text-[11.5px] font-bold text-red-600">Perlu Restock Segera</span>
+            <span className="text-[11.5px] font-bold text-red-600">
+              {products.length > 0 ? "Perlu Restock Segera" : "Katalog produk kosong"}
+            </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
             <span className="text-[12.5px] font-medium text-[#64748b]">Rata-rata Closing Rate CS</span>
-            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">82.4%</div>
-            <span className="text-[11.5px] font-bold text-emerald-700">Target Tercapai</span>
+            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">{spvClosingRate}</div>
+            <span className="text-[11.5px] font-bold text-emerald-700">
+              {paidOrders.length > 0 ? "Target Tercapai" : "Belum ada data transaksi"}
+            </span>
           </div>
         </div>
 
@@ -181,34 +192,42 @@ export default function DashboardPage() {
         <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-xs">
           <h3 className="text-[16px] font-extrabold text-[#0c1754] mb-3">Rekap Performa & Komisi Staf CS</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-[13px]">
-              <thead>
-                <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Nama CS</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Closing Rate</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Omzet Dihasilkan</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Estimasi Komisi (5%)</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0e9e1]">
-                {teamMembers.filter((t) => t.role.includes("CS")).map((cs) => (
-                  <tr key={cs.id} className="hover:bg-[#fcfbf9]">
-                    <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.name}</td>
-                    <td className="py-3 px-4 font-extrabold text-emerald-600">{cs.csClosingRate}</td>
-                    <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.revenueGen}</td>
-                    <td className="py-3 px-4 font-bold text-[#2545ff]">
-                      Rp {cs.revenueGen !== "-" ? (parseInt(cs.revenueGen.replace(/[^0-9]/g, "")) * 0.05).toLocaleString() : "0"}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                        Aktif Bertugas
-                      </span>
-                    </td>
+            {csList.length === 0 ? (
+              <div className="p-6 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[13px]">
+                Belum ada data staf CS yang terdaftar.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse text-[13px]">
+                <thead>
+                  <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
+                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Nama CS</th>
+                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Closing Rate</th>
+                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Omzet Dihasilkan</th>
+                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Estimasi Komisi (5%)</th>
+                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#f0e9e1]">
+                  {csList.map((cs) => (
+                    <tr key={cs.id} className="hover:bg-[#fcfbf9]">
+                      <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.name}</td>
+                      <td className="py-3 px-4 font-extrabold text-emerald-600">{cs.csClosingRate || "0%"}</td>
+                      <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.revenueGen || "Rp 0"}</td>
+                      <td className="py-3 px-4 font-bold text-[#2545ff]">
+                        {cs.revenueGen && cs.revenueGen !== "-" && cs.revenueGen !== "Rp 0"
+                          ? "Rp " + (parseInt(cs.revenueGen.replace(/[^0-9]/g, "") || 0) * 0.05).toLocaleString()
+                          : "Rp 0"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                          Aktif Bertugas
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -224,66 +243,88 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
                 <HeadphonesIcon className="w-3.5 h-3.5" />
-                <span>Frontline Customer Service</span>
+                <span>CS Frontliner Workspace</span>
               </span>
             </div>
-            <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Meja Kerja Sales & Chat</h1>
-            <p className="text-[13.5px] text-[#64748b]">Layani chat WhatsApp pembeli, terbitkan invoice QRIS kilat, dan pantau komisi Anda.</p>
+            <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Meja Kerja Customer Service</h1>
+            <p className="text-[13.5px] text-[#64748b]">Fokus respon pesan masuk, buat tagihan QRIS instan, dan capai target closing hari ini.</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/dashboard/chat" className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2">
+            <Link href="/dashboard/chat" className="btn-primary !py-2.5 !px-5 text-[13px] font-bold flex items-center gap-2">
               <MessageSquareIcon className="w-4 h-4" />
-              <span>Buka Live Chat WhatsApp (12)</span>
+              <span>Buka Live Chat WhatsApp</span>
             </Link>
           </div>
         </div>
 
-        {/* CS Personal Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* CS Personal Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Chat Sedang Aktif</span>
-            <div className="text-[28px] font-extrabold text-[#2545ff] mt-1">12 Antrean</div>
-            <span className="text-[11.5px] font-bold text-emerald-600">Rata-rata Respon: 1.8 Detik</span>
+            <span className="text-[12.5px] font-medium text-[#64748b]">Closing Rate Pribadi</span>
+            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">
+              {leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%"}
+            </div>
+            <span className="text-[11.5px] font-bold text-emerald-700">
+              {paidOrders.length > 0 ? "Performa aktif" : "Belum ada transaksi"}
+            </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Closing Pribadi Hari Ini</span>
-            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">18 Pesanan</div>
-            <span className="text-[11.5px] font-bold text-emerald-700">Omzet: Rp 5.400.000</span>
+            <span className="text-[12.5px] font-medium text-[#64748b]">Omzet Penjualan Saya</span>
+            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
+              Rp {totalRevenue.toLocaleString()}
+            </div>
+            <span className="text-[11.5px] font-bold text-[#2545ff]">{paidOrders.length} Pesanan Lunas</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Estimasi Bonus Komisi</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">Rp 270.000</div>
-            <span className="text-[11.5px] font-bold text-[#2545ff]">Dihitung 5% dari closing</span>
+            <span className="text-[12.5px] font-medium text-[#64748b]">Estimasi Komisi (5%)</span>
+            <div className="text-[28px] font-extrabold text-[#2545ff] mt-1">
+              Rp {(totalRevenue * 0.05).toLocaleString()}
+            </div>
+            <span className="text-[11.5px] font-bold text-emerald-600">Dicairkan Akhir Bulan</span>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
+            <span className="text-[12.5px] font-medium text-[#64748b]">Leads Dalam Percakapan</span>
+            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
+              {leads.length} Kontak
+            </div>
+            <span className="text-[11.5px] font-bold text-amber-600">WhatsApp Aktif</span>
           </div>
         </div>
 
-        {/* Quick Recent Orders handled by CS */}
+        {/* Recent Deals Table */}
         <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-xs">
           <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-            <h3 className="text-[16px] font-extrabold text-[#0c1754]">Pesanan Terbaru yang Saya Tangani</h3>
+            <h3 className="text-[16px] font-extrabold text-[#0c1754]">Pesanan Terakhir Berhasil Ditutup</h3>
             <Link href="/dashboard/orders" className="text-[12.5px] font-bold text-[#2545ff] hover:underline">
               Lihat Semua Pesanan →
             </Link>
           </div>
           <div className="flex flex-col gap-2.5">
-            {orders.slice(0, 3).map((ord) => (
-              <div key={ord.id} className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] flex items-center justify-between">
-                <div>
-                  <span className="font-mono text-[11px] font-bold text-[#2545ff]">{ord.id}</span>
-                  <div className="font-bold text-[#0c1754] text-[13.5px]">{ord.customer} ({ord.city})</div>
-                  <div className="text-[12px] text-[#64748b]">{ord.items[0]?.name}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-extrabold text-[#0c1754] text-[14px]">Rp {ord.total.toLocaleString()}</div>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                    {ord.paymentMethod}
-                  </span>
-                </div>
+            {orders.length === 0 ? (
+              <div className="p-6 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[13px]">
+                Belum ada riwayat pesanan yang ditutup.
               </div>
-            ))}
+            ) : (
+              orders.slice(0, 3).map((ord) => (
+                <div key={ord.id} className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] flex items-center justify-between">
+                  <div>
+                    <span className="font-mono text-[11px] font-bold text-[#2545ff]">{ord.id}</span>
+                    <div className="font-bold text-[#0c1754] text-[13.5px]">{ord.customer} ({ord.city})</div>
+                    <div className="text-[12px] text-[#64748b]">{ord.items[0]?.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-extrabold text-[#0c1754] text-[14px]">Rp {ord.total.toLocaleString()}</div>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                      {ord.paymentMethod}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -291,6 +332,9 @@ export default function DashboardPage() {
   }
 
   // ==================== 4. OWNER / MERCHANT ADMIN VIEW (DEFAULT) ====================
+  const ownerClosingRate = leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%";
+  const ownerCsList = teamMembers.filter((t) => t.role?.includes("CS") || t.role?.toLowerCase()?.includes("customer service"));
+
   return (
     <div className="flex flex-col gap-6">
       
@@ -304,7 +348,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Dashboard Overview</h1>
-          <p className="text-[13.5px] text-[#64748b]">Ringkasan performa penjualan WhatsApp hari ini, 29 Agustus 2026</p>
+          <p className="text-[13.5px] text-[#64748b]">Ringkasan performa penjualan WhatsApp hari ini</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/dashboard/orders" className="btn-primary !py-2.5 !px-5 text-[13px] font-bold">
@@ -318,9 +362,11 @@ export default function DashboardPage() {
         <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
           <span className="text-[13px] font-medium text-[#64748b]">Omzet Penjualan Lunas</span>
           <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
-            Rp {totalRevenue > 0 ? totalRevenue.toLocaleString() : "18.750.000"}
+            Rp {totalRevenue.toLocaleString()}
           </div>
-          <span className="text-[12px] font-semibold text-emerald-600">Naik 23% dari kemarin</span>
+          <span className={`text-[12px] font-semibold ${totalRevenue > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
+            {totalRevenue > 0 ? "Omzet tercatat aktif" : "Belum ada omzet hari ini"}
+          </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
@@ -328,7 +374,9 @@ export default function DashboardPage() {
           <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
             {paidOrders.length} Pesanan
           </div>
-          <span className="text-[12px] font-semibold text-emerald-600">100% QRIS & Mutasi Cocok</span>
+          <span className={`text-[12px] font-semibold ${paidOrders.length > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
+            {paidOrders.length > 0 ? "100% QRIS & Mutasi Cocok" : "Menunggu transaksi pertama"}
+          </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
@@ -336,15 +384,19 @@ export default function DashboardPage() {
           <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
             {leads.length} Leads
           </div>
-          <span className="text-[12px] font-semibold text-[#2545ff]">Meta CAPI Tracked</span>
+          <span className={`text-[12px] font-semibold ${leads.length > 0 ? "text-[#2545ff]" : "text-[#64748b]"}`}>
+            {leads.length > 0 ? "Meta CAPI Tracked" : "Belum ada lead baru"}
+          </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
           <span className="text-[13px] font-medium text-[#64748b]">Closing Rate Rata-rata</span>
           <div className="text-[26px] font-extrabold text-emerald-600 tracking-tight my-2">
-            82.4%
+            {ownerClosingRate}
           </div>
-          <span className="text-[12px] font-semibold text-emerald-600">Naik 5.2% vs CS manual</span>
+          <span className={`text-[12px] font-semibold ${paidOrders.length > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
+            {paidOrders.length > 0 ? "Tercatat real-time" : "Belum ada data closing"}
+          </span>
         </div>
       </div>
 
@@ -375,33 +427,45 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Bar Visuals */}
-          <div className="flex items-end justify-between gap-3 h-[180px] pt-4 px-2">
-            {[
-              { day: "Sen", val: 12, height: "45%" },
-              { day: "Sel", val: 18, height: "65%" },
-              { day: "Rab", val: 14, height: "50%" },
-              { day: "Kam", val: 22, height: "80%" },
-              { day: "Jum", val: 19, height: "70%" },
-              { day: "Sab", val: 28, height: "100%", active: true },
-              { day: "Min", val: 18, height: "65%" },
-            ].map((d) => (
-              <div key={d.day} className="flex-1 flex flex-col items-center gap-2 group">
-                <span className="text-[11px] font-bold text-[#2545ff] opacity-0 group-hover:opacity-100 transition-opacity">
-                  {d.val}Jt
-                </span>
-                <div className="w-full bg-[#eaebf8] rounded-t-xl h-[120px] flex items-end overflow-hidden">
-                  <div
-                    style={{ height: d.height }}
-                    className={`w-full rounded-t-xl transition-all duration-500 ${
-                      d.active ? "bg-[#2545ff] shadow-md" : "bg-[#2545ff]/40 group-hover:bg-[#2545ff]"
-                    }`}
-                  />
-                </div>
-                <span className="text-[12px] font-medium text-[#64748b]">{d.day}</span>
+          {/* Bar Visuals or Clean Empty State */}
+          {totalRevenue === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[180px] text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] p-6">
+              <div className="w-10 h-10 rounded-full bg-[#eaebf8] flex items-center justify-center text-[#2545ff] mb-2 font-bold">
+                Rp
               </div>
-            ))}
-          </div>
+              <span className="text-[13.5px] font-bold text-[#0c1754]">Belum Ada Riwayat Transaksi Penjualan</span>
+              <span className="text-[12px] text-[#969696] mt-1 max-w-[400px]">
+                Grafik omzet akan otomatis terisi saat pesanan pertama dibuat secara manual atau via WhatsApp QRIS.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-end justify-between gap-3 h-[180px] pt-4 px-2">
+              {[
+                { day: "Sen", val: 12, height: "45%" },
+                { day: "Sel", val: 18, height: "65%" },
+                { day: "Rab", val: 14, height: "50%" },
+                { day: "Kam", val: 22, height: "80%" },
+                { day: "Jum", val: 19, height: "70%" },
+                { day: "Sab", val: 28, height: "100%", active: true },
+                { day: "Min", val: 18, height: "65%" },
+              ].map((d) => (
+                <div key={d.day} className="flex-1 flex flex-col items-center gap-2 group">
+                  <span className="text-[11px] font-bold text-[#2545ff] opacity-0 group-hover:opacity-100 transition-opacity">
+                    {d.val}Jt
+                  </span>
+                  <div className="w-full bg-[#eaebf8] rounded-t-xl h-[120px] flex items-end overflow-hidden">
+                    <div
+                      style={{ height: d.height }}
+                      className={`w-full rounded-t-xl transition-all duration-500 ${
+                        d.active ? "bg-[#2545ff] shadow-md" : "bg-[#2545ff]/40 group-hover:bg-[#2545ff]"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-[12px] font-medium text-[#64748b]">{d.day}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* CS Closing Performance Leaderboard (Col 4) */}
@@ -413,23 +477,29 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-3">
-              {teamMembers.filter((t) => t.role.includes("CS")).map((cs, idx) => (
-                <div key={cs.id} className="flex items-center justify-between p-3 rounded-xl bg-[#f9f8f6] border border-[#f0e9e1]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-full bg-[#2545ff] text-white flex items-center justify-center font-bold text-[11px]">
-                      0{idx + 1}
-                    </span>
-                    <div>
-                      <div className="font-bold text-[13px] text-[#0c1754]">{cs.name}</div>
-                      <div className="text-[11px] text-[#64748b]">{cs.role}</div>
+              {ownerCsList.length === 0 ? (
+                <div className="p-4 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[12px]">
+                  Belum ada staf CS yang ditugaskan.
+                </div>
+              ) : (
+                ownerCsList.map((cs, idx) => (
+                  <div key={cs.id} className="flex items-center justify-between p-3 rounded-xl bg-[#f9f8f6] border border-[#f0e9e1]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-[#2545ff] text-white flex items-center justify-center font-bold text-[11px]">
+                        0{idx + 1}
+                      </span>
+                      <div>
+                        <div className="font-bold text-[13px] text-[#0c1754]">{cs.name}</div>
+                        <div className="text-[11px] text-[#64748b]">{cs.role}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[13px] font-extrabold text-emerald-600">{cs.csClosingRate || "0%"}</div>
+                      <div className="text-[10px] text-[#969696]">{cs.revenueGen || "Rp 0"}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-[13px] font-extrabold text-emerald-600">{cs.csClosingRate}</div>
-                    <div className="text-[10px] text-[#969696]">{cs.revenueGen}</div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
