@@ -41,18 +41,19 @@ export default function DataTransferModal({
   const [fileName, setFileName] = useState("");
   const [parseResult, setParseResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
 
   const tpl = TEMPLATES[type] || TEMPLATES.products;
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
+  const processFile = (file) => {
     if (!file) return;
 
     setFileName(file.name);
     setIsProcessing(true);
+    setParseResult(null);
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -91,12 +92,44 @@ export default function DataTransferModal({
         setIsProcessing(false);
       }
     };
+    reader.onerror = () => {
+      setIsProcessing(false);
+      setParseResult({
+        valid: [],
+        errors: [{ rowNumber: 0, raw: "", errors: ["Gagal membaca file dari media penyimpanan."] }],
+        total: 0,
+      });
+    };
     reader.readAsArrayBuffer(file);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) processFile(file);
+  };
+
   const handleConfirmImport = () => {
-    if (!parseResult || !parseResult.valid.length) {
-      alert("Tidak ada data valid yang dapat diimpor.");
+    if (!parseResult || !parseResult.valid || !parseResult.valid.length) {
       return;
     }
 
@@ -104,11 +137,7 @@ export default function DataTransferModal({
       onImportSuccess(parseResult.valid, importMode);
     }
 
-    const aiMsg = parseResult.aiReport?.anomalyCount
-      ? ` (${parseResult.aiReport.anomalyCount} kolom telah disempurnakan otomatis oleh AI!)`
-      : "";
-
-    alert(`Sukses mengimpor ${parseResult.valid.length} data ${tpl.title} ke toko Anda!${aiMsg}`);
+    // Directly close modal and return to screen without blocking alert
     handleClose();
   };
 
@@ -123,6 +152,7 @@ export default function DataTransferModal({
     setFileName("");
     setParseResult(null);
     setIsProcessing(false);
+    setIsDragging(false);
     setShowAiLog(false);
     setFilterOnlyAiFixed(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -133,8 +163,8 @@ export default function DataTransferModal({
     onClose();
   };
 
-  // Calculated values for preview screen
-  const isPreviewScreen = activeTab === "import" && parseResult && parseResult.total > 0;
+  // Calculated values for preview screen: Only show review studio when there is at least 1 valid row!
+  const isPreviewScreen = activeTab === "import" && Boolean(parseResult && parseResult.valid && parseResult.valid.length > 0);
   const displayedRows = filterOnlyAiFixed
     ? (parseResult?.valid || []).filter((r) => r._aiRepaired)
     : parseResult?.valid || [];
@@ -294,14 +324,21 @@ export default function DataTransferModal({
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#cbd5e1] hover:border-emerald-500 bg-[#fcfbf9] hover:bg-emerald-50/30 rounded-3xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 group ${
+                      isDragging
+                        ? "border-emerald-500 bg-emerald-50/60 scale-[1.01]"
+                        : "border-[#cbd5e1] hover:border-emerald-500 bg-[#fcfbf9] hover:bg-emerald-50/30"
+                    }`}
                   >
                     <div className="w-14 h-14 rounded-2xl bg-white shadow-md border border-[#ede8e2] flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
                       <UploadIcon className="w-7 h-7" />
                     </div>
                     <div>
                       <span className="font-black text-[15px] text-[#1e2640] block">
-                        Klik atau Seret File Excel (.xlsx) ke Sini
+                        {isDragging ? "Lepaskan File Excel di Sini!" : "Klik atau Seret File Excel (.xlsx) ke Sini"}
                       </span>
                       <span className="text-[12px] text-[#8f95a8] mt-0.5 block">
                         Setelah diunggah, Anda akan otomatis diarahkan ke <strong>Layar Studio Review Lengkap</strong> untuk membaca seluruh kolom dengan jelas.
@@ -311,11 +348,52 @@ export default function DataTransferModal({
                       ref={fileInputRef}
                       type="file"
                       accept=".xlsx,.xls,.csv"
+                      onClick={(e) => {
+                        e.target.value = "";
+                      }}
                       onChange={handleFileChange}
                       className="hidden"
                     />
                   </div>
                 </div>
+
+                {/* Error Notification Card on Screen 1 if upload failed / 0 valid rows */}
+                {parseResult && (!parseResult.valid || parseResult.valid.length === 0) && parseResult.errors?.length > 0 && (
+                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-rose-900 font-extrabold text-[13.5px]">
+                      <AlertTriangleIcon className="w-5 h-5 text-rose-600 shrink-0" />
+                      <span>Gagal Membaca File {fileName ? `"${fileName}"` : "Excel"}:</span>
+                    </div>
+                    <p className="text-[12px] text-rose-800">
+                      Sistem tidak menemukan baris data valid yang sesuai dengan format tabel toko. Pastikan judul kolom sesuai dengan template.
+                    </p>
+                    <ul className="text-[12px] text-rose-800 list-disc list-inside space-y-0.5 pl-1">
+                      {parseResult.errors.slice(0, 3).map((err, i) => (
+                        <li key={i}>
+                          {err.rowNumber > 0 ? `Baris #${err.rowNumber}: ` : ""}
+                          {Array.isArray(err.errors) ? err.errors.join(", ") : err.errors}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="pt-2 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => downloadExcelTemplate(type)}
+                        className="text-[12px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
+                      >
+                        Unduh Format Template Resmi ({tpl.filename})
+                      </button>
+                      <span className="text-[11px] text-[#94a3b8]">•</span>
+                      <button
+                        type="button"
+                        onClick={handleResetFile}
+                        className="text-[12px] font-bold text-rose-700 hover:text-rose-800 underline cursor-pointer"
+                      >
+                        Coba File Lain
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Loading state */}
                 {isProcessing && (

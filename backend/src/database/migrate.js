@@ -17,13 +17,17 @@ export async function runMigration() {
       await pool.query("SET FOREIGN_KEY_CHECKS = 0;");
       const statements = schemaSql
         .split(";")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith("--"));
+        .map((s) => {
+          return s
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("--"))
+            .join("\n")
+            .trim();
+        })
+        .filter((s) => s.length > 5);
 
       for (const statement of statements) {
-        if (statement.length > 5) {
-          await pool.query(statement);
-        }
+        await pool.query(statement);
       }
       await pool.query("SET FOREIGN_KEY_CHECKS = 1;");
       console.log("[Migration] All 17 MySQL tables created successfully!");

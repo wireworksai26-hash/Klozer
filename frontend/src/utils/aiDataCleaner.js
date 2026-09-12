@@ -318,3 +318,84 @@ export function aiCleanStock(stockList) {
     repairsLog,
   };
 }
+
+// ==================== AI ANTI-RTS & COD RISK VALIDATOR ====================
+/**
+ * Evaluates buyer delivery address completeness and calculates COD delivery risk
+ * Recommends a Dynamic QRIS Micro-Deposit (e.g. Rp 15.000 / Rp 20.000) for at-risk orders
+ * @param {Object} params { address, phone, pastReturnRate }
+ * @returns {Object} Risk assessment, flags, and suggested customer communication
+ */
+export function validateCodAddressAndRisk({ address = "", phone = "", pastReturnRate = 0 }) {
+  let score = 100;
+  const flags = [];
+  const raw = String(address || "").toLowerCase().trim();
+
+  if (!raw || raw.length < 15) {
+    score -= 35;
+    flags.push("Alamat terlalu ringkas (kurang dari 15 karakter)");
+  }
+
+  const hasStreet = /(jl\.|jalan|gang|gg\.|dusun|desa|komp|komplek|perum|perumahan|kp\.|kampung)/i.test(raw);
+  if (!hasStreet) {
+    score -= 15;
+    flags.push("Tidak ada nama jalan, dusun, atau perumahan");
+  }
+
+  const hasHouseNumberOrRtRw = /(no\.|nomor|\brt\b|\brw\b|\bblok\b)/i.test(raw);
+  if (!hasHouseNumberOrRtRw) {
+    score -= 15;
+    flags.push("Nomor rumah atau RT/RW tidak tercantum");
+  }
+
+  const hasPostalCode = /\b\d{5}\b/.test(raw);
+  if (!hasPostalCode) {
+    score -= 10;
+    flags.push("Kode pos 5 digit tidak disertakan");
+  }
+
+  const hasLandmark = /(dekat|samping|depan|seberang|belakang|patokan|sebelah)/i.test(raw);
+  if (hasLandmark) {
+    score += 5; // Bonus for explicit landmark
+  }
+
+  if (pastReturnRate > 25) {
+    score -= 40;
+    flags.push(`Tingkat retur riwayat pelanggan tinggi (${pastReturnRate}%)`);
+  } else if (pastReturnRate > 10) {
+    score -= 20;
+    flags.push(`Ada riwayat retur paket sebelumnya (${pastReturnRate}%)`);
+  }
+
+  score = Math.max(10, Math.min(100, score));
+
+  let riskLevel = "LOW_RISK";
+  let requiresMicroDeposit = false;
+  let microDepositAmount = 0;
+  let microDepositReason = "";
+
+  if (score < 50) {
+    riskLevel = "HIGH_RISK_RTS";
+    requiresMicroDeposit = true;
+    microDepositAmount = 20000;
+    microDepositReason = "Risiko retur COD tinggi: Sangat disarankan mewajibkan DP ongkir Rp 20.000 via Dynamic QRIS.";
+  } else if (score < 75) {
+    riskLevel = "MEDIUM_RISK";
+    requiresMicroDeposit = true;
+    microDepositAmount = 15000;
+    microDepositReason = "Alamat kurang spesifik: Disarankan menawarkan DP ongkir Rp 15.000 via QRIS.";
+  }
+
+  return {
+    score,
+    riskLevel,
+    flags,
+    requiresMicroDeposit,
+    microDepositAmount,
+    microDepositReason,
+    suggestedWaMessage: requiresMicroDeposit
+      ? `Halo Kak! Terima kasih sudah memesan di toko kami. Demi memastikan kurir berhasil mengantar paket ke lokasi Kakak tanpa kendala, pesanan COD ini memerlukan deposit ongkir komitmen sebesar Rp ${microDepositAmount.toLocaleString("id-ID")} via Dynamic QRIS. Sisa harga barang dibayar langsung ke kurir saat paket diterima. Boleh kami kirimkan QRIS-nya sekarang, Kak?`
+      : null,
+  };
+}
+

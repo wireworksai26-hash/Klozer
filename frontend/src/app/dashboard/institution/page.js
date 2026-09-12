@@ -34,6 +34,8 @@ export default function SupervisorInstitutionPage() {
     outOfHoursAiMode: true,
   });
 
+  const [toastMsg, setToastMsg] = useState("");
+
   const handleAddUserSubmit = (e) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) return;
@@ -46,7 +48,8 @@ export default function SupervisorInstitutionPage() {
     setShowAddUserModal(false);
     setNewUserName("");
     setNewUserEmail("");
-    alert(`Akun staf baru berhasil dibuat untuk ${newUserName}!`);
+    setToastMsg(`Akun staf baru berhasil dibuat untuk ${newUserName}!`);
+    setTimeout(() => setToastMsg(""), 4000);
   };
 
   return (
@@ -67,6 +70,13 @@ export default function SupervisorInstitutionPage() {
             Atur identitas profil bisnis, jam kerja operasional CS, dan kelola user tim (tambah/hapus CS, Finance, SPV).
           </p>
         </div>
+
+        {toastMsg && (
+          <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-2 animate-scale-pop self-start sm:self-auto shadow-xs">
+            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+            <span>{toastMsg}</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -134,7 +144,10 @@ export default function SupervisorInstitutionPage() {
 
             <button
               type="button"
-              onClick={() => alert("Profil instansi berhasil diperbarui.")}
+              onClick={() => {
+                setToastMsg("Profil instansi berhasil diperbarui!");
+                setTimeout(() => setToastMsg(""), 4000);
+              }}
               className="btn-primary !py-2.5 text-[13px] font-bold mt-2 cursor-pointer"
             >
               Simpan Profil Instansi

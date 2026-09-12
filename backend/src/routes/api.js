@@ -14,6 +14,9 @@ import * as shippingCtrl from "../controllers/shippingController.js";
 import * as fraudCtrl from "../controllers/fraudController.js";
 import * as reportCtrl from "../controllers/reportController.js";
 import * as webhookCtrl from "../controllers/webhookController.js";
+import * as systemCtrl from "../controllers/systemController.js";
+import * as tokenUsageCtrl from "../controllers/tokenUsageController.js";
+import { getSessionStatus, updateSessionHeartbeat } from "../services/whatsappWatchdog.js";
 
 const router = Router();
 
@@ -22,10 +25,25 @@ router.post("/auth/login", authCtrl.login);
 router.post("/auth/register", authCtrl.register);
 router.get("/auth/me", authenticate, authCtrl.getMe);
 
-// ==================== 2. WEBHOOKS (Public Gateway Handlers) ====================
+// ==================== 2. WEBHOOKS & WHATSAPP WATCHDOG ====================
 router.get("/webhooks/whatsapp", webhookCtrl.verifyWhatsAppWebhook);
 router.post("/webhooks/whatsapp", webhookCtrl.handleWhatsAppInbound);
 router.post("/payments/webhook", paymentCtrl.paymentWebhookHandler);
+router.get("/whatsapp/status", authenticate, async (req, res) => {
+  const instId = req.tenantId || req.user?.institution_id || 1;
+  const status = await getSessionStatus(instId);
+  res.json(status);
+});
+router.post("/whatsapp/heartbeat", async (req, res) => {
+  const { institution_id = 1, session_status, phone_number, battery_level } = req.body;
+  const result = await updateSessionHeartbeat({
+    institutionId: institution_id,
+    sessionStatus: session_status,
+    phoneNumber: phone_number,
+    batteryLevel: battery_level,
+  });
+  res.json({ success: true, result });
+});
 
 // ==================== 3. INSTITUTIONS (Tenants) ====================
 router.get("/institutions", authenticate, instCtrl.getAllInstitutions);
@@ -69,5 +87,11 @@ router.post("/fraud/reconcile-mutation", authenticate, tenantContext, fraudCtrl.
 
 // ==================== 11. REPORTS & BUSINESS INTELLIGENCE ====================
 router.get("/reports/summary", authenticate, tenantContext, reportCtrl.getSummaryReport);
+
+// ==================== 12. SYSTEM TELEMETRY & TOKEN LOGS ====================
+router.get("/system/metrics", systemCtrl.getSystemMetrics);
+router.get("/ai/token-usage", tokenUsageCtrl.getTokenUsageSummary);
+router.get("/ai/token-balance", tokenUsageCtrl.getTenantTokenBalance);
+router.post("/ai/token-usage/log", tokenUsageCtrl.logTokenUsage);
 
 export default router;

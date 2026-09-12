@@ -28,7 +28,7 @@ export async function authenticate(req, res, next) {
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
     req.user = decoded;
-    req.tenantId = decoded.institution_id || decoded.institutionId || 1;
+    req.tenantId = decoded.institution_id || decoded.institutionId || null;
     req.institutionId = req.tenantId;
     next();
   } catch (err) {

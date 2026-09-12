@@ -96,11 +96,12 @@ export default function InstitutionsPage() {
   };
 
   const filtered = institutions.filter((inst) => {
+    const s = searchTerm.toLowerCase();
     const matchSearch =
-      inst.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inst.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inst.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchSector = selectedSector === "all" || inst.sector.toLowerCase().includes(selectedSector.toLowerCase());
+      (inst.name?.toLowerCase() || "").includes(s) ||
+      (inst.owner?.toLowerCase() || "").includes(s) ||
+      (inst.id?.toLowerCase() || "").includes(s);
+    const matchSector = selectedSector === "all" || (inst.sector?.toLowerCase() || "").includes(selectedSector.toLowerCase());
     return matchSearch && matchSector;
   });
 

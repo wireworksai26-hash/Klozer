@@ -24,6 +24,7 @@ export default function SupervisorStockPage() {
   const [adjustNotes, setAdjustNotes] = useState("Restok barang masuk");
 
   const [mutations, setMutations] = useState([]);
+  const [importToast, setImportToast] = useState("");
 
   const totalUnits = products.reduce((acc, p) => acc + (Number(p.stock) || 0), 0);
   const totalAssetValue = products.reduce((acc, p) => acc + ((Number(p.stock) || 0) * (Number(p.price) || 0)), 0);
@@ -72,6 +73,13 @@ export default function SupervisorStockPage() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {importToast && (
+            <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-2 animate-scale-pop shadow-xs">
+              <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+              <span>{importToast}</span>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
@@ -351,7 +359,8 @@ export default function SupervisorStockPage() {
         }))}
         onImportSuccess={(newStockItems) => {
           importStock(newStockItems);
-          alert(`Sukses memperbarui stok ${newStockItems.length} produk dari file CSV!`);
+          setImportToast(`Sukses memperbarui stok ${newStockItems.length} produk langsung ke tabel toko!`);
+          setTimeout(() => setImportToast(""), 4500);
         }}
       />
     </div>

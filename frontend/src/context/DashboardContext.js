@@ -67,23 +67,32 @@ const initialInstitutions = [
   },
   {
     id: "INST-004",
-    name: "Kopi Kencana Roastery",
+    name: "Geprek Juara",
     sector: "Kuliner & F&B",
-    owner: "Bayu Wicaksono",
-    email: "bayu@kopikencana.com",
-    phone: "+62 878-1122-3344",
-    tier: "Starter",
-    quotaUsed: 4800,
-    quotaMax: 10000,
+    owner: "SPV - Geprek Juara",
+    email: "spv@geprekjuara.id",
+    phone: "+62 812-9900-8800",
+    tier: "Pro Plan",
+    quotaUsed: 3200,
+    quotaMax: 50000,
     status: "active",
     modules: {
+      personaAi: true,
+      autoLabel: true,
+      printReceipt: true,
+      baileys: true,
+      instagram: true,
+      csBlast: true,
+      publicBooking: true,
+      stockManagement: true,
+      picFeature: true,
       qris: true,
-      voiceAi: false,
-      antiFraud: false,
-      metaCapi: false,
-      multiCs: false,
+      voiceAi: true,
+      antiFraud: true,
+      metaCapi: true,
+      multiCs: true,
     },
-    joinedDate: "15 Maret 2026",
+    joinedDate: "28 Agustus 2026",
   },
 ];
 
@@ -343,6 +352,74 @@ const initialTeam = [
   },
 ];
 
+// Master Subscriptions Dataset
+const initialSubscriptions = [
+  {
+    id: "SUB-101",
+    institutionId: "INST-001",
+    institutionName: "Batik Mahakarya Solo",
+    plan: "Enterprise Scale",
+    pricePerMonth: 2499000,
+    csSeats: 15,
+    csSeatsUsed: 8,
+    tokenQuota: "500,000 / bln",
+    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
+    startDate: "12 Jan 2026",
+    expiryDate: "12 Jan 2027",
+    daysLeft: 136,
+    status: "active",
+    billingCycle: "Tahunan (Diskon 20%)",
+  },
+  {
+    id: "SUB-102",
+    institutionId: "INST-002",
+    institutionName: "Lumiere Skincare Official",
+    plan: "Pro Growth",
+    pricePerMonth: 999000,
+    csSeats: 5,
+    csSeatsUsed: 4,
+    tokenQuota: "200,000 / bln",
+    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
+    startDate: "01 Feb 2026",
+    expiryDate: "01 Sep 2026",
+    daysLeft: 30,
+    status: "active",
+    billingCycle: "Bulanan",
+  },
+  {
+    id: "SUB-103",
+    institutionId: "INST-003",
+    institutionName: "Yayasan ZISWAF Peduli Umat",
+    plan: "NGO Social Plan",
+    pricePerMonth: 499000,
+    csSeats: 10,
+    csSeatsUsed: 5,
+    tokenQuota: "300,000 / bln",
+    aiEngine: "NVIDIA NIM Llama 3.3",
+    startDate: "20 Feb 2026",
+    expiryDate: "20 Feb 2027",
+    daysLeft: 165,
+    status: "active",
+    billingCycle: "Tahunan",
+  },
+  {
+    id: "SUB-104",
+    institutionId: "INST-004",
+    institutionName: "Geprek Juara",
+    plan: "Pro Growth",
+    pricePerMonth: 999000,
+    csSeats: 5,
+    csSeatsUsed: 3,
+    tokenQuota: "200,000 / bln",
+    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
+    startDate: "28 Agu 2026",
+    expiryDate: "28 Agu 2027",
+    daysLeft: 350,
+    status: "active",
+    billingCycle: "Tahunan",
+  },
+];
+
 // Full Enterprise AI Configuration Schema
 const initialAiConfig = {
   // Primary AI Engine & Credentials (Prioritas Utama: NVIDIA NIM)
@@ -404,6 +481,7 @@ export function DashboardProvider({ children }) {
   const [teamMembers, setTeamMembers] = useState(initialTeam);
   const [aiConfig, setAiConfig] = useState(initialAiConfig);
   const [activeInstitutionId, setActiveInstitutionId] = useState("INST-001");
+  const [subscriptions, setSubscriptions] = useState(initialSubscriptions);
 
   // Load from localStorage on client
   useEffect(() => {
@@ -509,17 +587,229 @@ export function DashboardProvider({ children }) {
         if (savedRole) setRole(savedRole);
       }
       const savedInst = localStorage.getItem("klozer_institutions");
-      if (savedInst) setInstitutions(JSON.parse(savedInst));
+      let currentInst = savedInst ? JSON.parse(savedInst) : initialInstitutions;
+      
+      // Ensure legacy "Kopi Kencana" dummy is replaced with real "Geprek Juara"
+      currentInst = currentInst.map((i) =>
+        i.name?.toLowerCase().includes("kencana")
+          ? {
+              id: "INST-004",
+              name: "Geprek Juara",
+              sector: "Kuliner & F&B",
+              owner: "SPV - Geprek Juara",
+              email: "spv@geprekjuara.id",
+              phone: "+62 812-9900-8800",
+              tier: "Pro Plan",
+              quotaUsed: 3200,
+              quotaMax: 50000,
+              status: "active",
+              modules: {
+                personaAi: true,
+                autoLabel: true,
+                printReceipt: true,
+                baileys: true,
+                instagram: true,
+                csBlast: true,
+                publicBooking: true,
+                stockManagement: true,
+                picFeature: true,
+                qris: true,
+                voiceAi: true,
+                antiFraud: true,
+                metaCapi: true,
+                multiCs: true,
+              },
+              joinedDate: "28 Agustus 2026",
+            }
+          : i
+      );
+
+      // Ensure Geprek Juara is always present in institutions
+      if (!currentInst.some((i) => i.name?.toLowerCase().includes("geprek"))) {
+        currentInst.push({
+          id: "INST-004",
+          name: "Geprek Juara",
+          sector: "Kuliner & F&B",
+          owner: "SPV - Geprek Juara",
+          email: "spv@geprekjuara.id",
+          phone: "+62 812-9900-8800",
+          tier: "Pro Plan",
+          quotaUsed: 3200,
+          quotaMax: 50000,
+          status: "active",
+          modules: {
+            personaAi: true,
+            autoLabel: true,
+            printReceipt: true,
+            baileys: true,
+            instagram: true,
+            csBlast: true,
+            publicBooking: true,
+            stockManagement: true,
+            picFeature: true,
+            qris: true,
+            voiceAi: true,
+            antiFraud: true,
+            metaCapi: true,
+            multiCs: true,
+          },
+          joinedDate: "28 Agustus 2026",
+        });
+      }
+
+      // If user has a registered institution name, ensure it is included
+      const savedUserStr = localStorage.getItem("klozer_user");
+      const loggedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+      if (loggedUser && loggedUser.institutionName) {
+        const exists = currentInst.some(
+          (i) => i.name?.toLowerCase() === loggedUser.institutionName.toLowerCase()
+        );
+        if (!exists) {
+          currentInst.push({
+            id: loggedUser.institutionId || `INST-00${currentInst.length + 1}`,
+            name: loggedUser.institutionName,
+            sector: loggedUser.sector || "Bisnis Terverifikasi",
+            owner: loggedUser.name,
+            email: loggedUser.email,
+            phone: "+62 812-xxxx-xxxx",
+            tier: "Pro Plan",
+            quotaUsed: 0,
+            quotaMax: 50000,
+            status: "active",
+            modules: {
+              personaAi: true,
+              autoLabel: true,
+              printReceipt: true,
+              baileys: true,
+              instagram: true,
+              csBlast: true,
+              publicBooking: true,
+              stockManagement: true,
+              picFeature: true,
+              qris: true,
+              voiceAi: true,
+              antiFraud: true,
+              metaCapi: true,
+              multiCs: true,
+            },
+            joinedDate: "Hari ini",
+          });
+        }
+      }
+
+      setInstitutions(currentInst);
+      try {
+        localStorage.setItem("klozer_institutions", JSON.stringify(currentInst));
+      } catch {}
+
+      // Realtime fetch from backend API
+      (async () => {
+        try {
+          const token = localStorage.getItem("klozer_token");
+          if (token) {
+            const res = await fetch("http://localhost:5000/api/v1/institutions", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const resData = await res.json();
+              if (resData.success && Array.isArray(resData.items) && resData.items.length > 0) {
+                setInstitutions((prev) => {
+                  const merged = [...prev];
+                  resData.items.forEach((backendInst) => {
+                    const idx = merged.findIndex(
+                      (m) => m.name.toLowerCase() === backendInst.name.toLowerCase() || m.id === `INST-00${backendInst.id}`
+                    );
+                    const formatted = {
+                      id: `INST-00${backendInst.id}`,
+                      name: backendInst.name,
+                      sector: backendInst.sector || "Bisnis & Jasa",
+                      owner: backendInst.name === "Geprek Juara" ? "SPV - Geprek Juara" : (backendInst.owner || backendInst.email?.split("@")[0] || "Owner"),
+                      email: backendInst.email,
+                      phone: backendInst.phone_number || "+62 812-xxxx-xxxx",
+                      tier: (backendInst.subscription_tier || "pro").toUpperCase() === "ENTERPRISE" ? "Enterprise" : "Pro Plan",
+                      quotaUsed: backendInst.blast_credit_quota || 3200,
+                      quotaMax: 50000,
+                      status: backendInst.is_active ? "active" : "inactive",
+                      modules: backendInst.features_json || {
+                        personaAi: true,
+                        autoLabel: true,
+                        printReceipt: true,
+                        baileys: true,
+                        instagram: true,
+                        csBlast: true,
+                        publicBooking: true,
+                        stockManagement: true,
+                        picFeature: true,
+                        qris: true,
+                        voiceAi: true,
+                        antiFraud: true,
+                        metaCapi: true,
+                        multiCs: true,
+                      },
+                      joinedDate: backendInst.created_at ? new Date(backendInst.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "Hari ini",
+                    };
+                    if (idx >= 0) {
+                      merged[idx] = { ...merged[idx], ...formatted };
+                    } else {
+                      merged.push(formatted);
+                    }
+                  });
+                  try {
+                    localStorage.setItem("klozer_institutions", JSON.stringify(merged));
+                  } catch {}
+                  return merged;
+                });
+              }
+            }
+          }
+        } catch (e) {}
+      })();
       const savedAi = localStorage.getItem("klozer_ai_config");
-      if (savedAi) setAiConfig(JSON.parse(savedAi));
+      if (savedAi) {
+        try {
+          const parsedAi = JSON.parse(savedAi);
+          setAiConfig((prev) => ({
+            ...prev,
+            ...parsedAi,
+            spvPersona: {
+              ...(prev.spvPersona || {}),
+              ...(parsedAi.spvPersona || {}),
+            },
+          }));
+        } catch (err) {}
+      }
+      const savedSubs = localStorage.getItem("klozer_subscriptions");
+      if (savedSubs) {
+        try {
+          setSubscriptions(JSON.parse(savedSubs));
+        } catch (err) {}
+      }
     } catch (e) {
       console.warn("Storage sync failed:", e);
     }
   }, []);
 
+  const getTenantStorageKey = () => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("klozer_user") : null;
+      const user = currentUser || (stored ? JSON.parse(stored) : null);
+      if (!user) return null;
+      const isDefault = (user.institutionName || "").toLowerCase() === "batik mahakarya solo";
+      if (isDefault || user.role === "superadmin") return null;
+      return `klozer_inst_${user.institutionId || user.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
+    } catch {
+      return null;
+    }
+  };
+
   const saveToStorage = (key, data) => {
     try {
       localStorage.setItem(key, JSON.stringify(data));
+      const tKey = getTenantStorageKey();
+      if (tKey && key.startsWith("klozer_")) {
+        const subKey = key.replace("klozer_", "");
+        localStorage.setItem(`${tKey}_${subKey}`, JSON.stringify(data));
+      }
     } catch (e) {
       console.warn("Storage save failed:", e);
     }
@@ -628,6 +918,30 @@ export function DashboardProvider({ children }) {
     const updated = [entry, ...institutions];
     setInstitutions(updated);
     saveToStorage("klozer_institutions", updated);
+
+    // Sync to backend if token exists
+    (async () => {
+      try {
+        const token = localStorage.getItem("klozer_token");
+        if (token) {
+          await fetch("http://localhost:5000/api/v1/institutions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: newInst.name,
+              sector: newInst.sector,
+              email: newInst.email,
+              phone_number: newInst.phone,
+              features: newInst.modules,
+            }),
+          });
+        }
+      } catch (err) {}
+    })();
+
     return entry;
   };
 
@@ -717,13 +1031,20 @@ export function DashboardProvider({ children }) {
 
   const importStock = (stockList) => {
     const skuMap = new Map();
+    const nameMap = new Map();
     stockList.forEach((s) => {
-      if (s.sku) skuMap.set(String(s.sku).trim().toUpperCase(), Number(s.newStock));
+      const qty = Number(s.newStock) || 0;
+      if (s.sku) skuMap.set(String(s.sku).trim().toUpperCase(), qty);
+      if (s.name) nameMap.set(String(s.name).trim().toLowerCase(), qty);
     });
     const updated = products.map((p) => {
       const pSku = String(p.sku || "").trim().toUpperCase();
+      const pName = String(p.name || "").trim().toLowerCase();
       if (skuMap.has(pSku)) {
         return { ...p, stock: skuMap.get(pSku) };
+      }
+      if (nameMap.has(pName)) {
+        return { ...p, stock: nameMap.get(pName) };
       }
       return p;
     });
@@ -866,22 +1187,99 @@ export function DashboardProvider({ children }) {
 
   // ==================== AI CONFIGURATION ====================
   const updateAiGlobalConfig = (fields) => {
-    const updated = { ...aiConfig, ...fields };
-    setAiConfig(updated);
-    saveToStorage("klozer_ai_config", updated);
+    setAiConfig((prev) => {
+      const updated = { ...prev, ...fields };
+      saveToStorage("klozer_ai_config", updated);
+      return updated;
+    });
   };
 
   const updateSpvAiPersona = (personaFields) => {
-    const updated = {
-      ...aiConfig,
-      spvPersona: {
-        ...aiConfig.spvPersona,
-        ...personaFields,
-      },
-    };
-    setAiConfig(updated);
-    saveToStorage("klozer_ai_config", updated);
+    setAiConfig((prev) => {
+      const updated = {
+        ...prev,
+        spvPersona: {
+          ...(prev.spvPersona || {}),
+          ...personaFields,
+        },
+      };
+      saveToStorage("klozer_ai_config", updated);
+      return updated;
+    });
   };
+
+  // ==================== SUBSCRIPTION EXTENSION & TOP-UP ====================
+  const extendSubscription = (idOrInstId, extendData = {}) => {
+    let targetSub = null;
+    setSubscriptions((prev) => {
+      const updated = prev.map((s) => {
+        if (
+          s.id === idOrInstId ||
+          s.institutionId === idOrInstId ||
+          s.institutionName?.toLowerCase() === idOrInstId?.toString()?.toLowerCase()
+        ) {
+          const daysToAdd = parseInt(extendData.daysToAdd) || 30;
+          const currentDays = Math.max(0, s.daysLeft || 0);
+          const newDaysLeft = currentDays + daysToAdd;
+
+          const expDate = new Date();
+          expDate.setDate(expDate.getDate() + newDaysLeft);
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+          const formattedExp = `${expDate.getDate()} ${monthNames[expDate.getMonth()]} ${expDate.getFullYear()}`;
+
+          const updatedSub = {
+            ...s,
+            status: "active",
+            daysLeft: newDaysLeft,
+            expiryDate: formattedExp,
+            plan: extendData.plan || s.plan,
+            csSeats: (s.csSeats || 5) + (parseInt(extendData.additionalSeats) || 0),
+            billingCycle: extendData.billingCycle || s.billingCycle,
+            tokenQuota: extendData.newTokenQuota || s.tokenQuota,
+            pricePerMonth: extendData.pricePerMonth || s.pricePerMonth,
+            lastExtendedAt: new Date().toISOString(),
+            lastPaymentMethod: extendData.paymentMethod || "Transfer Manual / QRIS",
+          };
+          targetSub = updatedSub;
+          return updatedSub;
+        }
+        return s;
+      });
+      saveToStorage("klozer_subscriptions", updated);
+      return updated;
+    });
+    return targetSub;
+  };
+
+  const activeInstitution =
+    institutions.find(
+      (i) =>
+        i.id === activeInstitutionId ||
+        i.name?.toLowerCase() === currentUser?.institutionName?.toLowerCase()
+    ) ||
+    (currentUser?.institutionName
+      ? {
+          id: currentUser.institutionId || "INST-ACTIVE",
+          name: currentUser.institutionName,
+          sector: currentUser.sector || "Bisnis & Retail",
+          owner: currentUser.name,
+          email: currentUser.email,
+          tier: "Pro Plan",
+          status: "active",
+          modules: { qris: true, voiceAi: true, antiFraud: true, metaCapi: true, multiCs: true },
+        }
+      : institutions[0]);
+
+  const activeSubscription =
+    subscriptions.find(
+      (s) =>
+        s.institutionId === activeInstitutionId ||
+        s.institutionId === activeInstitution?.id ||
+        s.institutionName?.toLowerCase() === activeInstitution?.name?.toLowerCase() ||
+        s.institutionName?.toLowerCase() === currentUser?.institutionName?.toLowerCase()
+    ) ||
+    subscriptions.find((s) => s.id === "SUB-104") ||
+    subscriptions[0];
 
   return (
     <DashboardContext.Provider
@@ -894,20 +1292,7 @@ export function DashboardProvider({ children }) {
         registerUser,
         logoutUser,
         institutions,
-        activeInstitution:
-          institutions.find((i) => i.id === activeInstitutionId || i.name?.toLowerCase() === currentUser?.institutionName?.toLowerCase()) ||
-          (currentUser?.institutionName
-            ? {
-                id: currentUser.institutionId || "INST-ACTIVE",
-                name: currentUser.institutionName,
-                sector: currentUser.sector || "Bisnis & Retail",
-                owner: currentUser.name,
-                email: currentUser.email,
-                tier: "Pro Plan",
-                status: "active",
-                modules: { qris: true, voiceAi: true, antiFraud: true, metaCapi: true, multiCs: true },
-              }
-            : institutions[0]),
+        activeInstitution,
         activeInstitutionId,
         setActiveInstitutionId,
         addInstitution,
@@ -937,6 +1322,10 @@ export function DashboardProvider({ children }) {
         aiConfig,
         updateAiGlobalConfig,
         updateSpvAiPersona,
+        subscriptions,
+        setSubscriptions,
+        extendSubscription,
+        activeSubscription,
       }}
     >
       {children}

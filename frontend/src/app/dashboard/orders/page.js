@@ -1,15 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { CheckCircleIcon, AlertTriangleIcon, PackageIcon, XIcon } from "@/components/icons";
+import { CheckCircleIcon, AlertTriangleIcon, PackageIcon, XIcon, ReceiptIcon } from "@/components/icons";
+import ThermalPrintModal from "@/components/common/ThermalPrintModal";
 
 export default function OrdersPage() {
-  const { orders, addOrder, updateOrderStatus, deleteOrder, products, role } = useDashboard();
+  const { orders, addOrder, updateOrderStatus, deleteOrder, products, role, currentUser, activeInstitution } = useDashboard();
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [selectedThermalOrder, setSelectedThermalOrder] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Form State for Manual Order Creation
@@ -272,6 +274,16 @@ export default function OrdersPage() {
                             Kirim Resi
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedThermalOrder(o)}
+                          className="px-2.5 py-1 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200 cursor-pointer flex items-center gap-1"
+                          title="Cetak Tiket Dapur / Struk Termal ESC/POS"
+                        >
+                          <ReceiptIcon className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Tiket Dapur</span>
+                        </button>
 
                         <button
                           onClick={() => setSelectedInvoice(o)}
@@ -546,6 +558,14 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Thermal Print Modal */}
+      <ThermalPrintModal
+        isOpen={Boolean(selectedThermalOrder)}
+        onClose={() => setSelectedThermalOrder(null)}
+        order={selectedThermalOrder}
+        storeName={currentUser?.institutionName || activeInstitution?.name || "Geprek Juara"}
+      />
 
     </div>
   );

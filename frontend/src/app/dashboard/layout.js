@@ -44,6 +44,7 @@ import {
   WarehouseIcon,
   AlertTriangleIcon,
   CreditCardIcon,
+  ShieldCheckIcon,
 } from "@/components/icons";
 
 function DashboardContent({ children }) {
@@ -213,68 +214,42 @@ function DashboardContent({ children }) {
       avatar: "OW",
       icon: <BriefcaseIcon className="w-4 h-4 text-[#2545ff]" />,
       pinnedItems: [
-        {
-          label: "Dashboard Instansi",
-          href: "/dashboard",
-          icon: <BarChartIcon className="w-4.5 h-4.5" />,
-        },
+        { label: "Dashboard Toko", href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+        { label: "Inbox WA & Closing", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
+        { label: "Katalog & HPP Produk", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+        { label: "Dynamic QRIS & Kas", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+        { label: "Pesanan & Tiket Dapur", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
       ],
       navSections: [
         {
-          sectionLabel: "Operasional",
-          sectionIcon: <MessageSquareIcon className="w-4 h-4" />,
-          items: [
-            { label: "Monitoring & Chat Live", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
-            { label: "Smart Broadcast AI", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
-            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: "Pesanan & Transaksi", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
-            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Master Data",
+          sectionLabel: "Operasional Toko & CRM",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
-            { label: "Customer Intelligence", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+            { label: "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
+            { label: "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+            { label: "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+            { label: "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" />, badge: "Simulator" },
+            { label: "Hak Akses & Tim", href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
+            { label: "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-[#2545ff]" />, badge: "Aktif" },
+          ],
+        },
+        {
+          sectionLabel: "Aplikasi Lanjutan",
+          sectionIcon: <SlidersIcon className="w-4 h-4" />,
+          items: [
+            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
+            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
+            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
+            { label: "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
+            { label: "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
             { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: "Katalog Produk / Donasi", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-            { label: "Rekening Resmi & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Basis Doa Donatur [NGO]", href: "/dashboard/doa-knowledge", icon: <BookOpenIcon className="w-4.5 h-4.5" /> },
-            { label: "Katalog Instan WA", href: "/dashboard/etalase", icon: <ExternalLinkIcon className="w-4.5 h-4.5" /> },
-            { label: "Hybrid Shift CS & AI", href: "/dashboard/pic-roster", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Inventaris",
-          sectionIcon: <PackageIcon className="w-4 h-4" />,
-          items: [
-            { label: "Stok & Mutasi Real-Time", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: "Master Gudang & Hub", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: "Resep HPP Produk", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Laporan",
-          sectionIcon: <BarChartIcon className="w-4 h-4" />,
-          items: [
-            { label: "Performa CS & Omzet", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: "Statistik Label & Minat", href: "/dashboard/label-stats", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-            { label: "Arus Kas & QRIS Settle", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-            { label: "Cetak Nota & Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
-            { label: "Audit Trail Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Pengaturan",
-          sectionIcon: <SettingsIcon className="w-4 h-4" />,
-          items: [
-            { label: "Persona AI & Script Toko", href: "/dashboard/settings?tab=ai-spv", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Profil Bisnis & Staf", href: "/dashboard/institution", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Uji Live CS AI", href: "/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" />, badge: "Tester" },
-            { label: "Buku Panduan In-App", href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
+            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+            { label: "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
@@ -286,68 +261,42 @@ function DashboardContent({ children }) {
       avatar: "SP",
       icon: <ClipboardListIcon className="w-4 h-4 text-amber-700" />,
       pinnedItems: [
-        {
-          label: "Dashboard Instansi",
-          href: "/dashboard",
-          icon: <BarChartIcon className="w-4.5 h-4.5" />,
-        },
+        { label: "Dashboard Toko", href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+        { label: "Inbox WA & Closing", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
+        { label: "Katalog & HPP Produk", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+        { label: "Dynamic QRIS & Kas", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+        { label: "Pesanan & Tiket Dapur", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
       ],
       navSections: [
         {
-          sectionLabel: "Operasional",
-          sectionIcon: <MessageSquareIcon className="w-4 h-4" />,
-          items: [
-            { label: "Monitoring & Chat Live", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
-            { label: "Smart Broadcast AI", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
-            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: "Pesanan & Transaksi", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
-            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Master Data",
+          sectionLabel: "Operasional Toko & CRM",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
-            { label: "Customer Intelligence", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+            { label: "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
+            { label: "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+            { label: "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+            { label: "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" />, badge: "Simulator" },
+            { label: "Hak Akses & Tim", href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
+            { label: "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-amber-600" />, badge: "Perpanjang" },
+          ],
+        },
+        {
+          sectionLabel: "Aplikasi Lanjutan",
+          sectionIcon: <SlidersIcon className="w-4 h-4" />,
+          items: [
+            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
+            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
+            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
+            { label: "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
+            { label: "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
             { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: "Katalog Produk / Donasi", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-            { label: "Rekening Resmi & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Basis Doa Donatur [NGO]", href: "/dashboard/doa-knowledge", icon: <BookOpenIcon className="w-4.5 h-4.5" /> },
-            { label: "Katalog Instan WA", href: "/dashboard/etalase", icon: <ExternalLinkIcon className="w-4.5 h-4.5" /> },
-            { label: "Hybrid Shift CS & AI", href: "/dashboard/pic-roster", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Inventaris",
-          sectionIcon: <PackageIcon className="w-4 h-4" />,
-          items: [
-            { label: "Stok & Mutasi Real-Time", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: "Master Gudang & Hub", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: "Resep HPP Produk", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Laporan",
-          sectionIcon: <BarChartIcon className="w-4 h-4" />,
-          items: [
-            { label: "Performa CS & Omzet", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: "Statistik Label & Minat", href: "/dashboard/label-stats", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-            { label: "Arus Kas & QRIS Settle", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-            { label: "Cetak Nota & Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
-            { label: "Audit Trail Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-        {
-          sectionLabel: "Pengaturan",
-          sectionIcon: <SettingsIcon className="w-4 h-4" />,
-          items: [
-            { label: "Persona AI & Script Toko", href: "/dashboard/settings?tab=ai-spv", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Profil Bisnis & Staf", href: "/dashboard/institution", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Uji Live CS AI", href: "/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" />, badge: "Tester" },
-            { label: "Buku Panduan In-App", href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
+            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+            { label: "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
@@ -449,25 +398,8 @@ function DashboardContent({ children }) {
           </span>
         </div>
 
-        {/* Tenant Switcher (For Superadmin or Multi-Institution) */}
-        {role === "superadmin" ? (
-          <div className="p-3 border-b border-[#f0e9e1] bg-[#f9f8f6]/70">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#969696] block mb-1">
-              Institusi Terpilih
-            </label>
-            <select
-              value={activeInstitution?.id}
-              onChange={(e) => setActiveInstitutionId(e.target.value)}
-              className="w-full text-[12px] font-bold bg-white border border-[#f0e9e1] rounded-lg p-2 text-[#0c1754] outline-none"
-            >
-              {institutions.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
+        {/* Store Indicator for Merchant Tenants (Owner, SPV, CS) */}
+        {role !== "superadmin" && (
           <div className="px-5 py-3 border-b border-[#f0e9e1] bg-[#fcfbf9] flex items-center justify-between">
             <div className="truncate">
               <div className="text-[12.5px] font-black text-[#0c1754] truncate">

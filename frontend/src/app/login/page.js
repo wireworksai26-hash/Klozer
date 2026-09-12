@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   MailIcon,
   KeyIcon,
-  CrownIcon,
-  BriefcaseIcon,
-  HeadphonesIcon,
   SparklesIcon,
   AlertTriangleIcon,
   KlozerIcon,
@@ -73,12 +70,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickLogin = (demoEmail) => {
-    setEmail(demoEmail);
-    setPassword("Klozer123!");
-    setErrorMsg("");
   };
 
   return (
@@ -214,42 +205,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Access Pills */}
-          <div className="mt-7 pt-5 border-t border-[#f0e9e1]">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#969696] block mb-2 text-center">
-              Pilihan Akun Demo Cepat:
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("superadmin@klozer.id")}
-                className="p-2.5 rounded-xl bg-[#f9f8f6] hover:bg-[#eaebf8] border border-[#f0e9e1] hover:border-[#2545ff]/40 text-center cursor-pointer transition-all flex flex-col items-center gap-1"
-              >
-                <CrownIcon className="w-4 h-4 text-amber-500" />
-                <span className="text-[11px] font-bold text-[#171417]">Superadmin</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("owner@batikmahakarya.id")}
-                className="p-2.5 rounded-xl bg-[#f9f8f6] hover:bg-[#eaebf8] border border-[#f0e9e1] hover:border-[#2545ff]/40 text-center cursor-pointer transition-all flex flex-col items-center gap-1"
-              >
-                <BriefcaseIcon className="w-4 h-4 text-[#2545ff]" />
-                <span className="text-[11px] font-bold text-[#171417]">Owner / SPV</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("siti@batikmahakarya.id")}
-                className="p-2.5 rounded-xl bg-[#f9f8f6] hover:bg-[#eaebf8] border border-[#f0e9e1] hover:border-[#2545ff]/40 text-center cursor-pointer transition-all flex flex-col items-center gap-1"
-              >
-                <HeadphonesIcon className="w-4 h-4 text-emerald-600" />
-                <span className="text-[11px] font-bold text-[#171417]">Staf CS</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 text-center text-[13px] text-[#64748b]">
+          <div className="mt-8 pt-6 border-t border-[#f0e9e1] text-center text-[13px] text-[#64748b]">
             Belum punya akun?{" "}
             <Link href="/register" className="font-bold text-[#2545ff] hover:underline">
               Daftar

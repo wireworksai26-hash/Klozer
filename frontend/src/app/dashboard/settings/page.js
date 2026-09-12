@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useDashboard } from "@/context/DashboardContext";
 import {
   SparklesIcon,
@@ -48,14 +49,12 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState(getDefaultTab());
 
-  // Auto-switch tabs when role or URL param changes so Admin never lands on SPV persona
+  // Auto-switch tabs when role or URL param changes
   useEffect(() => {
-    if (role === "superadmin" && activeTab === "ai-spv") {
-      setActiveTab("ai-admin");
-    } else if (role === "spv" && activeTab === "ai-admin") {
-      setActiveTab("ai-spv");
-    } else if (tabFromUrl) {
+    if (tabFromUrl) {
       setActiveTab(tabFromUrl);
+    } else if (role === "superadmin" && activeTab === "ai-spv") {
+      setActiveTab("ai-admin");
     }
   }, [role, tabFromUrl]);
 
@@ -69,42 +68,95 @@ export default function SettingsPage() {
 
   // Admin AI Config State
   const [adminAiState, setAdminAiState] = useState({
-    primaryProvider: aiConfig.primaryProvider || "openai",
-    primaryApiKey: aiConfig.primaryApiKey || "",
-    primaryBaseUrl: aiConfig.primaryBaseUrl || "https://api.openai.com/v1",
-    primaryModelName: aiConfig.primaryModelName || "gpt-4o",
+    primaryProvider: aiConfig?.primaryProvider || "nvidia",
+    primaryApiKey: aiConfig?.primaryApiKey || "",
+    primaryBaseUrl: aiConfig?.primaryBaseUrl || "https://integrate.api.nvidia.com/v1",
+    primaryModelName: aiConfig?.primaryModelName || "meta/llama-3.3-70b-instruct",
     
-    enableFallback: aiConfig.enableFallback ?? true,
-    fallbackProvider: aiConfig.fallbackProvider || "openrouter",
-    fallbackApiKey: aiConfig.fallbackApiKey || "",
-    fallbackBaseUrl: aiConfig.fallbackBaseUrl || "https://openrouter.ai/api/v1",
-    fallbackModelName: aiConfig.fallbackModelName || "gpt-4o-mini",
+    enableFallback: aiConfig?.enableFallback ?? true,
+    fallbackProvider: aiConfig?.fallbackProvider || "openrouter",
+    fallbackApiKey: aiConfig?.fallbackApiKey || "",
+    fallbackBaseUrl: aiConfig?.fallbackBaseUrl || "https://openrouter.ai/api/v1",
+    fallbackModelName: aiConfig?.fallbackModelName || "gpt-4o-mini",
 
-    sttEngine: aiConfig.sttEngine || "whisper-large-v3",
-    sttEndpoint: aiConfig.sttEndpoint || "https://api.openai.com/v1/audio/transcriptions",
-    sttApiKey: aiConfig.sttApiKey || "",
-    ttsEngine: aiConfig.ttsEngine || "tts-1-hd",
-    ttsVoice: aiConfig.ttsVoice || "nova",
+    sttEngine: aiConfig?.sttEngine || "whisper-large-v3",
+    sttEndpoint: aiConfig?.sttEndpoint || "https://api.openai.com/v1/audio/transcriptions",
+    sttApiKey: aiConfig?.sttApiKey || "",
+    ttsEngine: aiConfig?.ttsEngine || "tts-1-hd",
+    ttsVoice: aiConfig?.ttsVoice || "nova",
 
-    ocrFraudThreshold: aiConfig.ocrFraudThreshold || 85,
-    humanDelayMin: aiConfig.humanDelayMin || 2,
-    humanDelayMax: aiConfig.humanDelayMax || 4,
-    autoBankMutationCheck: aiConfig.autoBankMutationCheck ?? true,
-    autoAbandonedFollowup: aiConfig.autoAbandonedFollowup ?? true,
-    webhookEndpoint: aiConfig.webhookEndpoint || "https://api.klozer.id/v1/webhook/whatsapp",
-    webhookSecret: aiConfig.webhookSecret || "whsec_klozer_981249810294",
+    ocrFraudThreshold: aiConfig?.ocrFraudThreshold || 85,
+    humanDelayMin: aiConfig?.humanDelayMin || 2,
+    humanDelayMax: aiConfig?.humanDelayMax || 4,
+    autoBankMutationCheck: aiConfig?.autoBankMutationCheck ?? true,
+    autoAbandonedFollowup: aiConfig?.autoAbandonedFollowup ?? true,
+    webhookEndpoint: aiConfig?.webhookEndpoint || "https://api.klozer.id/v1/webhook/whatsapp",
+    webhookSecret: aiConfig?.webhookSecret || "whsec_klozer_981249810294",
   });
 
   // SPV AI Persona State
   const [spvState, setSpvState] = useState({
-    botName: aiConfig.spvPersona.botName,
-    tone: aiConfig.spvPersona.tone,
-    greetingMessage: aiConfig.spvPersona.greetingMessage,
-    voiceAccent: aiConfig.spvPersona.voiceAccent,
-    voiceGender: aiConfig.spvPersona.voiceGender,
-    abandonedMessage: aiConfig.spvPersona.abandonedMessage,
-    customFaqKeywords: aiConfig.spvPersona.customFaqKeywords,
+    botName: aiConfig?.spvPersona?.botName || "Klozer Assistant",
+    tone: aiConfig?.spvPersona?.tone || "Ramah, Santun & Solutif (Bahasa Gaul/Sopan Online Shop)",
+    greetingMessage: aiConfig?.spvPersona?.greetingMessage || "Halo kak! Terima kasih sudah menghubungi kami. Mau cari produk apa hari ini?",
+    voiceAccent: aiConfig?.spvPersona?.voiceAccent || "Bahasa Indonesia Standar (Aksen Ramah)",
+    voiceGender: aiConfig?.spvPersona?.voiceGender || "Female (Putri)",
+    abandonedMessage: aiConfig?.spvPersona?.abandonedMessage || "Halo kak, apakah pesanan kemeja kemarin masih mau diproses? Stok tersisa sedikit lagi nih kak",
+    customFaqKeywords: aiConfig?.spvPersona?.customFaqKeywords || "ongkir, transfer, cod, ready, ukuran, resi",
   });
+
+  // Sync immediately from localStorage on client mount so credentials are NEVER lost on refresh
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("klozer_ai_config");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setAdminAiState((prev) => ({ ...prev, ...parsed }));
+          if (parsed.spvPersona) {
+            setSpvState((prev) => ({ ...prev, ...parsed.spvPersona }));
+          }
+        }
+      } catch (err) {}
+    }
+  }, []);
+
+  // Also sync when context aiConfig updates
+  useEffect(() => {
+    if (aiConfig) {
+      setAdminAiState((prev) => ({
+        ...prev,
+        primaryProvider: aiConfig.primaryProvider || prev.primaryProvider,
+        primaryApiKey: aiConfig.primaryApiKey !== undefined ? aiConfig.primaryApiKey : prev.primaryApiKey,
+        primaryBaseUrl: aiConfig.primaryBaseUrl || prev.primaryBaseUrl,
+        primaryModelName: aiConfig.primaryModelName || prev.primaryModelName,
+        enableFallback: aiConfig.enableFallback !== undefined ? aiConfig.enableFallback : prev.enableFallback,
+        fallbackProvider: aiConfig.fallbackProvider || prev.fallbackProvider,
+        fallbackApiKey: aiConfig.fallbackApiKey !== undefined ? aiConfig.fallbackApiKey : prev.fallbackApiKey,
+        fallbackBaseUrl: aiConfig.fallbackBaseUrl || prev.fallbackBaseUrl,
+        fallbackModelName: aiConfig.fallbackModelName || prev.fallbackModelName,
+        sttEngine: aiConfig.sttEngine || prev.sttEngine,
+        sttEndpoint: aiConfig.sttEndpoint || prev.sttEndpoint,
+        sttApiKey: aiConfig.sttApiKey !== undefined ? aiConfig.sttApiKey : prev.sttApiKey,
+        ttsEngine: aiConfig.ttsEngine || prev.ttsEngine,
+        ttsVoice: aiConfig.ttsVoice || prev.ttsVoice,
+        ocrFraudThreshold: aiConfig.ocrFraudThreshold ?? prev.ocrFraudThreshold,
+        humanDelayMin: aiConfig.humanDelayMin ?? prev.humanDelayMin,
+        humanDelayMax: aiConfig.humanDelayMax ?? prev.humanDelayMax,
+        autoBankMutationCheck: aiConfig.autoBankMutationCheck ?? prev.autoBankMutationCheck,
+        autoAbandonedFollowup: aiConfig.autoAbandonedFollowup ?? prev.autoAbandonedFollowup,
+        webhookEndpoint: aiConfig.webhookEndpoint || prev.webhookEndpoint,
+        webhookSecret: aiConfig.webhookSecret || prev.webhookSecret,
+      }));
+
+      if (aiConfig.spvPersona) {
+        setSpvState((prev) => ({
+          ...prev,
+          ...aiConfig.spvPersona,
+        }));
+      }
+    }
+  }, [aiConfig]);
 
   // Team Member Form State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -132,17 +184,36 @@ export default function SettingsPage() {
   };
 
   const handleSaveAdminAi = (e) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
     updateAiGlobalConfig(adminAiState);
-    setSaveSuccessMsg("Konfigurasi AI Global (API Key & Endpoint) berhasil disimpan!");
-    setTimeout(() => setSaveSuccessMsg(""), 3500);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("klozer_ai_config", JSON.stringify(adminAiState));
+      } catch (err) {}
+    }
+    setSaveSuccessMsg("Konfigurasi AI Global & Kredensial API berhasil disimpan!");
+    setTimeout(() => setSaveSuccessMsg(""), 4500);
   };
 
   const handleSaveSpvPersona = (e) => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
     updateSpvAiPersona(spvState);
-    setSaveSuccessMsg("Persona & Script AI Supervisor berhasil diperbarui!");
-    setTimeout(() => setSaveSuccessMsg(""), 3500);
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("klozer_ai_config");
+        const current = saved ? JSON.parse(saved) : (aiConfig || {});
+        const updated = {
+          ...current,
+          spvPersona: {
+            ...(current.spvPersona || {}),
+            ...spvState,
+          },
+        };
+        localStorage.setItem("klozer_ai_config", JSON.stringify(updated));
+      } catch (err) {}
+    }
+    setSaveSuccessMsg("Persona & Script AI Supervisor berhasil disimpan!");
+    setTimeout(() => setSaveSuccessMsg(""), 4500);
   };
 
   const handleAddMemberSubmit = (e) => {
@@ -202,28 +273,52 @@ export default function SettingsPage() {
           <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
             {role === "superadmin"
               ? "Konfigurasi AI Global & Master Data"
-              : role === "spv"
-              ? "Persona & Script Prompts AI (Supervisor)"
+              : activeTab === "ai-spv"
+              ? "Persona & Script Prompts AI"
               : "Pengaturan & Hak Akses Tim"}
           </h1>
           <p className="text-[13.5px] text-[#64748b]">
             {role === "superadmin"
               ? "Kelola API Key, Base URL, Endpoint Model AI Utama & Fallback, serta Master Data Toggles."
-              : role === "spv"
+              : activeTab === "ai-spv"
               ? "Atur gaya bahasa percakapan bot AI, template salam WhatsApp, karakter suara audio, dan follow-up."
               : "Kelola data anggota tim, hak akses staf CS, dan koneksi WhatsApp API."}
           </p>
         </div>
 
-        {saveSuccessMsg && (
-          <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-[13px] font-bold flex items-center gap-2 animate-scale-pop">
-            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
-            <span>{saveSuccessMsg}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {saveSuccessMsg && (
+            <div className="px-4 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-[13px] font-bold flex items-center gap-2 animate-scale-pop shadow-xs">
+              <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+              <span>{saveSuccessMsg}</span>
+            </div>
+          )}
+
+          {activeTab === "ai-admin" && role === "superadmin" && (
+            <button
+              type="button"
+              onClick={handleSaveAdminAi}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-[13px] font-black flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer border-none"
+            >
+              <CheckCircleIcon className="w-4.5 h-4.5" />
+              <span>Simpan Konfigurasi AI</span>
+            </button>
+          )}
+
+          {activeTab === "ai-spv" && (role === "spv" || role === "owner") && (
+            <button
+              type="button"
+              onClick={handleSaveSpvPersona}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-[13px] font-black flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer border-none"
+            >
+              <CheckCircleIcon className="w-4.5 h-4.5" />
+              <span>Simpan Persona AI</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Tabs Navigation — Strictly Filtered by Role (Admin has NO Persona; SPV has NO API Keys) */}
+      {/* Tabs Navigation */}
       <div className="flex items-center gap-2 border-b border-[#f0e9e1] pb-2 overflow-x-auto scrollbar-none">
         
         {/* Admin Global Config Tab (ONLY visible to Super Admin / Admin) */}
@@ -241,8 +336,8 @@ export default function SettingsPage() {
           </button>
         )}
 
-        {/* SPV Persona Tab (ONLY visible to Supervisor / SPV) */}
-        {role === "spv" && (
+        {/* Persona AI Tab (Visible to SPV and Owner) */}
+        {(role === "spv" || role === "owner") && (
           <button
             onClick={() => setActiveTab("ai-spv")}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold border-none cursor-pointer transition-all whitespace-nowrap ${
@@ -252,7 +347,7 @@ export default function SettingsPage() {
             }`}
           >
             <SparklesIcon className="w-4 h-4" />
-            <span>Persona & Script AI (SPV)</span>
+            <span>Persona & Script AI</span>
           </button>
         )}
 
@@ -326,6 +421,15 @@ export default function SettingsPage() {
                 >
                   <ZapIcon className="w-3.5 h-3.5" />
                   <span>{isTestingConnection ? "Mengetes..." : "Tes Koneksi Endpoint"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAdminAi}
+                  className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[12px] font-bold cursor-pointer flex items-center gap-1.5 transition-all shadow-xs border-none"
+                >
+                  <CheckCircleIcon className="w-3.5 h-3.5" />
+                  <span>Simpan Kredensial Ini</span>
                 </button>
               </div>
             </div>
@@ -444,15 +548,26 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-[12.5px] font-bold text-[#0c1754]">Aktifkan Fallback</span>
-                <input
-                  type="checkbox"
-                  checked={adminAiState.enableFallback}
-                  onChange={(e) => setAdminAiState({ ...adminAiState, enableFallback: e.target.checked })}
-                  className="w-4 h-4 accent-[#2545ff]"
-                />
-              </label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-[12.5px] font-bold text-[#0c1754]">Aktifkan Fallback</span>
+                  <input
+                    type="checkbox"
+                    checked={adminAiState.enableFallback}
+                    onChange={(e) => setAdminAiState({ ...adminAiState, enableFallback: e.target.checked })}
+                    className="w-4 h-4 accent-[#2545ff]"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAdminAi}
+                  className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-300 text-[11.5px] font-bold cursor-pointer flex items-center gap-1 transition-all"
+                >
+                  <CheckCircleIcon className="w-3.5 h-3.5" />
+                  <span>Simpan</span>
+                </button>
+              </div>
             </div>
 
             {adminAiState.enableFallback && (
@@ -642,31 +757,50 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button type="submit" className="btn-primary !py-3 !px-8 text-[14px] font-bold shadow-md">
-              Simpan Seluruh Konfigurasi AI Global
+          {/* Sticky Bottom Save Bar */}
+          <div className="sticky bottom-4 z-20 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-emerald-200 shadow-xl animate-scale-pop">
+            <div className="flex items-center gap-2.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+              <div>
+                <span className="text-[13.5px] font-extrabold text-[#0c1754] block">
+                  Simpan Seluruh Konfigurasi AI Global
+                </span>
+                <span className="text-[12px] text-[#64748b]">
+                  Kredensial API Key & model langsung aktif & tersimpan permanen di sistem.
+                </span>
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-7 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white text-[13.5px] font-black rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all border-none"
+            >
+              <CheckCircleIcon className="w-4.5 h-4.5" />
+              <span>Simpan Seluruh Konfigurasi AI Global</span>
             </button>
           </div>
 
         </form>
       )}
 
-      {/* TAB 2: AI PERSONA & SCRIPT PROMPTS (SUPERVISOR / SPV ROLE ONLY) */}
-      {activeTab === "ai-spv" && role === "spv" && (
+      {/* TAB 2: AI PERSONA & SCRIPT PROMPTS (SUPERVISOR & OWNER) */}
+      {activeTab === "ai-spv" && (role === "spv" || role === "owner") && (
         <div className="grid lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)]">
             <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-5">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#2545ff]">
-                  Supervisor / Operasional Control
+                  Supervisor & Owner Operasional Control
                 </span>
                 <h3 className="text-[17px] font-extrabold text-[#0c1754]">
                   Persona, Gaya Bahasa & Script Prompts AI
                 </h3>
               </div>
-              <span className="text-[11px] font-extrabold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
-                Kewenangan Khusus SPV
-              </span>
+              <Link
+                href="/dashboard/persona-ai"
+                className="text-[11.5px] font-extrabold bg-purple-100 text-purple-700 px-3 py-1 rounded-full border border-purple-200 hover:bg-purple-200 transition-all"
+              >
+                Buka Layar Penuh Persona →
+              </Link>
             </div>
 
             <form onSubmit={handleSaveSpvPersona} className="flex flex-col gap-4 text-[13px]">

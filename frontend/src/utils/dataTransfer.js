@@ -1,10 +1,11 @@
 /**
- * Klozer Data Transfer Utility — Native Excel (.xlsx) Engine
+ * Klozer Data Transfer Utility — Native Excel (.xlsx / .csv) Engine
  * Powered by SheetJS (xlsx) for seamless spreadsheet templates, batch importing, and one-click exporting.
+ * Resilient against varied Indonesian column headers, currency formats, and missing optional fields.
  */
 import * as XLSX from "xlsx";
 
-// ==================== EXCEL TEMPLATES DEFINITION ====================
+// ==================== EXCEL TEMPLATES & SYNONYMS DEFINITION ====================
 export const TEMPLATES = {
   products: {
     filename: "template_katalog_produk_klozer.xlsx",
@@ -25,14 +26,72 @@ export const TEMPLATES = {
       ["GPK-010", "Es Lemon Tea Soda", "Minuman", 10000, 4000, 120, 20, "Original Lemon, Mint Fresh"],
     ],
     columns: [
-      { key: "sku", label: "SKU", required: true, width: 14 },
-      { key: "name", label: "Nama Produk", required: true, width: 32 },
-      { key: "category", label: "Kategori", required: false, default: "Umum", width: 20 },
-      { key: "price", label: "Harga Jual (Rp)", required: true, type: "number", width: 18 },
-      { key: "hpp", label: "HPP Modal (Rp)", required: false, type: "number", default: 0, width: 16 },
-      { key: "stock", label: "Stok Awal", required: true, type: "number", width: 12 },
-      { key: "lowStock", label: "Batas Min. Stok", required: false, type: "number", default: 5, width: 16 },
-      { key: "variants", label: "Variasi (Dipisah Koma)", required: false, default: "Standard", width: 28 },
+      {
+        key: "sku",
+        label: "SKU",
+        required: false,
+        width: 14,
+        synonyms: ["sku", "kode", "kodemenu", "kodeproduk", "barcode", "itemcode", "id", "kodepenjualan"],
+      },
+      {
+        key: "name",
+        label: "Nama Produk",
+        required: true,
+        width: 32,
+        synonyms: ["namaproduk", "name", "nama", "namamenu", "namabarang", "namaitem", "menu", "productname", "itemname", "judul", "namamakanan"],
+      },
+      {
+        key: "category",
+        label: "Kategori",
+        required: false,
+        default: "Umum",
+        width: 20,
+        synonyms: ["kategori", "category", "kategoriproduk", "golongan", "jenis", "tipe", "label", "group", "kelompok"],
+      },
+      {
+        key: "price",
+        label: "Harga Jual (Rp)",
+        required: true,
+        type: "number",
+        default: 0,
+        width: 18,
+        synonyms: ["hargajual", "harga", "price", "hargajualrp", "sellingprice", "tarif", "rp", "hargasatuan", "hargakonsumen"],
+      },
+      {
+        key: "hpp",
+        label: "HPP Modal (Rp)",
+        required: false,
+        type: "number",
+        default: 0,
+        width: 16,
+        synonyms: ["hpp", "hppmodal", "modal", "cost", "cogs", "hargamodal", "hargabeli", "biayaproduksi", "modalhpp", "hppmodalrp"],
+      },
+      {
+        key: "stock",
+        label: "Stok Awal",
+        required: false,
+        type: "number",
+        default: 10,
+        width: 12,
+        synonyms: ["stokawal", "stock", "stok", "qty", "quantity", "jumlah", "stokfisik", "saldoawal", "stoksaatini"],
+      },
+      {
+        key: "lowStock",
+        label: "Batas Min. Stok",
+        required: false,
+        type: "number",
+        default: 5,
+        width: 16,
+        synonyms: ["batasminstok", "minstok", "minimumstok", "stokminimum", "lowstock", "safetystock", "warningstok", "minstokawal"],
+      },
+      {
+        key: "variants",
+        label: "Variasi (Dipisah Koma)",
+        required: false,
+        default: "Standard",
+        width: 28,
+        synonyms: ["variasi", "varian", "variants", "variasidipisahkoma", "options", "level", "ukuran", "warna", "size", "pilihan"],
+      },
     ],
   },
   contacts: {
@@ -48,12 +107,53 @@ export const TEMPLATES = {
       ["Rina Anggraini", "+62 878-5566-7788", "rina@gmail.com", "Bandung", "Cold Lead", 0],
     ],
     columns: [
-      { key: "name", label: "Nama Lengkap", required: true, width: 24 },
-      { key: "phone", label: "Nomor WhatsApp", required: true, width: 22 },
-      { key: "email", label: "Email", required: false, default: "-", width: 25 },
-      { key: "city", label: "Kota / Alamat", required: false, default: "Indonesia", width: 20 },
-      { key: "category", label: "Label Kategori", required: false, default: "Lead Baru", width: 18 },
-      { key: "totalSpent", label: "Total Belanja (Rp)", required: false, type: "number", default: 0, width: 20 },
+      {
+        key: "name",
+        label: "Nama Lengkap",
+        required: true,
+        width: 24,
+        synonyms: ["namalengkap", "name", "nama", "namapelanggan", "customer", "pelanggan", "contact", "kontak", "namauser"],
+      },
+      {
+        key: "phone",
+        label: "Nomor WhatsApp",
+        required: true,
+        width: 22,
+        synonyms: ["nomorwhatsapp", "phone", "whatsapp", "wa", "nowa", "nomorwa", "telepon", "notelp", "nohp", "handphone", "hp", "telp", "mobile"],
+      },
+      {
+        key: "email",
+        label: "Email",
+        required: false,
+        default: "-",
+        width: 25,
+        synonyms: ["email", "surel", "e-mail", "mail", "alamatemail"],
+      },
+      {
+        key: "city",
+        label: "Kota / Alamat",
+        required: false,
+        default: "Indonesia",
+        width: 20,
+        synonyms: ["kota", "alamat", "kotaalamat", "kabupaten", "address", "domisili", "provinsi", "lokasi"],
+      },
+      {
+        key: "category",
+        label: "Label Kategori",
+        required: false,
+        default: "Lead Baru",
+        width: 18,
+        synonyms: ["labelkategori", "category", "kategori", "label", "tag", "segmentasi", "status", "tipe", "klasifikasi"],
+      },
+      {
+        key: "totalSpent",
+        label: "Total Belanja (Rp)",
+        required: false,
+        type: "number",
+        default: 0,
+        width: 20,
+        synonyms: ["totalbelanja", "totalspent", "totalbelanjarp", "ltv", "omset", "nominalbelanja", "totaltransaksi", "spend", "belanja"],
+      },
     ],
   },
   stock: {
@@ -63,18 +163,61 @@ export const TEMPLATES = {
     description: "Template Excel resmi untuk memperbarui jumlah stok fisik real-time gudang berdasarkan SKU produk.",
     headers: ["SKU", "Nama Produk", "Stok Fisik Baru", "Catatan Penyesuaian"],
     sampleRows: [
-      ["KLZ-101", "Kemeja Batik Tulis Pria", 50, "Stok opname akhir bulan"],
-      ["KLZ-102", "Daster Premium Rayon", 42, "Restock dari konveksi cabang"],
-      ["KLZ-103", "Serum Brightening Glowing 30ml", 28, "Penyesuaian barang rusak 2 pcs"],
+      ["GPK-001", "Paket Juara 1", 120, "Stok opname gudang harian"],
+      ["GPK-002", "Ayam Geprek Mozzarella Leleh", 65, "Restock dapur utama"],
+      ["GPK-008", "Es Teh Manis Jumbo Segar", 300, "Penyesuaian stok harian"],
     ],
     columns: [
-      { key: "sku", label: "SKU", required: true, width: 15 },
-      { key: "name", label: "Nama Produk", required: false, width: 30 },
-      { key: "newStock", label: "Stok Fisik Baru", required: true, type: "number", width: 18 },
-      { key: "note", label: "Catatan Penyesuaian", required: false, default: "Update Excel", width: 30 },
+      {
+        key: "sku",
+        label: "SKU",
+        required: true,
+        width: 15,
+        synonyms: ["sku", "kode", "kodemenu", "kodeproduk", "barcode", "itemcode", "id"],
+      },
+      {
+        key: "name",
+        label: "Nama Produk",
+        required: false,
+        width: 30,
+        synonyms: ["namaproduk", "name", "nama", "namabarang", "menu", "productname"],
+      },
+      {
+        key: "newStock",
+        label: "Stok Fisik Baru",
+        required: true,
+        type: "number",
+        width: 18,
+        synonyms: ["stokfisikbaru", "newstock", "stok", "stokfisik", "stokbaru", "qty", "jumlah", "qtybaru", "stock"],
+      },
+      {
+        key: "note",
+        label: "Catatan Penyesuaian",
+        required: false,
+        default: "Update Excel",
+        width: 30,
+        synonyms: ["catatanpenyesuaian", "note", "catatan", "keterangan", "alasan", "notes", "keteranganpenyesuaian"],
+      },
     ],
   },
 };
+
+// ==================== HELPER: ROBUST NUMBER / CURRENCY CLEANER ====================
+export function parseCurrencyOrNumber(val, defaultVal = 0) {
+  if (typeof val === "number") return isNaN(val) ? defaultVal : val;
+  if (!val) return defaultVal;
+
+  let str = String(val).trim().toLowerCase();
+  // Strip "rp", "idr", whitespace
+  str = str.replace(/^(rp|idr)\.?\s*/i, "");
+  // Strip trailing dashes (e.g. 25.000,-) or zeroes (e.g. 25000,00)
+  str = str.replace(/(?:[,-]\s*-$|[,.]00$)/, "");
+  // Strip non-digits
+  str = str.replace(/[^0-9]/g, "");
+
+  const num = Number(str);
+  return isNaN(num) ? defaultVal : num;
+}
 
 // ==================== DOWNLOAD EXCEL TEMPLATE ====================
 export const downloadExcelTemplate = (type) => {
@@ -133,7 +276,7 @@ export const parseExcelArrayBuffer = (buffer, type) => {
   const tpl = TEMPLATES[type];
   if (!tpl) throw new Error("Tipe template tidak valid.");
 
-  const wb = XLSX.read(buffer, { type: "array" });
+  const wb = XLSX.read(buffer, { type: "array", raw: false });
   const firstSheetName = wb.SheetNames[0];
   if (!firstSheetName) {
     return { valid: [], errors: [{ rowNumber: 0, raw: "", errors: ["Sheet Excel kosong."] }], total: 0 };
@@ -146,18 +289,72 @@ export const parseExcelArrayBuffer = (buffer, type) => {
     return { valid: [], errors: [{ rowNumber: 0, raw: "", errors: ["File Excel hanya berisi header tanpa baris data."] }], total: 0 };
   }
 
-  const rawHeaders = (rows[0] || []).map((h) =>
-    String(h).toLowerCase().replace(/[^a-z0-9]/g, "")
-  );
+  // 1. Intelligent Header Row Detection (Scans up to first 5 rows to locate real header)
+  let headerRowIdx = 0;
+  let maxMatchedKeywords = 0;
+  const scanLimit = Math.min(rows.length, 5);
 
-  const dataRows = rows.slice(1);
+  for (let r = 0; r < scanLimit; r++) {
+    const candidateRow = rows[r] || [];
+    const cleanCand = candidateRow.map((c) => String(c || "").toLowerCase().replace(/[^a-z0-9]/g, ""));
+    
+    let currentMatches = 0;
+    tpl.columns.forEach((col) => {
+      const patterns = [col.key, col.label, ...(col.synonyms || [])].map((s) => s.toLowerCase().replace(/[^a-z0-9]/g, ""));
+      const isPresent = cleanCand.some((cell) => cell && patterns.some((pat) => cell === pat || cell.includes(pat) || pat.includes(cell)));
+      if (isPresent) currentMatches++;
+    });
+
+    if (currentMatches > maxMatchedKeywords) {
+      maxMatchedKeywords = currentMatches;
+      headerRowIdx = r;
+    }
+  }
+
+  const headerRow = rows[headerRowIdx] || [];
+  const cleanHeaders = headerRow.map((h) => String(h || "").toLowerCase().replace(/[^a-z0-9]/g, ""));
+
+  // 2. Map Columns to Header Indices using Synonyms & Exact Match Priority
+  const headerMap = {};
+  tpl.columns.forEach((col) => {
+    const cleanKey = col.key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanLabel = col.label.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const synonyms = (col.synonyms || []).map((s) => s.toLowerCase().replace(/[^a-z0-9]/g, ""));
+    const allPatterns = [cleanKey, cleanLabel, ...synonyms];
+
+    let bestIdx = -1;
+    let bestScore = 0;
+
+    cleanHeaders.forEach((h, colIdx) => {
+      if (!h) return; // Skip empty header cells completely!
+      allPatterns.forEach((pattern) => {
+        if (!pattern) return;
+        if (h === pattern) {
+          if (bestScore < 3) {
+            bestScore = 3;
+            bestIdx = colIdx;
+          }
+        } else if (h.includes(pattern) || pattern.includes(h)) {
+          if (bestScore < 2) {
+            bestScore = 2;
+            bestIdx = colIdx;
+          }
+        }
+      });
+    });
+
+    headerMap[col.key] = bestIdx;
+  });
+
+  // 3. Process Data Rows
+  const dataRows = rows.slice(headerRowIdx + 1);
   const validRows = [];
   const errorRows = [];
 
   dataRows.forEach((rowValues, idx) => {
-    const rowNumber = idx + 2;
+    const rowNumber = headerRowIdx + idx + 2;
 
-    // Check if row is entirely empty
+    // Skip entirely empty rows
     if (!rowValues || rowValues.every((v) => v === "" || v === null || v === undefined)) {
       return;
     }
@@ -167,16 +364,16 @@ export const parseExcelArrayBuffer = (buffer, type) => {
     const errorDetails = [];
 
     tpl.columns.forEach((col, colIdx) => {
-      // Find matching header index by key or label
-      let foundIdx = rawHeaders.findIndex((h) =>
-        h.includes(col.key.toLowerCase()) ||
-        col.label.toLowerCase().replace(/[^a-z0-9]/g, "").includes(h) ||
-        (h && col.key.toLowerCase().includes(h))
-      );
+      const mappedIdx = headerMap[col.key];
+      let val = mappedIdx !== -1 && mappedIdx !== undefined ? rowValues[mappedIdx] : rowValues[colIdx];
 
-      let val = foundIdx !== -1 ? rowValues[foundIdx] : rowValues[colIdx];
       if (val === undefined || val === null || val === "") {
         val = col.default !== undefined ? col.default : "";
+      }
+
+      // Special fallback for missing SKU in products: Auto-generate SKU
+      if (type === "products" && col.key === "sku" && (!val || String(val).trim() === "")) {
+        val = `GPK-${Math.floor(100 + Math.random() * 900)}`;
       }
 
       // Check required fields
@@ -185,20 +382,9 @@ export const parseExcelArrayBuffer = (buffer, type) => {
         errorDetails.push(`Kolom '${col.label}' wajib diisi.`);
       }
 
-      // Type checking: number
+      // Type checking & cleaning: number
       if (col.type === "number") {
-        const cleanNum = String(val).replace(/[^0-9.-]/g, "");
-        const numVal = Number(cleanNum);
-        if (isNaN(numVal)) {
-          if (col.required) {
-            hasError = true;
-            errorDetails.push(`Kolom '${col.label}' harus berupa angka.`);
-          } else {
-            val = col.default || 0;
-          }
-        } else {
-          val = numVal;
-        }
+        val = parseCurrencyOrNumber(val, col.default || 0);
       }
 
       // Array parsing: variants
@@ -224,5 +410,6 @@ export const parseExcelArrayBuffer = (buffer, type) => {
     valid: validRows,
     errors: errorRows,
     total: dataRows.length,
+    headerRowIndex: headerRowIdx + 1,
   };
 };

@@ -15,7 +15,17 @@ import {
 } from "@/components/icons";
 
 export default function DashboardPage() {
-  const { role, institutions, orders, products, leads, teamMembers } = useDashboard();
+  const {
+    role,
+    institutions,
+    orders,
+    products,
+    leads,
+    teamMembers,
+    activeSubscription,
+    currentUser,
+    activeInstitution,
+  } = useDashboard();
   const [activeRange, setActiveRange] = useState("7H");
 
   const paidOrders = orders.filter((o) => o.status === "paid" || o.status === "processing" || o.status === "shipped");
@@ -145,6 +155,37 @@ export default function DashboardPage() {
               + Buat Pesanan Manual
             </Link>
           </div>
+        </div>
+
+        {/* SPV Active Subscription Banner */}
+        <div className="bg-gradient-to-r from-[#0c1754] via-[#1a2d8a] to-[#2545ff] p-4 sm:p-5 rounded-2xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 flex-shrink-0">
+              <CrownIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-extrabold text-[15px]">{activeSubscription?.plan || "Pro Growth"}</span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  Aktif
+                </span>
+                <span className="text-[11.5px] text-white/70 font-mono">
+                  • {currentUser?.institutionName || activeInstitution?.name || "Geprek Juara"}
+                </span>
+              </div>
+              <p className="text-[12.5px] text-white/80 mt-0.5">
+                Masa aktif tersisa: <strong className="text-amber-300 font-mono">{activeSubscription?.daysLeft || 350} Hari</strong> (s/d {activeSubscription?.expiryDate || "28 Agu 2027"}) • Alokasi: <strong>{activeSubscription?.csSeatsUsed || 3}/{activeSubscription?.csSeats || 5} Kursi CS</strong>
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/dashboard/subscription"
+            className="px-4 py-2 rounded-xl bg-white text-[#0c1754] hover:bg-white/90 font-extrabold text-[12.5px] transition-all no-underline shadow-sm self-start sm:self-auto flex items-center gap-1.5"
+          >
+            <span>Perpanjang Paket Toko</span>
+            <span>→</span>
+          </Link>
         </div>
 
         {/* SPV Operational Metrics */}
@@ -355,6 +396,37 @@ export default function DashboardPage() {
             + Buat Pesanan Manual
           </Link>
         </div>
+      </div>
+
+      {/* Owner Active Subscription Banner */}
+      <div className="bg-gradient-to-r from-[#0c1754] via-[#1a2d8a] to-[#2545ff] p-4 sm:p-5 rounded-2xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 flex-shrink-0">
+            <CrownIcon className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-extrabold text-[15px]">{activeSubscription?.plan || "Pro Growth"}</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                Aktif
+              </span>
+              <span className="text-[11.5px] text-white/70 font-mono">
+                • {currentUser?.institutionName || activeInstitution?.name || "Geprek Juara"}
+              </span>
+            </div>
+            <p className="text-[12.5px] text-white/80 mt-0.5">
+              Masa aktif tersisa: <strong className="text-amber-300 font-mono">{activeSubscription?.daysLeft || 350} Hari</strong> (s/d {activeSubscription?.expiryDate || "28 Agu 2027"}) • Alokasi: <strong>{activeSubscription?.csSeatsUsed || 3}/{activeSubscription?.csSeats || 5} Kursi CS</strong>
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/dashboard/subscription"
+          className="px-4 py-2 rounded-xl bg-white text-[#0c1754] hover:bg-white/90 font-extrabold text-[12.5px] transition-all no-underline shadow-sm self-start sm:self-auto flex items-center gap-1.5"
+        >
+          <span>Perpanjang Paket Toko</span>
+          <span>→</span>
+        </Link>
       </div>
 
       {/* 4 Metric Cards */}

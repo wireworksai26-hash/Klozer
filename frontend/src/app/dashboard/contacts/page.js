@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import {
   UsersIcon,
@@ -39,6 +39,19 @@ export default function SupervisorContactsPage() {
       : []
   );
 
+  // Sync contacts from localStorage on client mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("klozer_contacts");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setContacts(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
   const filtered = contacts.filter((c) => {
     const matchSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,11 +66,14 @@ export default function SupervisorContactsPage() {
   const repeatCount = contacts.filter((c) => c.totalOrders > 1).length;
   const repeatRate = contacts.length > 0 ? Math.round((repeatCount / contacts.length) * 100) : 0;
 
+  const [cleanFeedback, setCleanFeedback] = useState("");
+
   const handleCleanData = () => {
     setIsCleaningData(true);
     setTimeout(() => {
       setIsCleaningData(false);
-      alert("AI Intelligence Contact Cleaner: Format nomor WhatsApp telah dinormalisasi ke standar internasional (+62).");
+      setCleanFeedback("AI Contact Cleaner: Format nomor WhatsApp dinormalisasi ke standar internasional (+62)!");
+      setTimeout(() => setCleanFeedback(""), 4000);
     }, 900);
   };
 
@@ -72,7 +88,11 @@ export default function SupervisorContactsPage() {
       tags: [r.category || "Lead Baru"],
       lastActive: "Hari ini",
     }));
-    setContacts((prev) => (mode === "replace" ? formatted : [...formatted, ...prev]));
+    const nextContacts = mode === "replace" ? formatted : [...formatted, ...contacts];
+    setContacts(nextContacts);
+    try {
+      localStorage.setItem("klozer_contacts", JSON.stringify(nextContacts));
+    } catch {}
   };
 
   return (
@@ -95,6 +115,13 @@ export default function SupervisorContactsPage() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {cleanFeedback && (
+            <div className="px-3.5 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-2 animate-scale-pop">
+              <SparklesIcon className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{cleanFeedback}</span>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleCleanData}
