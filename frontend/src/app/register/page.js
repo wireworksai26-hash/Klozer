@@ -14,6 +14,7 @@ import {
   HeadphonesIcon,
   CheckIcon,
 } from "@/components/icons";
+import { API_BASE_URL } from "@/utils/apiConfig";
 
 export default function RegisterPage() {
   const [institutionName, setInstitutionName] = useState("");
@@ -65,7 +66,7 @@ export default function RegisterPage() {
     try {
       let data = null;
       try {
-        const res = await fetch("http://localhost:5000/api/v1/auth/register", {
+        const res = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

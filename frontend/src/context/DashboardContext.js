@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { API_BASE_URL } from "@/utils/apiConfig";
 
 const DashboardContext = createContext();
 
@@ -707,7 +708,7 @@ export function DashboardProvider({ children }) {
         try {
           const token = localStorage.getItem("klozer_token");
           if (token) {
-            const res = await fetch("http://localhost:5000/api/v1/institutions", {
+            const res = await fetch(`${API_BASE_URL}/institutions`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
@@ -824,7 +825,7 @@ export function DashboardProvider({ children }) {
 
   const loginUser = async (email, password) => {
     try {
-      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -860,7 +861,7 @@ export function DashboardProvider({ children }) {
 
   const registerUser = async (regData) => {
     try {
-      const res = await fetch("http://localhost:5000/api/v1/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(regData),
@@ -924,7 +925,7 @@ export function DashboardProvider({ children }) {
       try {
         const token = localStorage.getItem("klozer_token");
         if (token) {
-          await fetch("http://localhost:5000/api/v1/institutions", {
+          await fetch(`${API_BASE_URL}/institutions`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

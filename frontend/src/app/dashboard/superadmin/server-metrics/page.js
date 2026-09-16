@@ -10,6 +10,7 @@ import {
   CpuIcon,
   RefreshCwIcon,
 } from "@/components/icons";
+import { API_BASE_URL } from "@/utils/apiConfig";
 
 export default function SuperadminServerMetricsPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString("id-ID"));
@@ -105,7 +106,7 @@ export default function SuperadminServerMetricsPage() {
   const executeScan = async () => {
     setIsScanning(true);
     try {
-      const res = await fetch("http://localhost:5000/api/v1/system/metrics");
+      const res = await fetch(`${API_BASE_URL}/system/metrics`);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {

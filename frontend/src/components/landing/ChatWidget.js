@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { SparklesIcon, KlozerIcon, XIcon } from "@/components/icons";
+import { API_BASE_URL } from "@/utils/apiConfig";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function ChatWidget() {
     try {
       let reply = "";
       try {
-        const res = await fetch("http://localhost:5000/api/v1/ai/ask", {
+        const res = await fetch(`${API_BASE_URL}/ai/ask`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: text }),

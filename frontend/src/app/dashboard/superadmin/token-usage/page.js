@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { API_BASE_URL } from "@/utils/apiConfig";
 import {
   CpuIcon,
   CrownIcon,
@@ -118,7 +119,7 @@ export default function SuperadminTokenUsagePage() {
   const fetchTokenUsage = async (range = timeRange) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/ai/token-usage?range=${range}`);
+      const res = await fetch(`${API_BASE_URL}/ai/token-usage?range=${range}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {

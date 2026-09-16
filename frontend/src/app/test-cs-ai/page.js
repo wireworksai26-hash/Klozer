@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useDashboard, DashboardProvider } from "@/context/DashboardContext";
+import { API_BASE_URL } from "@/utils/apiConfig";
 import {
   SparklesIcon,
   BotIcon,
@@ -264,7 +265,7 @@ function TestCsAiContent() {
   // Fetch real token balance from backend
   const fetchTenantTokenBalance = async (instId = selectedInstId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/ai/token-balance?tenantId=${instId}`);
+      const res = await fetch(`${API_BASE_URL}/ai/token-balance?tenantId=${instId}`);
       if (res.ok) {
         const json = await res.json();
         if (json.balance) {
@@ -523,7 +524,7 @@ function TestCsAiContent() {
       });
 
       // Fire async log to backend token tracking engine (deducts token quota on backend too)
-      fetch("http://localhost:5000/api/v1/ai/token-usage/log", {
+      fetch(`${API_BASE_URL}/ai/token-usage/log`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
