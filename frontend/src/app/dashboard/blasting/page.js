@@ -26,23 +26,7 @@ export default function SupervisorBlastingPage() {
     `Halo kak {{nama}}, ada promo spesial dari ${cleanInstName}! Dapatkan penawaran menarik hari ini dengan membalas pesan ini.`
   );
 
-  const [campaigns, setCampaigns] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "BST-01",
-            title: "Flash Promo Gajian Weekend 25%",
-            targetSegment: "Pelanggan VIP & Repeat",
-            targetCount: 1250,
-            sentCount: 1250,
-            readCount: 1080,
-            replyCount: 310,
-            status: "completed",
-            date: "28 Agu 2026, 10:00 WIB",
-          },
-        ]
-      : []
-  );
+  const [campaigns, setCampaigns] = useState([]);
 
   const totalSent = campaigns.reduce((acc, c) => acc + c.sentCount, 0);
   const totalReplies = campaigns.reduce((acc, c) => acc + c.replyCount, 0);

@@ -51,53 +51,42 @@ export default function IndustryCarousel() {
   const sectionRef = useRef(null);
   const trackRef = useRef(null);
 
+  const scrollContainerRef = useRef(null);
+
   useEffect(() => {
-    if (!sectionRef.current || !trackRef.current || typeof window === "undefined") return;
+    if (!sectionRef.current || typeof window === "undefined") return;
 
-    const mm = gsap.matchMedia();
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".industry-card-item",
+        { y: 30, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.7,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+          },
+        }
+      );
+    }, sectionRef);
 
-    mm.add("(min-width: 768px)", () => {
-      const track = trackRef.current;
-      const getScrollAmount = () => {
-        const trackWidth = track.scrollWidth;
-        return -(trackWidth - window.innerWidth + 80);
-      };
-
-      gsap.to(track, {
-        x: getScrollAmount,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top top",
-          end: () => `+=${Math.abs(getScrollAmount()) + 600}`,
-          pin: true,
-          scrub: 1.2,
-          invalidateOnRefresh: true,
-        },
-      });
-    });
-
-    return () => mm.revert();
+    return () => ctx.revert();
   }, []);
 
   const handleManualScroll = (direction) => {
-    if (!trackRef.current) return;
-    const amount = direction === "left" ? 320 : -320;
-    if (window.innerWidth < 768) {
-      trackRef.current.scrollBy({ left: amount, behavior: "smooth" });
-    } else {
-      gsap.to(trackRef.current, {
-        x: `+=${amount}`,
-        duration: 0.5,
-        ease: "power2.out",
-      });
-    }
+    if (!scrollContainerRef.current) return;
+    const amount = direction === "left" ? -360 : 360;
+    scrollContainerRef.current.scrollBy({ left: amount, behavior: "smooth" });
   };
 
   return (
     <section
       ref={sectionRef}
-      className="min-h-screen bg-[#f9f8f6] border-b border-[#f0e9e1] flex flex-col justify-center py-12 md:py-16 overflow-hidden relative"
+      className="py-14 sm:py-18 md:py-24 bg-[#f9f8f6] border-b border-[#f0e9e1] flex flex-col justify-center overflow-hidden relative"
     >
       {/* Top Header Bar with Navigation Arrows */}
       <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16 mb-6 md:mb-8 flex items-end justify-between">
@@ -137,15 +126,18 @@ export default function IndustryCarousel() {
       </div>
 
       {/* Horizontal Full-Screen Floating Track */}
-      <div className="w-full px-4 sm:px-6 md:pl-12 overflow-x-auto md:overflow-visible scrollbar-none snap-x">
+      <div
+        ref={scrollContainerRef}
+        className="w-full px-4 sm:px-6 md:px-12 overflow-x-auto scrollbar-none snap-x scroll-smooth"
+      >
         <div
           ref={trackRef}
-          className="flex gap-4 sm:gap-6 w-max py-2 sm:py-4 will-change-transform"
+          className="flex gap-4 sm:gap-6 w-max py-2 sm:py-4"
         >
           {industries.map((ind, idx) => (
             <div
               key={idx}
-              className="w-[280px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[480px] rounded-[22px] sm:rounded-[24px] bg-white border border-[#f0e9e1] p-3.5 sm:p-4 flex flex-col justify-between shadow-[0_4px_24px_rgba(12,23,84,0.06)] hover:shadow-[0_12px_36px_rgba(12,23,84,0.12)] transition-all duration-300 group cursor-pointer flex-shrink-0 snap-start"
+              className="industry-card-item w-[280px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[480px] rounded-[22px] sm:rounded-[24px] bg-white border border-[#f0e9e1] p-3.5 sm:p-4 flex flex-col justify-between shadow-[0_4px_24px_rgba(12,23,84,0.06)] hover:shadow-[0_12px_36px_rgba(12,23,84,0.12)] transition-all duration-300 group cursor-pointer flex-shrink-0 snap-start"
             >
               {/* Photo Area */}
               <div className="w-full h-[210px] sm:h-[230px] rounded-[16px] sm:rounded-[18px] overflow-hidden relative border border-[#f0e9e1]">

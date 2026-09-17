@@ -18,23 +18,7 @@ export default function SupervisorEscalationPage() {
 
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const [escalations, setEscalations] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "ESC-101",
-            customerName: "Budi Pratama",
-            phone: "+62 812-9988-1122",
-            reason: "Permintaan Khusus: Pembelian Grosir 100 Pcs Seragam Kantor",
-            summary: "Pelanggan meminta surat penawaran resmi (invoice proforma) dan diskon khusus instansi BUMN.",
-            urgency: "high",
-            waitTime: "4 menit lalu",
-            status: "pending",
-            assignedCs: "Belum Ditugaskan",
-          },
-        ]
-      : []
-  );
+  const [escalations, setEscalations] = useState([]);
 
   const filtered = escalations.filter((item) => {
     if (activeFilter === "all") return true;

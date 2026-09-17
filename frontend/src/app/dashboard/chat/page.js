@@ -12,18 +12,9 @@ export default function ChatPage() {
   const { products, addOrder, role, currentUser, activeInstitution } = useDashboard();
 
   const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
-  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
-
-  const [contacts, setContacts] = useState(
-    isDefaultDemo
-      ? [
-          { id: 1, name: "Andi Pratama", phone: "+62 812-3456-7890", lastMsg: "Pembayaran terverifikasi...", time: "10:23", unread: 0, status: "closing", avatar: "AP", city: "Bandung, Jawa Barat" },
-        ]
-      : []
-  );
-
-  const [selectedContact, setSelectedContact] = useState(isDefaultDemo ? contacts[0] : null);
-  const [messages, setMessages] = useState(isDefaultDemo ? initialChatMessages : []);
+  const [contacts, setContacts] = useState([]);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [showContactList, setShowContactList] = useState(true);
   const [showQrisDrawer, setShowQrisDrawer] = useState(false);

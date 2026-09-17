@@ -67,14 +67,27 @@ export async function sendMessage(req, res, next) {
   }
 }
 
+import { deductTokens } from "./tokenUsageController.js";
+
 /**
  * AI CS Copilot & Sandbox Assistant
  * POST /api/v1/ai/chat
  */
 export async function aiChatSimulation(req, res, next) {
   try {
-    const institutionId = req.tenantId || 1;
-    const { message, customerName, customerPhone } = req.body;
+    const institutionId = req.tenantId || req.body.institutionId || 1;
+    const {
+      message,
+      customerName,
+      customerPhone,
+      history,
+      products,
+      promos,
+      institutionName,
+      sector,
+      address,
+      hours,
+    } = req.body;
 
     if (!message) {
       return res.status(400).json({ success: false, message: "Pesan tidak boleh kosong." });
@@ -85,9 +98,31 @@ export async function aiChatSimulation(req, res, next) {
       customerName: customerName || "Pelanggan",
       customerPhone: customerPhone || "",
       messageText: message,
+      history: history || [],
+      customProducts: products || null,
+      promos: promos || null,
+      institutionName: institutionName || null,
+      sector: sector || null,
+      address: address || null,
+      hours: hours || null,
     });
 
-    res.json(aiResult);
+    // Real Server-Side Token Deduction
+    const promptTok = Math.floor(message.length / 2.8) + 52;
+    const compTok = Math.floor((aiResult?.replyText || "").length / 3.2) + 38;
+    const totalTok = promptTok + compTok;
+
+    const tokenDeduction = deductTokens(institutionName || institutionId, totalTok);
+
+    res.json({
+      ...aiResult,
+      tokenDeduction: {
+        ...tokenDeduction,
+        promptTokens: promptTok,
+        completionTokens: compTok,
+        totalTokens: totalTok,
+      },
+    });
   } catch (err) {
     next(err);
   }

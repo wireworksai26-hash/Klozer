@@ -11,10 +11,6 @@ import {
 } from "@/components/icons";
 
 export default function SupervisorBookingsPage() {
-  const { currentUser, activeInstitution, teamMembers } = useDashboard();
-  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
-  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -22,24 +18,7 @@ export default function SupervisorBookingsPage() {
   const [bookingDate, setBookingDate] = useState("Hari ini");
   const [bookingTime, setBookingTime] = useState("14:00 WIB");
   const [picStaff, setPicStaff] = useState("CS 1");
-
-  const [bookings, setBookings] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "BKG-201",
-            customer: "Nadia Maharani",
-            phone: "+62 813-8899-1122",
-            service: "Fitting Baju Pengantin & Custom Jahit",
-            date: "30 Agu 2026",
-            time: "10:30 WIB",
-            pic: "Sarah Amalia",
-            status: "confirmed",
-            waReminder: "Terkirim",
-          },
-        ]
-      : []
-  );
+  const [bookings, setBookings] = useState([]);
 
   const handleAddSubmit = (e) => {
     e.preventDefault();

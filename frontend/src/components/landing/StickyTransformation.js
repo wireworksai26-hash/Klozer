@@ -11,14 +11,14 @@ if (typeof window !== "undefined") {
 const stages = [
   {
     id: "masalah",
-    navLabel: "1. Permasalahan",
+    navLabel: "1. Masalah Manual",
     badge: "Kondisi Manual (Sebelum)",
-    title: "Chat Menumpuk & Penipuan Struk Palsu",
-    desc: "Ketika obrolan WhatsApp bisnis membludak, staf CS kewalahan membalas satu per satu. Pembeli kabur karena respon lambat, dan bisnis rentan tertipu bukti transfer editan.",
+    title: "Chat Menumpuk & Struk Palsu",
+    desc: "Balas chat manual membuat pembeli kabur karena respon lambat, dan bisnis rentan merugi akibat bukti transfer editan.",
     bulletPoints: [
-      "Pelanggan menunggu berjam-jam hanya untuk tanya total harga dan rekening",
-      "CS sering salah catat varian produk atau alamat kirim pembeli",
-      "Rentan tertipu struk palsu karena tidak sempat cek mutasi bank manual",
+      "Pembeli menunggu lama untuk tanya harga dan stok",
+      "CS sering salah catat pesanan atau alamat kirim",
+      "Rentan penipuan bukti transfer palsu tanpa mutasi",
     ],
     cardTag: "Kondisi Manual (Sebelum)",
     cardContent: (
@@ -28,25 +28,25 @@ const stages = [
             <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
             <span>48 Chat Belum Dibalas (&gt;2 Jam)</span>
           </div>
-          <div>Banyak calon pembeli yang beralih belanja ke toko kompetitor karena lambat respon.</div>
+          <div>Calon pembeli beralih ke toko lain akibat lambat respon.</div>
         </div>
         <div className="bg-[#f9f8f6] p-3 rounded-xl border border-[#f0e9e1] text-[11.5px] sm:text-[12px] text-[#64748b] flex items-center justify-between">
           <span className="font-bold text-red-600">Terdeteksi:</span>
-          <span>Bukti transfer tidak tertera di mutasi bank.</span>
+          <span>Struk transfer tidak cocok dengan mutasi bank.</span>
         </div>
       </div>
     ),
   },
   {
     id: "solusi",
-    navLabel: "2. Solusi Cerdas",
+    navLabel: "2. Solusi AI Klozer",
     badge: "Sistem Otomatis Klozer",
-    title: "Pendekatan Terpusat & QRIS Otomatis",
-    desc: "Klozer mengintegrasikan seluruh alur transaksi: mulai dari tangkap pesanan, terbitkan QRIS instan di chat, transkripsi voice note, hingga cek mutasi bank otomatis tanpa jeda.",
+    title: "Otomatisasi Chat & QRIS Instan",
+    desc: "Klozer menangani alur dari rekomendasi produk, terbitkan QRIS instan di chat, hingga verifikasi mutasi bank otomatis.",
     bulletPoints: [
-      "AI menangkap nama barang, varian, dan alamat pengiriman seketika",
-      "Dynamic QRIS langsung muncul di chat, pembeli tinggal scan dan bayar",
-      "Voice Note AI memahami rekaman suara pelanggan bahasa Indonesia",
+      "AI mencatat varian dan alamat pengiriman seketika",
+      "Dynamic QRIS langsung terkirim ke WhatsApp pembeli",
+      "AI Voice Note memahami rekaman audio pelanggan",
     ],
     cardTag: "Sistem Otomatis Klozer",
     cardContent: (
@@ -56,7 +56,7 @@ const stages = [
             <SparklesIcon className="w-4 h-4 text-[#2545ff]" />
             <span>QRIS Rp 312.000 Terbit Otomatis</span>
           </div>
-          <div>Kode QRIS langsung dikirim ke WhatsApp pembeli dengan batas waktu pembayaran 15 menit.</div>
+          <div>Kode QRIS langsung dikirim ke WhatsApp pembeli dengan batas bayar 15 menit.</div>
         </div>
         <div className="bg-[#f9f8f6] p-3 rounded-xl border border-[#f0e9e1] text-[11.5px] sm:text-[12px] flex items-center justify-between">
           <span className="text-[#64748b]">Waktu Respon Chat:</span>
@@ -69,12 +69,12 @@ const stages = [
     id: "hasil",
     navLabel: "3. Hasil Nyata",
     badge: "Pertumbuhan Bisnis",
-    title: "Omzet Naik 2-3x Lipat Tanpa Beban CS",
-    desc: "Toko Anda dapat melayani pesanan 24 jam nonstop bahkan saat tengah malam. Rekonsiliasi keuangan 100% akurat dan laporan omzet iklan Meta Ads terlacak presisi.",
+    title: "Omzet Naik 2-3x Tanpa Beban CS",
+    desc: "Toko melayani transaksi 24 jam nonstop dengan pencatatan mutasi 100% akurat dan rekonsiliasi instan.",
     bulletPoints: [
-      "Closing rate naik rata-rata hingga 82.4%",
-      "Staf CS dapat fokus pada pelayanan VIP dan strategi promosi",
-      "Cashback ongkir multi-kurir 15-25% langsung menambah profit toko",
+      "Closing rate rata-rata meningkat hingga 82.4%",
+      "Staf CS fokus melayani pelanggan VIP",
+      "Cashback ongkir multi-kurir hingga 25% langsung cair",
     ],
     cardTag: "Pertumbuhan Bisnis Nyata",
     cardContent: (
@@ -100,33 +100,12 @@ export default function StickyTransformation() {
   const [activeStage, setActiveStage] = useState(0);
 
   useEffect(() => {
-    if (!sectionRef.current || typeof window === "undefined") return;
+    // Auto-cycle stages every 6 seconds smoothly
+    const timer = setInterval(() => {
+      setActiveStage((prev) => (prev + 1) % stages.length);
+    }, 6000);
 
-    const mm = gsap.matchMedia();
-
-    mm.add("(min-width: 768px)", () => {
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "+=1800",
-        pin: true,
-        scrub: 1,
-        onUpdate: (self) => {
-          const p = self.progress;
-          let idx = 0;
-          if (p < 0.35) {
-            idx = 0;
-          } else if (p < 0.7) {
-            idx = 1;
-          } else {
-            idx = 2;
-          }
-          setActiveStage((prev) => (prev !== idx ? idx : prev));
-        },
-      });
-    });
-
-    return () => mm.revert();
+    return () => clearInterval(timer);
   }, []);
 
   const current = stages[activeStage];
@@ -134,7 +113,7 @@ export default function StickyTransformation() {
   return (
     <section
       ref={sectionRef}
-      className="min-h-screen bg-[#f9f8f6] border-b border-[#f0e9e1] flex flex-col justify-center py-12 md:py-16 relative overflow-hidden"
+      className="py-14 sm:py-18 md:py-24 bg-[#f9f8f6] border-b border-[#f0e9e1] flex flex-col justify-center relative overflow-hidden"
     >
       <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16">
         

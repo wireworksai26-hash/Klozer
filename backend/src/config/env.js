@@ -37,10 +37,11 @@ export const config = {
   },
 
   ai: {
-    provider: process.env.AI_PROVIDER || "gemini",
+    provider: process.env.AI_PROVIDER || "nvidia",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
     geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
     nvidiaKey: process.env.NVIDIA_API_KEY || "",
+    nvidiaModel: process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct",
     openaiKey: process.env.OPENAI_API_KEY || "",
   },
 };

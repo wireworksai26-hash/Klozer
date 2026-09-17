@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate, requireRole } from "../middlewares/authMiddleware.js";
+import { authenticate, requireRole, optionalAuth } from "../middlewares/authMiddleware.js";
 import { tenantContext } from "../middlewares/tenantContext.js";
 
 // Controllers
@@ -28,6 +28,7 @@ router.get("/auth/me", authenticate, authCtrl.getMe);
 // ==================== 2. WEBHOOKS & WHATSAPP WATCHDOG ====================
 router.get("/webhooks/whatsapp", webhookCtrl.verifyWhatsAppWebhook);
 router.post("/webhooks/whatsapp", webhookCtrl.handleWhatsAppInbound);
+router.post("/webhooks/whatsapp/simulate", webhookCtrl.simulateWhatsAppInbound);
 router.post("/payments/webhook", paymentCtrl.paymentWebhookHandler);
 router.get("/whatsapp/status", authenticate, async (req, res) => {
   const instId = req.tenantId || req.user?.institution_id || 1;
@@ -66,7 +67,7 @@ router.put("/leads/:id", authenticate, tenantContext, leadCtrl.updateLead);
 router.post("/ai/ask", chatCtrl.publicAskAi);
 router.get("/chats/:leadId", authenticate, tenantContext, chatCtrl.getChatMessages);
 router.post("/chats/send", authenticate, tenantContext, chatCtrl.sendMessage);
-router.post("/ai/chat", authenticate, tenantContext, chatCtrl.aiChatSimulation);
+router.post("/ai/chat", optionalAuth, chatCtrl.aiChatSimulation);
 
 // ==================== 7. ORDERS & INVOICING ====================
 router.get("/orders", authenticate, tenantContext, orderCtrl.getOrders);

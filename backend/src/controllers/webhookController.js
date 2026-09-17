@@ -1,7 +1,6 @@
 import { config } from "../config/env.js";
-import { memoryStore } from "../config/db.js";
-import { generateAiCsResponse } from "../services/aiBrainService.js";
 import { normalizePhone } from "../utils/helpers.js";
+import { processInboundAiReply } from "../services/whatsappService.js";
 
 /**
  * WhatsApp Meta Cloud API Webhook Verification
@@ -21,7 +20,7 @@ export async function verifyWhatsAppWebhook(req, res) {
 }
 
 /**
- * WhatsApp Inbound Message Ingestion Webhook
+ * WhatsApp Inbound Message Ingestion Webhook (Meta Official Cloud API)
  * POST /api/v1/webhooks/whatsapp
  */
 export async function handleWhatsAppInbound(req, res) {
@@ -29,29 +28,61 @@ export async function handleWhatsAppInbound(req, res) {
     const body = req.body;
     console.log("[WhatsApp Inbound Webhook Received]", JSON.stringify(body).slice(0, 200));
 
-    // Instant 200 OK acknowledgment to Meta
+    // Instant 200 OK acknowledgment to Meta (Prevents webhook timeout retries)
     res.status(200).json({ status: "EVENT_RECEIVED" });
 
-    // Process asynchronous in background
+    // Process asynchronous in background with anti-ban human delay
     if (body.entry && body.entry[0]?.changes && body.entry[0].changes[0]?.value?.messages) {
-      const msg = body.entry[0].changes[0].value.messages[0];
+      const changeVal = body.entry[0].changes[0].value;
+      const msg = changeVal.messages[0];
+      const contact = changeVal.contacts?.[0];
       const fromPhone = normalizePhone(msg.from);
       const textBody = msg.text?.body || "";
+      const customerName = contact?.profile?.name || "Pelanggan";
 
-      // Store in memory chat thread
-      if (!memoryStore.chat_messages) memoryStore.chat_messages = [];
-      memoryStore.chat_messages.push({
-        id: memoryStore.chat_messages.length + 1,
-        institution_id: 1,
-        lead_id: 1,
-        sender_type: "customer",
-        message_type: msg.type || "text",
-        content_text: textBody,
-        is_delivered: 1,
-        created_at: new Date().toISOString(),
+      // Trigger Autonomous AI CS with anti-ban pacing
+      processInboundAiReply({
+        fromPhone,
+        customerName,
+        text: textBody,
+        messageId: msg.id,
+        institutionId: 1, // Default tenant or resolve via recipient phone
+      }).catch((err) => {
+        console.error("[WhatsApp Auto-CS Process Error]", err.message);
       });
     }
   } catch (err) {
     console.error("[WhatsApp Inbound Error]", err.message);
+  }
+}
+
+/**
+ * Simulate Inbound WhatsApp Message (Simulator & Sandbox Testing)
+ * POST /api/v1/webhooks/whatsapp/simulate
+ */
+export async function simulateWhatsAppInbound(req, res, next) {
+  try {
+    const {
+      phone = "+62 812-9876-5432",
+      name = "Calon Pembeli",
+      message = "Halo min, kemeja batik tulis sutra apakah masih ready?",
+      institution_id = 1,
+    } = req.body;
+
+    const result = await processInboundAiReply({
+      fromPhone: phone,
+      customerName: name,
+      text: message,
+      messageId: `sim_${Date.now()}`,
+      institutionId: parseInt(institution_id, 10),
+    });
+
+    res.json({
+      success: true,
+      message: "Simulasi pesan WhatsApp berhasil diproses oleh AI CS.",
+      data: result,
+    });
+  } catch (err) {
+    next(err);
   }
 }

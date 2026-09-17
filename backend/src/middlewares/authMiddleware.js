@@ -40,6 +40,25 @@ export async function authenticate(req, res, next) {
 }
 
 /**
+ * Optional Authentication Middleware (Allows public / simulator testing while attaching user if present)
+ */
+export async function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, config.jwt.secret);
+      req.user = decoded;
+      req.tenantId = decoded.institution_id || decoded.institutionId || null;
+      req.institutionId = req.tenantId;
+    } catch (err) {
+      // Non-blocking for optional auth
+    }
+  }
+  next();
+}
+
+/**
  * Role-Based Access Control (RBAC) Guard
  * @param  {...string} allowedRoles 
  */

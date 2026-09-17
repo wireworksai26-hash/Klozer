@@ -170,7 +170,7 @@ export default function DashboardPage() {
                   Aktif
                 </span>
                 <span className="text-[11.5px] text-white/70 font-mono">
-                  • {currentUser?.institutionName || activeInstitution?.name || "Geprek Juara"}
+                  • {currentUser?.institutionName || activeInstitution?.name || "Bisnis Saya"}
                 </span>
               </div>
               <p className="text-[12.5px] text-white/80 mt-0.5">
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                 Aktif
               </span>
               <span className="text-[11.5px] text-white/70 font-mono">
-                • {currentUser?.institutionName || activeInstitution?.name || "Geprek Juara"}
+                • {currentUser?.institutionName || activeInstitution?.name || "Bisnis Saya"}
               </span>
             </div>
             <p className="text-[12.5px] text-white/80 mt-0.5">

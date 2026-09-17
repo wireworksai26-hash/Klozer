@@ -4,17 +4,17 @@ import { API_BASE_URL } from "@/utils/apiConfig";
 
 const DashboardContext = createContext();
 
-// Initial Mock Datasets
+// Initial Clean Datasets (Production Ready)
 const initialInstitutions = [
   {
     id: "INST-001",
-    name: "Batik Mahakarya Solo",
-    sector: "Fashion & Retail",
-    owner: "Rendra Pratama",
-    email: "rendra@batikmahakarya.id",
-    phone: "+62 812-3456-7890",
-    tier: "Pro Plan",
-    quotaUsed: 14250,
+    name: "Toko Bisnis Utama",
+    sector: "Retail & Commerce",
+    owner: "Owner Toko",
+    email: "owner@klozer.id",
+    phone: "+62 812-0000-0000",
+    tier: "Pro Growth",
+    quotaUsed: 0,
     quotaMax: 50000,
     status: "active",
     modules: {
@@ -24,398 +24,29 @@ const initialInstitutions = [
       metaCapi: true,
       multiCs: true,
     },
-    joinedDate: "12 Januari 2026",
-  },
-  {
-    id: "INST-002",
-    name: "Lumiere Skincare Official",
-    sector: "Beauty & Healthcare",
-    owner: "Nadia Maharani",
-    email: "nadia@lumiereskin.com",
-    phone: "+62 813-8899-1122",
-    tier: "Pro Plan",
-    quotaUsed: 38900,
-    quotaMax: 50000,
-    status: "active",
-    modules: {
-      qris: true,
-      voiceAi: true,
-      antiFraud: true,
-      metaCapi: true,
-      multiCs: true,
-    },
-    joinedDate: "05 Februari 2026",
-  },
-  {
-    id: "INST-003",
-    name: "Yayasan ZISWAF Peduli Umat",
-    sector: "Lembaga Sosial & Donasi",
-    owner: "Ustadz Firdaus",
-    email: "donasi@ziswafpeduli.org",
-    phone: "+62 857-4433-2211",
-    tier: "Enterprise",
-    quotaUsed: 62400,
-    quotaMax: 100000,
-    status: "active",
-    modules: {
-      qris: true,
-      voiceAi: true,
-      antiFraud: true,
-      metaCapi: false,
-      multiCs: true,
-    },
-    joinedDate: "20 Februari 2026",
-  },
-  {
-    id: "INST-004",
-    name: "Geprek Juara",
-    sector: "Kuliner & F&B",
-    owner: "SPV - Geprek Juara",
-    email: "spv@geprekjuara.id",
-    phone: "+62 812-9900-8800",
-    tier: "Pro Plan",
-    quotaUsed: 3200,
-    quotaMax: 50000,
-    status: "active",
-    modules: {
-      personaAi: true,
-      autoLabel: true,
-      printReceipt: true,
-      baileys: true,
-      instagram: true,
-      csBlast: true,
-      publicBooking: true,
-      stockManagement: true,
-      picFeature: true,
-      qris: true,
-      voiceAi: true,
-      antiFraud: true,
-      metaCapi: true,
-      multiCs: true,
-    },
-    joinedDate: "28 Agustus 2026",
+    joinedDate: "Hari ini",
   },
 ];
 
-const initialProducts = [
-  {
-    id: "PRD-01",
-    sku: "KLZ-BTK-01",
-    name: "Kemeja Batik Modern Navy",
-    category: "Pakaian Pria",
-    price: 150000,
-    hpp: 85000,
-    stock: 42,
-    lowStock: 10,
-    active: true,
-    variants: ["M", "L", "XL"],
-  },
-  {
-    id: "PRD-02",
-    sku: "KLZ-SKN-02",
-    name: "Lumiere Radiance Serum 30ml",
-    category: "Skincare",
-    price: 185000,
-    hpp: 75000,
-    stock: 8,
-    lowStock: 15,
-    active: true,
-    variants: ["30ml"],
-  },
-  {
-    id: "PRD-03",
-    sku: "KLZ-GMS-03",
-    name: "Gamis Syari Premium Maroon",
-    category: "Pakaian Wanita",
-    price: 275000,
-    hpp: 140000,
-    stock: 24,
-    lowStock: 8,
-    active: true,
-    variants: ["All Size"],
-  },
-  {
-    id: "PRD-04",
-    sku: "KLZ-KOP-04",
-    name: "Arabica Gayo Wine 250gr",
-    category: "F&B",
-    price: 95000,
-    hpp: 50000,
-    stock: 65,
-    lowStock: 20,
-    active: true,
-    variants: ["Biji", "Bubuk Halus", "Bubuk Kasar"],
-  },
-  {
-    id: "PRD-05",
-    sku: "KLZ-TAS-05",
-    name: "Leather Sling Bag Vintage",
-    category: "Aksesoris",
-    price: 220000,
-    hpp: 110000,
-    stock: 5,
-    lowStock: 10,
-    active: false,
-    variants: ["Cokelat", "Hitam"],
-  },
-];
+const initialProducts = [];
+const initialOrders = [];
+const initialLeads = [];
+const initialTeam = [];
 
-const initialOrders = [
-  {
-    id: "ORD-8921",
-    customer: "Dewi Lestari",
-    phone: "+62 812-4567-8901",
-    city: "Bandung, Jawa Barat",
-    items: [{ productId: "PRD-01", name: "Kemeja Batik Modern Navy (XL)", qty: 2, price: 150000 }],
-    subtotal: 300000,
-    shippingFee: 12000,
-    total: 312000,
-    paymentMethod: "Dynamic QRIS",
-    status: "paid",
-    cs: "Sarah Amalia",
-    courier: "J&T Express",
-    awb: "JX9821448201",
-    date: "29 Agu 2026, 10:24 WIB",
-  },
-  {
-    id: "ORD-8920",
-    customer: "Agus Pratama",
-    phone: "+62 856-1122-3344",
-    city: "Surabaya, Jawa Timur",
-    items: [{ productId: "PRD-02", name: "Lumiere Radiance Serum 30ml", qty: 1, price: 185000 }],
-    subtotal: 185000,
-    shippingFee: 15000,
-    total: 200000,
-    paymentMethod: "BCA Transfer",
-    status: "processing",
-    cs: "Sarah Amalia",
-    courier: "SiCepat REG",
-    awb: "SC102948291",
-    date: "29 Agu 2026, 09:55 WIB",
-  },
-  {
-    id: "ORD-8919",
-    customer: "Siti Rahma",
-    phone: "+62 877-3344-5566",
-    city: "Yogyakarta",
-    items: [{ productId: "PRD-03", name: "Gamis Syari Premium Maroon", qty: 1, price: 275000 }],
-    subtotal: 275000,
-    shippingFee: 10000,
-    total: 285000,
-    paymentMethod: "Dynamic QRIS",
-    status: "shipped",
-    cs: "Rizky Ramadhan",
-    courier: "JNE Regular",
-    awb: "JNE88291039",
-    date: "29 Agu 2026, 09:12 WIB",
-  },
-  {
-    id: "ORD-8918",
-    customer: "Budi Kurniawan",
-    phone: "+62 813-9988-7766",
-    city: "Jakarta Selatan",
-    items: [{ productId: "PRD-04", name: "Arabica Gayo Wine 250gr", qty: 2, price: 95000 }],
-    subtotal: 190000,
-    shippingFee: 9000,
-    total: 199000,
-    paymentMethod: "COD (Bayar di Tempat)",
-    status: "waiting_payment",
-    cs: "Rizky Ramadhan",
-    courier: "SAP Express COD",
-    awb: "",
-    date: "29 Agu 2026, 08:40 WIB",
-  },
-];
-
-const initialLeads = [
-  {
-    id: "LEAD-101",
-    name: "Clarissa Putri",
-    phone: "+62 812-9988-4433",
-    source: "Instagram Ads (Reels)",
-    interest: "Kemeja Batik Modern",
-    status: "closing",
-    cs: "Sarah Amalia",
-    codScore: 94,
-    codRisk: "low",
-    estValue: 450000,
-    notes: "Sudah minta kode QRIS, menunggu proses scan m-BCA.",
-    lastInteraction: "5 menit lalu",
-  },
-  {
-    id: "LEAD-102",
-    name: "Dimas Anggara",
-    phone: "+62 857-1122-9900",
-    source: "WhatsApp Direct Link",
-    interest: "Paket Skincare Glow",
-    status: "follow_up",
-    cs: "Sarah Amalia",
-    codScore: 78,
-    codRisk: "medium",
-    estValue: 370000,
-    notes: "Kirim voice note tanya kecocokan kulit berminyak.",
-    lastInteraction: "22 menit lalu",
-  },
-  {
-    id: "LEAD-103",
-    name: "Indah Permata",
-    phone: "+62 878-4455-6677",
-    source: "Facebook Ads (Feed)",
-    interest: "Gamis Syari Maroon",
-    status: "repeat_order",
-    cs: "Rizky Ramadhan",
-    codScore: 98,
-    codRisk: "low",
-    estValue: 550000,
-    notes: "Pelanggan VIP, pernah belanja 3x sebelumnya.",
-    lastInteraction: "1 jam lalu",
-  },
-  {
-    id: "LEAD-104",
-    name: "Fauzan Hadi",
-    phone: "+62 819-2233-4455",
-    source: "TikTok Click to WA",
-    interest: "Biji Kopi Arabica",
-    status: "new",
-    cs: "Belum Ditugaskan",
-    codScore: 45,
-    codRisk: "high",
-    estValue: 190000,
-    notes: "Minta pembayaran COD tanpa DP. Riwayat RTS tinggi.",
-    lastInteraction: "2 jam lalu",
-  },
-];
-
-const initialTeam = [
-  {
-    id: "USR-01",
-    name: "Budi Santoso",
-    email: "budi@klozer.id",
-    role: "Owner / Supervisor",
-    status: "active",
-    csClosingRate: "88%",
-    revenueGen: "Rp 64.200.000",
-    permissions: {
-      qrisGenerate: true,
-      voiceAiManage: true,
-      mutationApproval: true,
-      exportReports: true,
-      productEdit: true,
-    },
-  },
-  {
-    id: "USR-02",
-    name: "Sarah Amalia",
-    email: "sarah.cs@klozer.id",
-    role: "Customer Service Senior",
-    status: "active",
-    csClosingRate: "82%",
-    revenueGen: "Rp 42.500.000",
-    permissions: {
-      qrisGenerate: true,
-      voiceAiManage: false,
-      mutationApproval: false,
-      exportReports: false,
-      productEdit: false,
-    },
-  },
-  {
-    id: "USR-03",
-    name: "Rizky Ramadhan",
-    email: "rizky.cs@klozer.id",
-    role: "Customer Service Junior",
-    status: "active",
-    csClosingRate: "74%",
-    revenueGen: "Rp 28.100.000",
-    permissions: {
-      qrisGenerate: true,
-      voiceAiManage: false,
-      mutationApproval: false,
-      exportReports: false,
-      productEdit: false,
-    },
-  },
-  {
-    id: "USR-04",
-    name: "Mega Safitri",
-    email: "mega.fin@klozer.id",
-    role: "Finance & Admin",
-    status: "active",
-    csClosingRate: "-",
-    revenueGen: "-",
-    permissions: {
-      qrisGenerate: false,
-      voiceAiManage: false,
-      mutationApproval: true,
-      exportReports: true,
-      productEdit: true,
-    },
-  },
-];
-
-// Master Subscriptions Dataset
 const initialSubscriptions = [
   {
     id: "SUB-101",
     institutionId: "INST-001",
-    institutionName: "Batik Mahakarya Solo",
-    plan: "Enterprise Scale",
-    pricePerMonth: 2499000,
-    csSeats: 15,
-    csSeatsUsed: 8,
-    tokenQuota: "500,000 / bln",
-    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
-    startDate: "12 Jan 2026",
-    expiryDate: "12 Jan 2027",
-    daysLeft: 136,
-    status: "active",
-    billingCycle: "Tahunan (Diskon 20%)",
-  },
-  {
-    id: "SUB-102",
-    institutionId: "INST-002",
-    institutionName: "Lumiere Skincare Official",
+    institutionName: "Toko Bisnis Utama",
     plan: "Pro Growth",
-    pricePerMonth: 999000,
-    csSeats: 5,
-    csSeatsUsed: 4,
-    tokenQuota: "200,000 / bln",
-    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
-    startDate: "01 Feb 2026",
-    expiryDate: "01 Sep 2026",
-    daysLeft: 30,
-    status: "active",
-    billingCycle: "Bulanan",
-  },
-  {
-    id: "SUB-103",
-    institutionId: "INST-003",
-    institutionName: "Yayasan ZISWAF Peduli Umat",
-    plan: "NGO Social Plan",
     pricePerMonth: 499000,
-    csSeats: 10,
-    csSeatsUsed: 5,
-    tokenQuota: "300,000 / bln",
-    aiEngine: "NVIDIA NIM Llama 3.3",
-    startDate: "20 Feb 2026",
-    expiryDate: "20 Feb 2027",
-    daysLeft: 165,
-    status: "active",
-    billingCycle: "Tahunan",
-  },
-  {
-    id: "SUB-104",
-    institutionId: "INST-004",
-    institutionName: "Geprek Juara",
-    plan: "Pro Growth",
-    pricePerMonth: 999000,
     csSeats: 5,
-    csSeatsUsed: 3,
+    csSeatsUsed: 1,
     tokenQuota: "200,000 / bln",
     aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
-    startDate: "28 Agu 2026",
-    expiryDate: "28 Agu 2027",
-    daysLeft: 350,
+    startDate: "17 Sep 2026",
+    expiryDate: "17 Sep 2027",
+    daysLeft: 365,
     status: "active",
     billingCycle: "Tahunan",
   },
@@ -467,13 +98,7 @@ const initialAiConfig = {
 export function DashboardProvider({ children }) {
   // Active Role: 'superadmin' | 'owner' | 'cs'
   const [role, setRole] = useState("owner");
-  const [currentUser, setCurrentUser] = useState({
-    id: 2,
-    name: "Hendra Wijaya",
-    email: "owner@batikmahakarya.id",
-    role: "owner",
-    institutionName: "Batik Mahakarya Solo",
-  });
+  const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
   const [institutions, setInstitutions] = useState(initialInstitutions);
   const [products, setProducts] = useState(initialProducts);
@@ -521,142 +146,47 @@ export function DashboardProvider({ children }) {
           setActiveInstitutionId(parsed.institutionId || `INST-${parsed.institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
         }
 
-        // Strict Tenant Data Isolation:
-        // If this is a newly registered business, clear all dummy data so they start 100% clean!
-        if (!isDefaultDemoTenant && parsed.role !== "superadmin") {
-          const tenantKey = `klozer_inst_${parsed.institutionId || parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
-          const savedPrd = localStorage.getItem(`${tenantKey}_products`);
-          setProducts(savedPrd ? JSON.parse(savedPrd) : []);
-          
-          const savedOrd = localStorage.getItem(`${tenantKey}_orders`);
-          setOrders(savedOrd ? JSON.parse(savedOrd) : []);
-          
-          const savedLeads = localStorage.getItem(`${tenantKey}_leads`);
-          setLeads(savedLeads ? JSON.parse(savedLeads) : []);
-          
-          const cleanSlug = parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis";
-          const defaultTeam = [
-            {
-              id: "SPV-01",
-              name: parsed.name || `SPV - ${parsed.institutionName}`,
-              email: parsed.email || `spv@${cleanSlug}.id`,
-              role: "Owner / Supervisor",
-              status: "active",
-              csClosingRate: "0%",
-              revenueGen: "Rp 0",
-              phone: parsed.phone_number || "+62 812-xxxx-xxxx",
-              permissions: { qrisGenerate: true, voiceAiManage: true, mutationApproval: true, exportReports: true, productEdit: true },
-            },
-            {
-              id: "CS-01",
-              name: `CS 1 - ${parsed.institutionName}`,
-              email: `cs1@${cleanSlug}.id`,
-              role: "Customer Service Senior",
-              status: "active",
-              csClosingRate: "0%",
-              revenueGen: "Rp 0",
-              phone: "+62 812-xxxx-0001",
-              permissions: { qrisGenerate: true, voiceAiManage: false, mutationApproval: false, exportReports: false, productEdit: false },
-            },
-            {
-              id: "CS-02",
-              name: `CS 2 - ${parsed.institutionName}`,
-              email: `cs2@${cleanSlug}.id`,
-              role: "Customer Service Junior",
-              status: "active",
-              csClosingRate: "0%",
-              revenueGen: "Rp 0",
-              phone: "+62 812-xxxx-0002",
-              permissions: { qrisGenerate: true, voiceAiManage: false, mutationApproval: false, exportReports: false, productEdit: false },
-            },
-          ];
-          const savedTeam = localStorage.getItem(`${tenantKey}_team`);
-          setTeamMembers(savedTeam ? JSON.parse(savedTeam) : defaultTeam);
-        } else {
-          // Default demo data for original seed tenant (Batik Mahakarya / Superadmin)
-          const savedPrd = localStorage.getItem("klozer_products");
-          if (savedPrd) setProducts(JSON.parse(savedPrd));
-          const savedOrd = localStorage.getItem("klozer_orders");
-          if (savedOrd) setOrders(JSON.parse(savedOrd));
-          const savedLeads = localStorage.getItem("klozer_leads");
-          if (savedLeads) setLeads(JSON.parse(savedLeads));
-          const savedTeam = localStorage.getItem("klozer_team");
-          if (savedTeam) setTeamMembers(JSON.parse(savedTeam));
-        }
+        // Clean Production Data Loading:
+        const tenantKey = `klozer_inst_${parsed.institutionId || parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "default"}`;
+        const savedPrd = localStorage.getItem(`${tenantKey}_products`) || localStorage.getItem("klozer_products");
+        setProducts(savedPrd ? JSON.parse(savedPrd) : []);
+        
+        const savedOrd = localStorage.getItem(`${tenantKey}_orders`) || localStorage.getItem("klozer_orders");
+        setOrders(savedOrd ? JSON.parse(savedOrd) : []);
+        
+        const savedLeads = localStorage.getItem(`${tenantKey}_leads`) || localStorage.getItem("klozer_leads");
+        setLeads(savedLeads ? JSON.parse(savedLeads) : []);
+        
+        const cleanSlug = parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis";
+        const defaultTeam = [
+          {
+            id: "USR-01",
+            name: parsed.name || "Owner Toko",
+            email: parsed.email || `owner@${cleanSlug}.id`,
+            role: parsed.role === "spv" ? "Owner / Supervisor" : parsed.role === "cs" ? "Customer Service Senior" : "Owner Toko",
+            status: "active",
+            csClosingRate: "0%",
+            revenueGen: "Rp 0",
+            phone: parsed.phone_number || "+62 812-xxxx-xxxx",
+            permissions: { qrisGenerate: true, voiceAiManage: true, mutationApproval: true, exportReports: true, productEdit: true },
+          },
+        ];
+        const savedTeam = localStorage.getItem(`${tenantKey}_team`) || localStorage.getItem("klozer_team");
+        setTeamMembers(savedTeam ? JSON.parse(savedTeam) : defaultTeam);
       } else {
         const savedRole = localStorage.getItem("klozer_role");
         if (savedRole) setRole(savedRole);
+        const savedPrd = localStorage.getItem("klozer_products");
+        if (savedPrd) setProducts(JSON.parse(savedPrd));
+        const savedOrd = localStorage.getItem("klozer_orders");
+        if (savedOrd) setOrders(JSON.parse(savedOrd));
+        const savedLeads = localStorage.getItem("klozer_leads");
+        if (savedLeads) setLeads(JSON.parse(savedLeads));
+        const savedTeam = localStorage.getItem("klozer_team");
+        if (savedTeam) setTeamMembers(JSON.parse(savedTeam));
       }
       const savedInst = localStorage.getItem("klozer_institutions");
       let currentInst = savedInst ? JSON.parse(savedInst) : initialInstitutions;
-      
-      // Ensure legacy "Kopi Kencana" dummy is replaced with real "Geprek Juara"
-      currentInst = currentInst.map((i) =>
-        i.name?.toLowerCase().includes("kencana")
-          ? {
-              id: "INST-004",
-              name: "Geprek Juara",
-              sector: "Kuliner & F&B",
-              owner: "SPV - Geprek Juara",
-              email: "spv@geprekjuara.id",
-              phone: "+62 812-9900-8800",
-              tier: "Pro Plan",
-              quotaUsed: 3200,
-              quotaMax: 50000,
-              status: "active",
-              modules: {
-                personaAi: true,
-                autoLabel: true,
-                printReceipt: true,
-                baileys: true,
-                instagram: true,
-                csBlast: true,
-                publicBooking: true,
-                stockManagement: true,
-                picFeature: true,
-                qris: true,
-                voiceAi: true,
-                antiFraud: true,
-                metaCapi: true,
-                multiCs: true,
-              },
-              joinedDate: "28 Agustus 2026",
-            }
-          : i
-      );
-
-      // Ensure Geprek Juara is always present in institutions
-      if (!currentInst.some((i) => i.name?.toLowerCase().includes("geprek"))) {
-        currentInst.push({
-          id: "INST-004",
-          name: "Geprek Juara",
-          sector: "Kuliner & F&B",
-          owner: "SPV - Geprek Juara",
-          email: "spv@geprekjuara.id",
-          phone: "+62 812-9900-8800",
-          tier: "Pro Plan",
-          quotaUsed: 3200,
-          quotaMax: 50000,
-          status: "active",
-          modules: {
-            personaAi: true,
-            autoLabel: true,
-            printReceipt: true,
-            baileys: true,
-            instagram: true,
-            csBlast: true,
-            publicBooking: true,
-            stockManagement: true,
-            picFeature: true,
-            qris: true,
-            voiceAi: true,
-            antiFraud: true,
-            metaCapi: true,
-            multiCs: true,
-          },
-          joinedDate: "28 Agustus 2026",
-        });
-      }
 
       // If user has a registered institution name, ensure it is included
       const savedUserStr = localStorage.getItem("klozer_user");
@@ -844,12 +374,14 @@ export function DashboardProvider({ children }) {
     } catch (err) {
       // Fallback local mock login
       const mockRole = email.includes("superadmin") ? "superadmin" : email.includes("cs") ? "cs" : "owner";
+      const namePart = email.split("@")[0] || "User";
+      const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
       const mockUser = {
         id: mockRole === "superadmin" ? 1 : mockRole === "owner" ? 2 : 3,
-        name: mockRole === "superadmin" ? "Platform Superadmin" : mockRole === "owner" ? "Hendra Wijaya" : "Siti Rahma (CS)",
+        name: mockRole === "superadmin" ? "Platform Superadmin" : `${cleanName} (Owner)`,
         email,
         role: mockRole,
-        institutionName: "Batik Mahakarya Solo",
+        institutionName: mockRole === "superadmin" ? "Platform Klozer" : `Toko ${cleanName}`,
       };
       setCurrentUser(mockUser);
       setRole(mockRole);

@@ -25,37 +25,17 @@ export default function SupervisorInternalChatPage() {
     { id: "finance", name: "# rekonsiliasi-keuangan", unread: 0, desc: "Konfirmasi transfer manual dan mutasi bank" },
   ];
 
-  // Online members dynamically derived from current tenant team
-  const onlineMembers = isDefaultDemo
-    ? [
-        { name: "Sarah Amalia", role: "CS Senior" },
-        { name: "Budi Santoso", role: "CS Junior" },
-        { name: "Dewi Lestari", role: "Finance" },
-      ]
-    : [
-        { name: currentUser?.name || "Owner / SPV", role: currentUser?.role === "superadmin" ? "Owner" : "Supervisor", isSelf: true },
-        ...teamMembers.map((m) => ({ name: m.name, role: m.role || "Staf CS" })),
-      ];
+  const onlineMembers = [
+    { name: currentUser?.name || "Owner / SPV", role: currentUser?.role === "superadmin" ? "Owner" : "Supervisor", isSelf: true },
+    ...(teamMembers || []).map((m) => ({ name: m.name, role: m.role || "Staf CS" })),
+  ];
 
-  const [messages, setMessages] = useState(
-    isDefaultDemo
-      ? {
-          general: [
-            { id: 1, sender: "Rian Supervisor", role: "SPV", avatar: "RS", text: "Selamat pagi tim! Hari ini fokus follow-up lead promo weekend ya. Target closing 40 pesanan.", time: "08:30" },
-          ],
-          diskon: [],
-          kurir: [],
-          finance: [],
-        }
-      : {
-          general: [
-            { id: 1, sender: "Sistem Klozer", role: "Bot", avatar: "KL", text: `Selamat datang di ruang obrolan internal tim ${cleanInstName}. Gunakan channel ini untuk koordinasi harian tim SPV dan Customer Service.`, time: "Hari ini" },
-          ],
-          diskon: [],
-          kurir: [],
-          finance: [],
-        }
-  );
+  const [messages, setMessages] = useState({
+    general: [],
+    diskon: [],
+    kurir: [],
+    finance: [],
+  });
 
   const handleSend = (e) => {
     e.preventDefault();

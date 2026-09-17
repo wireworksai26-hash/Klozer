@@ -7,11 +7,11 @@ const stepsData = {
   1: {
     title: "Dapatkan data pesanan yang",
     italic: "akurat & otomatis",
-    desc: "Ketahui apa yang diinginkan pembeli secara instan. Sistem Klozer menangkap detail produk, varian ukuran, dan lokasi pengiriman langsung dari obrolan WhatsApp tanpa repot input manual.",
+    desc: "Klozer menangkap detail produk, varian, dan alamat pengiriman langsung dari percakapan WhatsApp tanpa input manual.",
     points: [
-      "Deteksi otomatis varian produk, jumlah, dan alamat pembeli",
-      "Pengecekan sisa stok gudang secara real-time agar tidak salah kirim",
-      "Paham pesan teks & pesan suara (voice note) bahasa Indonesia santai",
+      "Deteksi instan varian produk dan alamat pembeli",
+      "Pengecekan stok gudang real-time cegah salah kirim",
+      "Mendukung teks dan voice note bahasa Indonesia",
     ],
     badgeText: "Ada Pesanan Masuk!",
     cardHeader: "Pertanyaan Produk Pembeli:",
@@ -21,11 +21,11 @@ const stepsData = {
   2: {
     title: "Terima pembayaran QRIS langsung",
     italic: "tanpa cek mutasi manual",
-    desc: "Kode QRIS otomatis terbit dengan nominal presisi termasuk ongkir. Pembeli tinggal scan via m-banking atau e-wallet, dan status pesanan langsung berubah lunas dalam 2 detik.",
+    desc: "Dynamic QRIS terbit otomatis dengan nominal presisi. Pembeli scan dan status order lunas seketika.",
     points: [
-      "QRIS berstandar EMVCo Nasional (BCA Mobile, GoPay, OVO, ShopeePay, Dana)",
-      "Nominal terkunci otomatis, pembeli tidak perlu mengetik manual",
-      "Sistem anti-struk palsu & auto-reconcile mutasi rekening bank resmi",
+      "Standar QRIS Nasional (BCA, Mandiri, BRI, GoPay, OVO, Dana)",
+      "Nominal presisi terkunci otomatis tanpa salah transfer",
+      "Verifikasi mutasi rekening instan tanpa risiko struk palsu",
     ],
     badgeText: "Dynamic QRIS Diterbitkan",
     cardHeader: "Tagihan Pembayaran QRIS:",
@@ -35,11 +35,11 @@ const stepsData = {
   3: {
     title: "Cetak resi pengiriman &",
     italic: "booking kurir otomatis",
-    desc: "Bandingkan ongkir semua ekspedisi dalam 1 layar, pesan kurir untuk jemput paket tanpa perlu keluar rumah, dan kirim nomor resi otomatis ke WhatsApp pembeli.",
+    desc: "Bandingkan ongkir terbaik, jadwalkan pickup kurir tanpa keluar rumah, dan kirim resi otomatis ke pembeli.",
     points: [
-      "Terhubung multi-ekspedisi: J&T, SiCepat, JNE, Lion Parcel, SAP Express",
-      "Cashback ongkir 15-25% langsung masuk ke saldo akun toko Anda",
-      "Resi pengiriman & invoice PDF terkirim otomatis ke WhatsApp pembeli",
+      "Multi-kurir: J&T, SiCepat, JNE, Lion Parcel, SAP Express",
+      "Cashback ongkir hingga 25% langsung masuk saldo toko",
+      "Resi dan invoice PDF otomatis terkirim ke WhatsApp pembeli",
     ],
     badgeText: "Paket Siap Dikirim ke Kurir",
     cardHeader: "Label Resi Otomatis (AWB):",

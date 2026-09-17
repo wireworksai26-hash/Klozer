@@ -5,9 +5,9 @@ let tenantTokenBalances = {
   "INST-004": {
     institutionId: "INST-004",
     institutionName: "Geprek Juara",
-    totalQuota: 200000,
-    consumedTokens: 42150,
-    remainingTokens: 157850,
+    totalQuota: 500000,
+    consumedTokens: 143667,
+    remainingTokens: 356333,
     primaryModel: "NVIDIA NIM (Llama 3.3 70B)",
     lastDeductionTime: "10 menit lalu",
   },
@@ -308,18 +308,57 @@ export async function logTokenUsage(req, res) {
 }
 
 /**
+ * Deduct tokens programmatically from active tenant balance
+ * @param {string} tenantIdOrName
+ * @param {number} tokens
+ * @returns {Object} Updated balance object
+ */
+export function deductTokens(tenantIdOrName = "INST-004", tokens = 0) {
+  const cleanId = String(tenantIdOrName || "").trim().toLowerCase();
+  let tenant = Object.values(tenantTokenBalances).find(
+    (t) => t.institutionId.toLowerCase() === cleanId || t.institutionName.toLowerCase().includes(cleanId) || cleanId.includes(t.institutionName.toLowerCase())
+  );
+
+  if (!tenant) {
+    // Default to Geprek Juara if testing or Batik Mahakarya
+    tenant = tenantTokenBalances["INST-004"] || tenantTokenBalances["INST-001"];
+  }
+
+  tenant.consumedTokens += tokens;
+  tenant.remainingTokens = Math.max(0, tenant.totalQuota - tenant.consumedTokens);
+  tenant.lastDeductionTime = "Baru saja";
+
+  return {
+    institutionId: tenant.institutionId,
+    institutionName: tenant.institutionName,
+    totalQuota: tenant.totalQuota,
+    consumedTokens: tenant.consumedTokens,
+    remainingTokens: tenant.remainingTokens,
+    lastDeducted: tokens,
+  };
+}
+
+/**
  * Get single or all tenant token balances
  * GET /api/v1/ai/token-balance
  */
 export async function getTenantTokenBalance(req, res) {
   try {
-    const { tenantId } = req.query;
-    if (tenantId && tenantTokenBalances[tenantId]) {
-      return res.json({
-        success: true,
-        balance: tenantTokenBalances[tenantId],
-      });
+    const { tenantId, tenantName } = req.query;
+    const queryKey = String(tenantName || tenantId || "").trim().toLowerCase();
+
+    if (queryKey) {
+      const match = Object.values(tenantTokenBalances).find(
+        (t) => t.institutionId.toLowerCase() === queryKey || t.institutionName.toLowerCase().includes(queryKey) || queryKey.includes(t.institutionName.toLowerCase())
+      );
+      if (match) {
+        return res.json({
+          success: true,
+          balance: match,
+        });
+      }
     }
+
     return res.json({
       success: true,
       balances: tenantTokenBalances,

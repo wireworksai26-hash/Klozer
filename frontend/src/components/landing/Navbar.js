@@ -7,12 +7,24 @@ import { ChevronDownIcon } from "@/components/icons";
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
+
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("klozer_token");
+      const user = localStorage.getItem("user") || localStorage.getItem("klozer_user");
+      if (token || user) {
+        setIsLoggedIn(true);
+      }
+    } catch (e) {
+      //
+    }
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -59,26 +71,38 @@ export default function Navbar() {
           </a>
         </nav>
 
-        {/* Right CTA Group - Masuk & Coba Gratis Berdampingan */}
+        {/* Right CTA Group - Masuk / Dashboard & Coba Gratis Berdampingan */}
         <div className="hidden sm:flex items-center gap-2.5">
-          <Link
-            href="/login"
-            className="px-4 py-2.5 rounded-full text-[14px] font-bold text-[#171417] hover:text-[#2545ff] hover:bg-white/60 transition-all no-underline"
-          >
-            Masuk
-          </Link>
-          <a
-            href="#demo"
-            className="btn-outline text-[14px] !py-2.5 !px-4.5 font-semibold"
-          >
-            Tanya AI
-          </a>
-          <Link
-            href="/register"
-            className="btn-primary text-[14px] !py-2.5 !px-5 font-bold shadow-sm hover:shadow-md"
-          >
-            Coba Gratis
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/dashboard"
+              className="btn-primary text-[14px] !py-2.5 !px-5 font-bold shadow-sm hover:shadow-md flex items-center gap-2"
+            >
+              <span>Dashboard</span>
+              <span>→</span>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-4 py-2.5 rounded-full text-[14px] font-bold text-[#171417] hover:text-[#2545ff] hover:bg-white/60 transition-all no-underline"
+              >
+                Masuk
+              </Link>
+              <a
+                href="#demo"
+                className="btn-outline text-[14px] !py-2.5 !px-4.5 font-semibold"
+              >
+                Tanya AI
+              </a>
+              <Link
+                href="/register"
+                className="btn-primary text-[14px] !py-2.5 !px-5 font-bold shadow-sm hover:shadow-md"
+              >
+                Coba Gratis
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -128,20 +152,32 @@ export default function Navbar() {
             Kisah Sukses Pelanggan
           </a>
           <div className="flex flex-col gap-2 pt-3">
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="btn-outline w-full text-center text-[14px] font-bold"
-            >
-              Masuk
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileOpen(false)}
-              className="btn-primary w-full text-center text-[14px] font-bold"
-            >
-              Coba Gratis Sekarang
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="btn-primary w-full text-center text-[14px] font-bold"
+              >
+                Buka Dashboard →
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-outline w-full text-center text-[14px] font-bold"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-primary w-full text-center text-[14px] font-bold"
+                >
+                  Coba Gratis Sekarang
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

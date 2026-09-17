@@ -99,7 +99,7 @@ export default function ChatWidget() {
           {/* Mobile Floating Button */}
           <button
             onClick={() => setIsOpen(true)}
-            className="md:hidden fixed bottom-5 right-5 z-40 w-13 h-13 rounded-full bg-[#2545ff] text-white shadow-[0_8px_25px_rgba(37,69,255,0.45)] flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 border-2 border-white"
+            className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#2545ff] text-white shadow-[0_8px_25px_rgba(37,69,255,0.45)] flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 border-2 border-white"
             title="Tanya AI Klozer"
             aria-label="Buka Chat AI"
           >

@@ -16,31 +16,7 @@ import AiHppModal from "@/components/common/AiHppModal";
 
 export default function SupervisorBomPage() {
   const { currentUser, activeInstitution, products, updateProduct } = useDashboard();
-  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
-  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
-
-  const [boms, setBoms] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "BOM-01",
-            finishedProduct: "Kemeja Batik Tulis Sutra",
-            category: "Fashion Pria",
-            batchSize: "1 Pcs",
-            totalHppCost: 285000,
-            sellingPrice: 650000,
-            marginPercent: "56.1%",
-            materials: [
-              { name: "Kain Sutra ATBM", qty: "2.5 Meter", unitCost: 180000 },
-              { name: "Malam Lilin Batik Premium", qty: "200 Gram", unitCost: 25000 },
-              { name: "Pewarna Alami Indigofera", qty: "1 Botol", unitCost: 35000 },
-              { name: "Kancing Batok Kelapa Asli", qty: "7 Pcs", unitCost: 15000 },
-              { name: "Ongkos Jahit & Finishing", qty: "1 Pcs", unitCost: 30000 },
-            ],
-          },
-        ]
-      : []
-  );
+  const [boms, setBoms] = useState([]);
 
   const [showHppModal, setShowHppModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);

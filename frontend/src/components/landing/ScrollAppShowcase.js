@@ -17,58 +17,39 @@ export default function ScrollAppShowcase() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
+    // Auto-cycle tabs smoothly every 5.5 seconds if user doesn't click
+    const timer = setInterval(() => {
+      setActiveTab((current) => {
+        const nextIdx = (tabList.indexOf(current) + 1) % tabList.length;
+        return tabList[nextIdx];
+      });
+    }, 5500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (!sectionRef.current || typeof window === "undefined") return;
 
-    // Use ScrollTrigger matchMedia for perfect mobile & desktop adaptability
-    const mm = gsap.matchMedia();
-
-    mm.add("(min-width: 768px)", () => {
-      // Desktop / Tablet: Sticky Pin with Smooth Scroll Transitions
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "+=2200",
-        pin: true,
-        scrub: 1,
-        onUpdate: (self) => {
-          const p = self.progress;
-          setScrollProgress(p);
-
-          let idx = 0;
-          if (p < 0.28) {
-            idx = 0;
-          } else if (p < 0.55) {
-            idx = 1;
-          } else if (p < 0.8) {
-            idx = 2;
-          } else {
-            idx = 3;
-          }
-
-          const targetTab = tabList[idx];
-          setActiveTab((prev) => (prev !== targetTab ? targetTab : prev));
-        },
-      });
-
+    const ctx = gsap.context(() => {
       gsap.fromTo(
         mockupRef.current,
-        { rotateX: 10, scale: 0.96, transformPerspective: 1200 },
+        { y: 35, opacity: 0, scale: 0.98 },
         {
-          rotateX: 0,
+          y: 0,
+          opacity: 1,
           scale: 1,
           duration: 0.8,
           ease: "power2.out",
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: "top 70%",
-            end: "top top",
-            scrub: 1,
+            start: "top 80%",
           },
         }
       );
-    });
+    }, sectionRef);
 
-    return () => mm.revert();
+    return () => ctx.revert();
   }, []);
 
   const tabs = [
@@ -81,7 +62,7 @@ export default function ScrollAppShowcase() {
   return (
     <section
       ref={sectionRef}
-      className="min-h-screen bg-[#f4f1ea] border-b border-[#e8e3d9] flex flex-col justify-center py-12 md:py-16 relative overflow-hidden"
+      className="py-14 sm:py-18 md:py-24 bg-[#f4f1ea] border-b border-[#e8e3d9] flex flex-col justify-center relative overflow-hidden"
     >
       <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16 flex flex-col justify-center">
         
@@ -123,11 +104,11 @@ export default function ScrollAppShowcase() {
             })}
           </div>
 
-          {/* Interactive Scroll Progress Line (Desktop only) */}
+          {/* Active Tab Progress Indicator (Desktop only) */}
           <div className="hidden md:block w-48 h-1 bg-[#e8e3d9] rounded-full mt-3 overflow-hidden">
             <div
-              className="h-full bg-[#2545ff] rounded-full transition-all duration-150"
-              style={{ width: `${Math.min(100, Math.max(10, scrollProgress * 100))}%` }}
+              className="h-full bg-[#2545ff] rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${((tabList.indexOf(activeTab) + 1) / tabList.length) * 100}%` }}
             />
           </div>
         </div>

@@ -19,6 +19,19 @@ export default function Hero() {
 
   const [activeMetric, setActiveMetric] = useState("qris");
   const [score, setScore] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("klozer_token");
+      const user = localStorage.getItem("user") || localStorage.getItem("klozer_user");
+      if (token || user) {
+        setIsLoggedIn(true);
+      }
+    } catch (e) {
+      //
+    }
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || typeof window === "undefined") return;
@@ -63,30 +76,33 @@ export default function Hero() {
         },
       });
 
-      // Subtle Scroll Parallax Effect ("Scroll Effect Tipis-Tipis")
-      gsap.to(textColRef.current, {
-        y: 45,
-        opacity: 0.9,
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: 1.2,
-        },
-      });
+      // Desktop-Only Scroll Parallax (Disabled on Mobile to prevent vertical element collision)
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 1024px)", () => {
+        gsap.to(textColRef.current, {
+          y: 45,
+          opacity: 0.9,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
 
-      gsap.to(cardRef.current, {
-        y: -40,
-        rotate: -1.5,
-        scale: 0.98,
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: 1.2,
-        },
+        gsap.to(cardRef.current, {
+          y: -40,
+          rotate: -1.5,
+          scale: 0.98,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
       });
     }, containerRef);
 
@@ -123,20 +139,29 @@ export default function Hero() {
             {/* Body Copy */}
             <p
               ref={subRef}
-              className="text-[18px] sm:text-[20px] leading-[1.65] text-[#171417] max-w-[640px] font-normal"
+              className="text-[18px] sm:text-[20px] leading-[1.6] text-[#171417] max-w-[620px] font-normal"
             >
-              Otomatiskan pembayaran <strong>Dynamic QRIS di chat</strong>, transkripsi <strong>AI Voice Note</strong> bahasa Indonesia, dan deteksi bukti transfer palsu. Mengubah obrolan menjadi transaksi lunas 24 jam nonstop.
+              Asisten AI WhatsApp yang melayani pesanan pelanggan, memproses <strong>Dynamic QRIS</strong> langsung di chat, dan menutup transaksi 24 jam nonstop.
             </p>
 
-            {/* Action Buttons: Coba Gratis & Masuk Berdampingan */}
+            {/* Action Buttons: Coba Gratis & Masuk / Dashboard */}
             <div ref={ctaRef} className="flex flex-wrap items-center gap-3.5 pt-2">
-              <Link href="/register" className="btn-primary text-[16px] !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all">
-                <span>Coba Gratis 14 Hari</span>
-                <span className="transition-transform group-hover:translate-x-1.5">→</span>
-              </Link>
-              <Link href="/login" className="px-6 py-3.5 rounded-full border border-[#ede8e2] bg-white hover:bg-[#f5f4f2] text-[15px] font-bold text-[#171417] hover:text-[#2545ff] transition-all no-underline shadow-xs">
-                <span>Masuk ke Akun</span>
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="btn-primary text-[16px] !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all flex items-center gap-2">
+                  <span>Buka Dashboard</span>
+                  <span className="transition-transform group-hover:translate-x-1.5">→</span>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/register" className="btn-primary text-[16px] !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all">
+                    <span>Coba Gratis 14 Hari</span>
+                    <span className="transition-transform group-hover:translate-x-1.5">→</span>
+                  </Link>
+                  <Link href="/login" className="px-6 py-3.5 rounded-full border border-[#ede8e2] bg-white hover:bg-[#f5f4f2] text-[15px] font-bold text-[#171417] hover:text-[#2545ff] transition-all no-underline shadow-xs">
+                    <span>Masuk ke Akun</span>
+                  </Link>
+                </>
+              )}
             </div>
 
           </div>

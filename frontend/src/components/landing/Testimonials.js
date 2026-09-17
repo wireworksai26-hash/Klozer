@@ -68,27 +68,30 @@ export default function Testimonials() {
         }
       );
 
-      // Subtle Alternating Scroll Parallax
-      gsap.to(".pastel-card-0, .pastel-card-2", {
-        y: -22,
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1.2,
-        },
-      });
+      // Desktop-Only Alternating Parallax (Disabled on Mobile to prevent card overlap)
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 1024px)", () => {
+        gsap.to(".pastel-card-0, .pastel-card-2", {
+          y: -22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
 
-      gsap.to(".pastel-card-1, .pastel-card-3", {
-        y: 22,
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1.2,
-        },
+        gsap.to(".pastel-card-1, .pastel-card-3", {
+          y: 22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
       });
     }, containerRef);
 
@@ -96,7 +99,7 @@ export default function Testimonials() {
   }, []);
 
   return (
-    <section id="testimoni" ref={containerRef} className="py-20 md:py-28 bg-[#f9f8f6] border-b border-[#f0e9e1] overflow-hidden">
+    <section id="testimoni" ref={containerRef} className="py-14 sm:py-18 md:py-24 bg-[#f9f8f6] border-b border-[#f0e9e1] overflow-hidden">
       <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16">
         
         {/* Section Headline */}

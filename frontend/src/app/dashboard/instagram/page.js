@@ -18,29 +18,9 @@ export default function SupervisorInstagramPage() {
   const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
 
   const [activeTab, setActiveTab] = useState("dms");
-  const [selectedChat, setSelectedChat] = useState(isDefaultDemo ? "ig-01" : null);
+  const [selectedChat, setSelectedChat] = useState(null);
   const [replyInput, setReplyInput] = useState("");
-
-  const [igChats, setIgChats] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "ig-01",
-            username: "@anisa_rahmawati",
-            name: "Anisa Rahmawati",
-            avatar: "AR",
-            lastMessage: "Kak produk yang di reels kemarin size M masih ada?",
-            time: "5 menit lalu",
-            unread: true,
-            channel: "Direct Message",
-            messages: [
-              { sender: "customer", text: "Halo kak, salam kenal!", time: "14:20" },
-              { sender: "ai", text: `Halo kak Anisa! Terima kasih sudah DM ${cleanInstName}. Mau tanya produk yang mana nih?`, time: "14:20" },
-            ],
-          },
-        ]
-      : []
-  );
+  const [igChats, setIgChats] = useState([]);
 
   const activeConversation = igChats.find((c) => c.id === selectedChat) || igChats[0];
 

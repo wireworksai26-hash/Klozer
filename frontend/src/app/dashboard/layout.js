@@ -391,7 +391,7 @@ function DashboardContent({ children }) {
       >
         {/* Brand Header with Exact klozer • Logo & Brand Icon */}
         <div className="flex items-center justify-between px-6 h-[72px] border-b border-[#f0e9e1] flex-shrink-0">
-          <Logo size="md" variant="dark" href="/dashboard" withIcon={true} />
+          <Logo size="md" variant="dark" href="/" withIcon={true} />
           <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border flex items-center gap-1 ${currentRoleConfig.badgeColor}`}>
             {currentRoleConfig.icon}
             <span>{role.toUpperCase()}</span>

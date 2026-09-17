@@ -50,12 +50,14 @@ export default function LoginPage() {
       } catch (networkErr) {
         // Local fallback if server is starting
         const role = email.includes("superadmin") ? "superadmin" : email.includes("cs") ? "cs" : "owner";
+        const namePart = email.split("@")[0] || "User";
+        const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
         userData = {
           id: role === "superadmin" ? 1 : role === "owner" ? 2 : 3,
-          name: role === "superadmin" ? "Platform Superadmin" : role === "owner" ? "Hendra Wijaya" : "Siti Rahma (CS)",
+          name: role === "superadmin" ? "Platform Superadmin" : `${cleanName} (Owner)`,
           email,
           role,
-          institutionName: "Batik Mahakarya Solo",
+          institutionName: role === "superadmin" ? "Platform Klozer" : `Toko ${cleanName}`,
         };
         token = "mock-jwt-token-klozer-2026";
       }
