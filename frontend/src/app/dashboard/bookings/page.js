@@ -11,13 +11,14 @@ import {
 } from "@/components/icons";
 
 export default function SupervisorBookingsPage() {
+  const { teamMembers = [] } = useDashboard();
   const [showAddModal, setShowAddModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState("Konsultasi & Layanan Bisnis");
   const [bookingDate, setBookingDate] = useState("Hari ini");
   const [bookingTime, setBookingTime] = useState("14:00 WIB");
-  const [picStaff, setPicStaff] = useState("CS 1");
+  const [picStaff, setPicStaff] = useState(teamMembers[0]?.name || "CS 1");
   const [bookings, setBookings] = useState([]);
 
   const handleAddSubmit = (e) => {

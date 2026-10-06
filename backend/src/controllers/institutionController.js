@@ -122,18 +122,73 @@ export async function updateInstitution(req, res, next) {
       return res.status(404).json({ success: false, message: "Instansi tidak ditemukan." });
     }
 
-    const { name, mode, sector, phone_number, email, address, is_active, features } = req.body;
+    const { name, mode, sector, phone_number, email, address, is_active, features, language } = req.body;
     if (name) inst.name = name;
     if (mode) inst.mode = mode;
     if (sector) inst.sector = sector;
     if (phone_number) inst.phone_number = phone_number;
     if (email) inst.email = email;
     if (address) inst.address = address;
+    if (language) inst.language = language;
     if (is_active !== undefined) inst.is_active = is_active;
     if (features) inst.features_json = { ...inst.features_json, ...features };
     inst.updated_at = new Date().toISOString();
 
     res.json({ success: true, message: "Instansi berhasil diperbarui.", data: inst });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Reset Institution Owner Password
+ * POST /api/v1/institutions/:id/reset-password
+ */
+export async function resetInstitutionPassword(req, res, next) {
+  try {
+    const instId = parseInt(req.params.id, 10);
+    const inst = (memoryStore.institutions || []).find((i) => i.id === instId);
+    if (!inst) {
+      return res.status(404).json({ success: false, message: "Instansi tidak ditemukan." });
+    }
+
+    const { newPassword } = req.body;
+    const passwordToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : generateRandomPassword(10);
+    const passwordHash = await hashPassword(passwordToSet);
+
+    // Find owner user for this institution
+    let ownerUser = (memoryStore.users || []).find((u) => u.institution_id === instId && (u.role === "owner" || u.role === "admin"));
+    if (ownerUser) {
+      ownerUser.password_hash = passwordHash;
+      ownerUser.updated_at = new Date().toISOString();
+    } else {
+      // Create owner user if none exists
+      ownerUser = {
+        id: (memoryStore.users?.length || 0) + 1,
+        institution_id: instId,
+        name: `Owner ${inst.name}`,
+        email: inst.email || `owner-${instId}@klozer.id`,
+        password_hash: passwordHash,
+        role: "owner",
+        phone_number: inst.phone_number,
+        commission_rate_percent: 0,
+        is_active: 1,
+        created_at: new Date().toISOString(),
+      };
+      if (!memoryStore.users) memoryStore.users = [];
+      memoryStore.users.push(ownerUser);
+    }
+
+    res.json({
+      success: true,
+      message: `Kata sandi akun owner instansi ${inst.name} berhasil di-reset!`,
+      credentials: {
+        institutionName: inst.name,
+        email: ownerUser.email,
+        newPassword: passwordToSet,
+        role: "Owner / Supervisor",
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -152,3 +207,4 @@ export async function deleteInstitution(req, res, next) {
     next(err);
   }
 }
+

@@ -7,17 +7,28 @@ import { paginate } from "../utils/helpers.js";
  */
 export async function getProducts(req, res, next) {
   try {
-    const institutionId = Number(req.tenantId || req.user?.institution_id || 1);
-    const { page = 1, limit = 10, search = "", category = "" } = req.query;
+    const requestedInstId = req.query.institutionId ? Number(req.query.institutionId) : null;
+    const institutionId = requestedInstId || Number(req.tenantId || req.user?.institution_id || req.headers["x-institution-id"] || 1);
+    const { page = 1, limit = 50, search = "", category = "" } = req.query;
 
-    let list = (memoryStore.products || []).filter((p) => Number(p.institution_id) === institutionId);
+    let list = (memoryStore.products || []);
+    
+    // Filter by institution unless superadmin requests all
+    if (!(req.user?.role === "superadmin" && req.query.all === "true")) {
+      list = list.filter((p) => Number(p.institution_id) === institutionId);
+      
+      // If still empty and querying inst 1 fallback for legacy default
+      if (list.length === 0 && institutionId === 1) {
+        list = (memoryStore.products || []).filter((p) => Number(p.institution_id) === 1);
+      }
+    }
 
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s));
     }
 
-    if (category) {
+    if (category && category !== "all") {
       list = list.filter((p) => p.category === category);
     }
 

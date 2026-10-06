@@ -6,7 +6,17 @@ import DataTransferModal from "@/components/common/DataTransferModal";
 import AiHppModal from "@/components/common/AiHppModal";
 
 export default function ProductsPage() {
-  const { products, addProduct, updateProduct, toggleProductStatus, deleteProduct, importProducts } = useDashboard();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    toggleProductStatus,
+    deleteProduct,
+    importProducts,
+    loadTemplateProducts,
+    activeInstitution,
+    currentUser,
+  } = useDashboard();
 
   const [view, setView] = useState("grid");
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,21 +196,31 @@ export default function ProductsPage() {
       {view === "grid" ? (
         filtered.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 border border-[#f0e9e1] shadow-xs text-center">
-            <div className="flex flex-col items-center justify-center max-w-[360px] mx-auto">
+            <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
               <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
                 <TagIcon className="w-6 h-6 text-[#2545ff]" />
               </div>
-              <div className="font-extrabold text-[#0c1754] text-[15px]">Katalog Produk Masih Kosong</div>
-              <p className="text-[12.5px] text-[#64748b] mt-1 mb-4">
-                Tambahkan produk atau paket layanan pertama bisnis Anda untuk mulai melayani penjualan otomatis via WhatsApp.
+              <div className="font-extrabold text-[#0c1754] text-[16px]">Katalog Produk Masih Kosong</div>
+              <p className="text-[12.5px] text-[#64748b] mt-1 mb-5 leading-relaxed">
+                Katalog produk untuk instansi <strong>{activeInstitution?.name || "Anda"}</strong> belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.
               </p>
-              <button
-                type="button"
-                onClick={handleOpenAdd}
-                className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
-              >
-                + Tambah Produk Pertama
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleOpenAdd}
+                  className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
+                >
+                  + Tambah Produk Manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadTemplateProducts("auto")}
+                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[12.5px] font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                >
+                  <SparklesIcon className="w-4 h-4 text-amber-600" />
+                  <span>Muat Produk Rekomendasi Instansi</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -318,21 +338,31 @@ export default function ProductsPage() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 px-4 text-center">
-                      <div className="flex flex-col items-center justify-center max-w-[360px] mx-auto">
+                      <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
                         <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
                           <TagIcon className="w-6 h-6 text-[#2545ff]" />
                         </div>
-                        <div className="font-extrabold text-[#0c1754] text-[15px]">Katalog Produk Masih Kosong</div>
-                        <p className="text-[12.5px] text-[#64748b] mt-1 mb-4">
-                          Tambahkan produk atau paket layanan pertama bisnis Anda untuk mulai melayani penjualan.
+                        <div className="font-extrabold text-[#0c1754] text-[16px]">Katalog Produk Masih Kosong</div>
+                        <p className="text-[12.5px] text-[#64748b] mt-1 mb-5 leading-relaxed">
+                          Katalog produk untuk instansi <strong>{activeInstitution?.name || "Anda"}</strong> belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.
                         </p>
-                        <button
-                          type="button"
-                          onClick={handleOpenAdd}
-                          className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
-                        >
-                          + Tambah Produk Pertama
-                        </button>
+                        <div className="flex flex-wrap items-center justify-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={handleOpenAdd}
+                            className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
+                          >
+                            + Tambah Produk Manual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => loadTemplateProducts("auto")}
+                            className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[12.5px] font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                          >
+                            <SparklesIcon className="w-4 h-4 text-amber-600" />
+                            <span>Muat Produk Rekomendasi Instansi</span>
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>

@@ -1,16 +1,15 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { MetricCard } from "@/components/dashboard";
 import {
   UsersIcon,
-  CrownIcon,
   CheckCircleIcon,
-  AlertTriangleIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
   DownloadIcon,
   BuildingIcon,
-  SparklesIcon,
-  MessageSquareIcon,
-  ShieldCheckIcon,
+  SearchIcon,
 } from "@/components/icons";
 
 export default function SuperadminLeadsPage() {
@@ -26,13 +25,12 @@ export default function SuperadminLeadsPage() {
       phone: "+62 819-2233-4455",
       institutionId: "INST-001",
       institutionName: "Batik Mahakarya Solo",
-      source: "TikTok Click to WA",
+      source: "TikTok WA",
       product: "Kain Batik Tulis Solo",
       value: 380000,
-      riskScore: "45% (Sedang)",
       status: "follow_up",
       assignedCs: "Sarah Amalia",
-      date: "29 Agu 2026, 17:40",
+      date: "29 Agu 2026",
     },
     {
       id: "GL-902",
@@ -43,10 +41,9 @@ export default function SuperadminLeadsPage() {
       source: "WhatsApp Direct",
       product: "Serum Anti-Aging Gold",
       value: 290000,
-      riskScore: "12% (Aman)",
       status: "closed_won",
       assignedCs: "Budi Santoso",
-      date: "29 Agu 2026, 16:15",
+      date: "29 Agu 2026",
     },
     {
       id: "GL-903",
@@ -54,13 +51,12 @@ export default function SuperadminLeadsPage() {
       phone: "+62 812-9988-4433",
       institutionId: "INST-001",
       institutionName: "Batik Mahakarya Solo",
-      source: "Instagram Reels Ads",
+      source: "Instagram Ads",
       product: "Kemeja Batik Sutra",
       value: 650000,
-      riskScore: "8% (Sangat Aman)",
       status: "closed_won",
       assignedCs: "Sarah Amalia",
-      date: "29 Agu 2026, 15:30",
+      date: "29 Agu 2026",
     },
     {
       id: "GL-904",
@@ -68,13 +64,12 @@ export default function SuperadminLeadsPage() {
       phone: "+62 878-4455-6677",
       institutionId: "INST-004",
       institutionName: "Geprek Juara",
-      source: "Facebook Feed Ads",
-      product: "Paket Juara 1 (Geprek + Es Teh)",
+      source: "Facebook Ads",
+      product: "Paket Juara 1",
       value: 88000,
-      riskScore: "15% (Aman)",
       status: "new",
-      assignedCs: "CS 1 - Geprek Juara",
-      date: "29 Agu 2026, 14:05",
+      assignedCs: "CS 1 - Geprek",
+      date: "29 Agu 2026",
     },
     {
       id: "GL-905",
@@ -82,13 +77,12 @@ export default function SuperadminLeadsPage() {
       phone: "+62 813-7766-5544",
       institutionId: "INST-002",
       institutionName: "Lumiere Skincare Official",
-      source: "TikTok Shop Live",
+      source: "TikTok Shop",
       product: "Acne Clear Package",
       value: 420000,
-      riskScore: "78% (Tinggi)",
-      status: "rts_risk",
+      status: "follow_up",
       assignedCs: "Dewi Lestari",
-      date: "29 Agu 2026, 12:20",
+      date: "29 Agu 2026",
     },
     {
       id: "GL-906",
@@ -96,13 +90,12 @@ export default function SuperadminLeadsPage() {
       phone: "+62 852-3344-5566",
       institutionId: "INST-003",
       institutionName: "Yayasan ZISWAF Peduli Umat",
-      source: "Google Search Ads",
-      product: "Wakaf Al-Quran Pedalaman",
+      source: "Google Search",
+      product: "Wakaf Al-Quran",
       value: 500000,
-      riskScore: "5% (Aman)",
       status: "closed_won",
       assignedCs: "Ahmad Fauzi",
-      date: "29 Agu 2026, 11:00",
+      date: "29 Agu 2026",
     },
   ];
 
@@ -118,94 +111,89 @@ export default function SuperadminLeadsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#f1f3f7]">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
-              <CrownIcon className="w-3.5 h-3.5" />
-              <span>Superadmin Master Operasional</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+              Operasional Global
             </span>
+            <span className="text-[12px] text-[#64748b]">Arus Leads WhatsApp Lintas Tenant</span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
-            Data Leads Global (Lintas Instansi)
+          <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+            Data Leads Global
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
-            Monitoring seluruh arus kontak calon pembeli WhatsApp dari seluruh tenant bisnis yang terdaftar.
-          </p>
         </div>
 
         <button
           type="button"
-          onClick={() => alert("Mengunduh seluruh database leads platform ke format CSV/Excel...")}
-          className="btn-primary !py-2.5 !px-4 text-[13px] font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          onClick={() => alert("Mengunduh data leads...")}
+          className="px-4 py-2 rounded-xl bg-white border border-[#e2e8f0] hover:bg-[#f8fafc] text-[#0f172a] text-[13px] font-bold shadow-2xs transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
-          <DownloadIcon className="w-4 h-4" />
-          <span>Export All Leads</span>
+          <DownloadIcon className="w-4 h-4 text-[#2545ff]" />
+          <span>Export CSV</span>
         </button>
       </div>
 
-      {/* Metric Cards */}
+      {/* 4 Clean Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Total Leads Global</span>
-            <UsersIcon className="w-4 h-4 text-[#2545ff]" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">18,429</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Tersebar di 4 Tenant</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Konversi Closed Won</span>
-            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">72.4%</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">+4.2% vs rata-rata industri</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>RTS Dicegah AI</span>
-            <ShieldCheckIcon className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">1,248 Order</div>
-          <span className="text-[11.5px] font-bold text-purple-600">Efisiensi Rp 142 Jt</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Rata-rata Respon Bot</span>
-            <SparklesIcon className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">1.8 Detik</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">NVIDIA NIM Ultra-Fast</span>
-        </div>
+        <MetricCard
+          title="Total Leads Global"
+          value="18.429"
+          subtitle="Tersebar di 4 Tenant"
+          delta="+12.4%"
+          deltaType="positive"
+          sparklineData={[120, 145, 138, 170, 162, 205, 190]}
+          icon={UsersIcon}
+        />
+        <MetricCard
+          title="Konversi Closing"
+          value="72.4%"
+          subtitle="Tingkat closing tim CS"
+          delta="+4.2%"
+          deltaType="positive"
+          sparklineData={[65, 68, 67, 70, 71, 74, 72]}
+          icon={CheckCircleIcon}
+        />
+        <MetricCard
+          title="RTS Dicegah AI"
+          value="1.248 Order"
+          subtitle="Efisiensi Rp 142 Jt"
+          delta="100% Valid"
+          deltaType="positive"
+          sparklineData={[18, 22, 20, 26, 24, 30, 28]}
+          icon={ShieldCheckIcon}
+        />
+        <MetricCard
+          title="Kecepatan Respon"
+          value="1.8 Detik"
+          subtitle="AI Assistant auto-reply"
+          delta="Optimal"
+          deltaType="positive"
+          sparklineData={[2.4, 2.2, 2.0, 1.9, 1.8, 1.8, 1.8]}
+          icon={SparklesIcon}
+        />
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#ede8e2] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          {/* Search Box */}
-          <div className="relative w-full sm:w-[260px]">
+      {/* Filter Toolbar & Clean Table */}
+      <div className="bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 pb-4 mb-4 border-b border-[#f1f3f7]">
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            {/* Search */}
             <input
               type="text"
-              placeholder="Cari nama, WA, produk..."
+              placeholder="Cari kontak, WA, produk..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-[13px] font-medium bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3.5 py-2 text-[#1e2640] outline-none focus:border-[#2545ff]"
+              className="text-[13px] bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-[#0f172a] placeholder:text-[#94a3b8] outline-none focus:border-[#2545ff] focus:bg-white transition-all w-full sm:w-[240px]"
             />
-          </div>
 
-          {/* Filter Tenant */}
-          <div className="flex items-center gap-1.5 bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3 py-1.5">
-            <BuildingIcon className="w-3.5 h-3.5 text-[#8f95a8]" />
+            {/* Filter Tenant */}
             <select
               value={selectedInst}
               onChange={(e) => setSelectedInst(e.target.value)}
-              className="bg-transparent text-[12.5px] font-bold text-[#1e2640] outline-none cursor-pointer"
+              className="text-[12.5px] font-semibold bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2 text-[#0f172a] outline-none cursor-pointer"
             >
               <option value="all">Semua Tenant Instansi</option>
               {institutions.map((inst) => (
@@ -214,106 +202,73 @@ export default function SuperadminLeadsPage() {
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Filter Status */}
-          <div className="flex items-center gap-1.5 bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3 py-1.5">
-            <span className="text-[11px] font-bold uppercase text-[#8f95a8]">Status:</span>
+            {/* Filter Status */}
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent text-[12.5px] font-bold text-[#1e2640] outline-none cursor-pointer"
+              className="text-[12.5px] font-semibold bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2 text-[#0f172a] outline-none cursor-pointer"
             >
-              <option value="all">Semua Status</option>
+              <option value="all">Semua Status Leads</option>
               <option value="new">Lead Baru</option>
-              <option value="follow_up">Sedang Follow-Up</option>
-              <option value="closed_won">Closed / Lunas</option>
-              <option value="rts_risk">Resiko RTS COD</option>
+              <option value="follow_up">Sedang Follow Up</option>
+              <option value="closed_won">Closing Lunas</option>
             </select>
           </div>
+
+          <span className="text-[12px] text-[#64748b] font-medium self-end md:self-auto">
+            Menampilkan <strong>{filteredLeads.length}</strong> leads
+          </span>
         </div>
 
-        <div className="text-[12.5px] font-bold text-[#8f95a8] self-end md:self-auto">
-          Menampilkan <span className="text-[#2545ff]">{filteredLeads.length}</span> dari {mockGlobalLeads.length} Leads
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>ID & Kontak</th>
-              <th>Tenant Instansi</th>
-              <th>Sumber Iklan & Minat Produk</th>
-              <th>Est. Nilai</th>
-              <th>Skor Resiko COD</th>
-              <th>Status & CS Assigned</th>
-              <th>Waktu Masuk</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredLeads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-[#fcfbf9] transition-colors">
-                <td>
-                  <div className="font-bold text-[#1e2640] text-[13.5px]">{lead.customerName}</div>
-                  <div className="text-[12px] text-[#5a6380] font-mono">{lead.phone}</div>
-                </td>
-                <td>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
-                    <BuildingIcon className="w-3 h-3" />
-                    <span>{lead.institutionName}</span>
-                  </span>
-                </td>
-                <td>
-                  <div className="text-[13px] font-semibold text-[#1e2640]">{lead.product}</div>
-                  <div className="text-[11.5px] text-[#8f95a8]">{lead.source}</div>
-                </td>
-                <td>
-                  <div className="font-extrabold text-[#1e2640] text-[13px]">
-                    Rp {lead.value.toLocaleString("id-ID")}
-                  </div>
-                </td>
-                <td>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
-                      lead.status === "rts_risk"
-                        ? "bg-rose-100 text-rose-700 border border-rose-200"
-                        : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                    }`}
-                  >
-                    {lead.status === "rts_risk" ? (
-                      <AlertTriangleIcon className="w-3 h-3" />
-                    ) : (
-                      <CheckCircleIcon className="w-3 h-3" />
-                    )}
-                    <span>{lead.riskScore}</span>
-                  </span>
-                </td>
-                <td>
-                  <div className="mb-1">
-                    {lead.status === "closed_won" && (
-                      <span className="badge badge-success text-[11px]">Closed / Lunas</span>
-                    )}
-                    {lead.status === "follow_up" && (
-                      <span className="badge badge-warning text-[11px]">Follow-Up CS</span>
-                    )}
-                    {lead.status === "new" && (
-                      <span className="badge badge-info text-[11px]">Lead Baru</span>
-                    )}
-                    {lead.status === "rts_risk" && (
-                      <span className="badge badge-danger text-[11px]">Mitigasi RTS</span>
-                    )}
-                  </div>
-                  <div className="text-[11px] text-[#8f95a8]">CS: {lead.assignedCs}</div>
-                </td>
-                <td>
-                  <span className="text-[12px] text-[#5a6380]">{lead.date}</span>
-                </td>
+        {/* Clean Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <th className="py-2.5 px-4 font-bold text-[#475467]">Pelanggan</th>
+                <th className="py-2.5 px-4 font-bold text-[#475467]">Instansi Bisnis</th>
+                <th className="py-2.5 px-4 font-bold text-[#475467]">Produk / Menu</th>
+                <th className="py-2.5 px-4 font-bold text-[#475467]">Nominal</th>
+                <th className="py-2.5 px-4 font-bold text-[#475467]">CS Penanggung Jawab</th>
+                <th className="py-2.5 px-4 font-bold text-[#475467]">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#f1f3f7]">
+              {filteredLeads.map((lead) => (
+                <tr key={lead.id} className="hover:bg-[#f8fafc]/80 transition-colors">
+                  <td className="py-3 px-4">
+                    <div className="font-bold text-[#0f172a]">{lead.customerName}</div>
+                    <div className="text-[11.5px] text-[#94a3b8] font-mono">{lead.phone}</div>
+                  </td>
+                  <td className="py-3 px-4 text-[#475467] font-medium">{lead.institutionName}</td>
+                  <td className="py-3 px-4 text-[#475467]">{lead.product}</td>
+                  <td className="py-3 px-4 font-extrabold text-[#0f172a]">
+                    Rp {lead.value.toLocaleString()}
+                  </td>
+                  <td className="py-3 px-4 text-[#475467]">{lead.assignedCs}</td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                        lead.status === "closed_won"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : lead.status === "follow_up"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {lead.status === "closed_won"
+                        ? "Closing Lunas"
+                        : lead.status === "follow_up"
+                        ? "Follow-up"
+                        : "Lead Baru"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

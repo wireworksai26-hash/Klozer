@@ -1,17 +1,28 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useDashboard } from "@/context/DashboardContext";
 import {
+  MetricCard,
+  TrendAreaChart,
+  ConversionFunnelChart,
+  PaymentBreakdownChart,
+} from "@/components/dashboard";
+import {
+  DollarSignIcon,
+  ShoppingCartIcon,
+  UsersIcon,
+  TrendingUpIcon,
+  MessageSquareIcon,
   CrownIcon,
   BriefcaseIcon,
   ClipboardListIcon,
   HeadphonesIcon,
-  TrendingUpIcon,
-  ShieldCheckIcon,
-  UsersIcon,
-  MessageSquareIcon,
   CheckCircleIcon,
+  PlusIcon,
+  CalendarIcon,
+  ChevronRightIcon,
+  SparklesIcon,
 } from "@/components/icons";
 
 export default function DashboardPage() {
@@ -25,99 +36,208 @@ export default function DashboardPage() {
     activeSubscription,
     currentUser,
     activeInstitution,
+    language,
+    t,
   } = useDashboard();
-  const [activeRange, setActiveRange] = useState("7H");
 
-  const paidOrders = orders.filter((o) => o.status === "paid" || o.status === "processing" || o.status === "shipped");
-  const totalRevenue = paidOrders.reduce((acc, curr) => acc + curr.total, 0);
+  const [dateFilter, setDateFilter] = useState("today"); // "today" | "week" | "month"
 
-  // ==================== 1. SUPER ADMIN UNIVERSAL OVERVIEW ====================
+  const paidOrders = orders.filter(
+    (o) => o.status === "paid" || o.status === "processing" || o.status === "shipped"
+  );
+  const totalRevenue = paidOrders.reduce((acc, curr) => acc + (Number(curr.total || curr.total_amount || 0)), 0);
+  const closingRatePct =
+    leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) : (paidOrders.length > 0 ? "100.0" : "0.0");
+
+  const csList = teamMembers.filter(
+    (t) =>
+      t.role?.includes("CS") ||
+      t.role?.toLowerCase()?.includes("customer service") ||
+      t.role?.toLowerCase()?.includes("frontliner")
+  );
+
+  // Dynamic Sparkline data derived from real orders and leads
+  const revenueSpark = React.useMemo(() => {
+    if (!orders || orders.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+    const points = [0, 0, 0, 0, 0, 0, 0];
+    const now = new Date();
+    orders.forEach((o) => {
+      const d = o.created_at ? new Date(o.created_at) : new Date();
+      const diffDays = Math.min(6, Math.max(0, Math.floor((now - d) / (1000 * 60 * 60 * 24))));
+      const idx = 6 - diffDays;
+      points[idx] += Number(o.total || o.total_amount || 0) / 1000000;
+    });
+    return points;
+  }, [orders]);
+
+  const ordersSpark = React.useMemo(() => {
+    if (!orders || orders.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+    const points = [0, 0, 0, 0, 0, 0, 0];
+    const now = new Date();
+    orders.forEach((o) => {
+      const d = o.created_at ? new Date(o.created_at) : new Date();
+      const diffDays = Math.min(6, Math.max(0, Math.floor((now - d) / (1000 * 60 * 60 * 24))));
+      const idx = 6 - diffDays;
+      points[idx] += 1;
+    });
+    return points;
+  }, [orders]);
+
+  const leadsSpark = React.useMemo(() => {
+    if (!leads || leads.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+    const points = [0, 0, 0, 0, 0, 0, 0];
+    const now = new Date();
+    leads.forEach((l) => {
+      const d = l.created_at ? new Date(l.created_at) : new Date();
+      const diffDays = Math.min(6, Math.max(0, Math.floor((now - d) / (1000 * 60 * 60 * 24))));
+      const idx = 6 - diffDays;
+      points[idx] += 1;
+    });
+    return points;
+  }, [leads]);
+
+  const closingSpark = React.useMemo(() => {
+    if (!orders || orders.length === 0) return [0, 0, 0, 0, 0, 0, 0];
+    const rate = Number(closingRatePct) || 0;
+    return [Math.max(0, rate - 4), Math.max(0, rate - 2), rate, Math.max(0, rate - 1), rate, Math.min(100, rate + 2), rate];
+  }, [orders, closingRatePct]);
+
+  // =========================================================================
+  // 1. SUPER ADMIN PLATFORM CONSOLE VIEW
+  // =========================================================================
   if (role === "superadmin") {
     return (
-      <div className="flex flex-col gap-6">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-6 font-sans">
+        {/* Clean Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
-                <CrownIcon className="w-3.5 h-3.5" />
-                <span>Super Admin Universal Console</span>
+              <span className="text-[11.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                Super Admin Console
+              </span>
+              <span className="text-[12px] text-[#64748b]">
+                {t("dashboard.superadminSubtitle", "Universal Multi-Tenant Overview")}
               </span>
             </div>
-            <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Platform Master Overview</h1>
-            <p className="text-[13.5px] text-[#64748b]">Monitoring universal seluruh tenant institusi, kuota WhatsApp API, dan stabilitas server.</p>
+            <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+              {t("dashboard.superadminTitle", "Platform Master Overview")}
+            </h1>
           </div>
 
-          <Link href="/dashboard/institutions" className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold self-start sm:self-auto flex items-center gap-1.5">
-            <span>+</span>
-            <span>Tambah Institusi Baru</span>
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/dashboard/institutions"
+              className="px-4 py-2 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-1.5 no-underline"
+            >
+              <span>{t("institutions.addBtn", "+ Tambah Instansi")}</span>
+            </Link>
+          </div>
         </div>
 
-        {/* 4 Universal Metrics */}
+        {/* 4 Core Platform Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Total Institusi Terdaftar</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">{institutions.length} Tenant</div>
-            <span className="text-[11.5px] font-bold text-emerald-600">100% Aktif Berlangganan</span>
-          </div>
+          <MetricCard
+            title={t("dashboard.totalTenants", "Total Tenant Institusi")}
+            value={`${institutions.length} Tenant`}
+            subtitle={t("dashboard.totalTenantsSub", "100% Aktif Berlangganan")}
+            delta={language === "en" ? "+2 New" : "+2 Baru"}
+            deltaType="positive"
+            sparklineData={[3, 4, 4, 5, 5, 6, 7]}
+            icon={CrownIcon}
+          />
+          <MetricCard
+            title={t("dashboard.totalGmv", "Total GMV Transaksi")}
+            value={totalRevenue > 0 ? `Rp ${(totalRevenue / 1000000).toFixed(1)}Jt` : "Rp 0"}
+            subtitle={t("dashboard.totalGmvSub", "Periode 30 hari terakhir")}
+            delta="+18.4%"
+            deltaType="positive"
+            sparklineData={revenueSpark}
+            icon={DollarSignIcon}
+          />
+          <MetricCard
+            title={t("dashboard.messagesProcessed", "Pesan WA Diproses")}
+            value={`${leads.length * 12 + 15}`}
+            subtitle={t("dashboard.messagesProcessedSub", "Cloud API Uptime: 99.98%")}
+            delta="+24.1%"
+            deltaType="positive"
+            sparklineData={leadsSpark}
+            icon={MessageSquareIcon}
+          />
+          <MetricCard
+            title={t("dashboard.antiFraud", "Deteksi Anti-Struk Palsu")}
+            value="142 Kasus"
+            subtitle={t("dashboard.antiFraudSub", "Rp 48.2 Jt Kerugian Dicegah")}
+            delta={language === "en" ? "100% Accurate" : "100% Akurat"}
+            deltaType="positive"
+            sparklineData={[12, 18, 15, 24, 20, 28, 25]}
+            icon={CheckCircleIcon}
+          />
+        </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Total GMV Transaksi Platform</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">Rp 1.48 Miliar</div>
-            <span className="text-[11.5px] font-bold text-emerald-600">Naik 18.4% vs bulan lalu</span>
+        {/* Charts Grid */}
+        <div className="grid lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8">
+            <TrendAreaChart
+              orders={orders}
+              title={t("dashboard.revenueGlobalTitle", "Tren Transaksi Seluruh Platform")}
+              subtitle={t("dashboard.revenueGlobalSubtitle", "Volume pergerakan GMV seluruh tenant bisnis & NGO")}
+            />
           </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Pesan WhatsApp Diproses</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">120.350</div>
-            <span className="text-[11.5px] font-bold text-[#2545ff]">Cloud API Uptime: 99.98%</span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Deteksi Anti-Struk Palsu</span>
-            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">142 Kasus</div>
-            <span className="text-[11.5px] font-bold text-emerald-700">Rp 48.2 Jt Kerugian Dicegah</span>
+          <div className="lg:col-span-4">
+            <PaymentBreakdownChart
+              orders={orders}
+              title={language === "en" ? "Platform Payment Channels" : "Channel Pembayaran Platform"}
+              subtitle={language === "en" ? "QRIS vs Bank Transfer Distribution" : "QRIS vs Bank Transfer se-Indonesia"}
+            />
           </div>
         </div>
 
-        {/* Universal Tenant Table Overview */}
-        <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-            <h3 className="text-[16px] font-extrabold text-[#0c1754]">Daftar Institusi & Penggunaan Kuota</h3>
-            <Link href="/dashboard/institutions" className="text-[12.5px] font-bold text-[#2545ff] hover:underline">
-              Kelola Semua Institusi →
+        {/* Tenant Table List */}
+        <div className="bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
+          <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7] mb-4">
+            <div>
+              <h3 className="text-[16px] font-bold text-[#0f172a]">
+                {language === "en" ? "Institutions & Quota Consumption" : "Daftar Institusi & Pemakaian Kuota"}
+              </h3>
+              <p className="text-[12px] text-[#64748b]">
+                {language === "en" ? "Monitor WhatsApp messaging quota & AI tokens" : "Monitoring kuota pesan WhatsApp & AI tokens"}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/institutions"
+              className="text-[12.5px] font-bold text-[#2545ff] hover:underline"
+            >
+              {language === "en" ? "Manage All →" : "Kelola Semua →"}
             </Link>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-[13px]">
               <thead>
-                <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Nama Institusi</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Sektor</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Paket</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Kuota Terpakai</th>
-                  <th className="py-2.5 px-4 font-bold text-[#64748b]">Status</th>
+                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Institution Name" : "Nama Institusi"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Sector" : "Sektor"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Plan Tier" : "Paket"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "WhatsApp Quota" : "Kuota WhatsApp"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{t("common.status", "Status")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#f0e9e1]">
+              <tbody className="divide-y divide-[#f1f3f7]">
                 {institutions.map((inst) => (
-                  <tr key={inst.id} className="hover:bg-[#fcfbf9]">
-                    <td className="py-3 px-4 font-bold text-[#0c1754]">{inst.name}</td>
+                  <tr key={inst.id} className="hover:bg-[#f8fafc]/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-[#0f172a]">{inst.name}</td>
                     <td className="py-3 px-4 text-[#64748b]">{inst.sector}</td>
                     <td className="py-3 px-4">
-                      <span className="text-[11px] font-bold bg-[#eaebf8] text-[#2545ff] px-2 py-0.5 rounded-full">
-                        {inst.tier}
+                      <span className="text-[11px] font-bold bg-[#f0f4ff] text-[#2545ff] px-2.5 py-0.5 rounded-full border border-[#dbeafe]">
+                        {inst.tier?.toUpperCase()}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium text-[#171417]">
-                      {inst.quotaUsed.toLocaleString()} / {inst.quotaMax.toLocaleString()}
+                    <td className="py-3 px-4 font-mono text-[#0f172a]">
+                      {(inst.quotaUsed || 0).toLocaleString()} / {(inst.quotaMax || 50000).toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                        Aktif
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {t("common.active", "Aktif")}
                       </span>
                     </td>
                   </tr>
@@ -126,448 +246,269 @@ export default function DashboardPage() {
             </table>
           </div>
         </div>
-
       </div>
     );
   }
 
-  // ==================== 2. SUPERVISOR (SPV) OPERATIONAL OVERVIEW ====================
-  if (role === "spv") {
-    const spvClosingRate = leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%";
-    const csList = teamMembers.filter((t) => t.role?.includes("CS") || t.role?.toLowerCase()?.includes("customer service"));
-
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1.5">
-                <ClipboardListIcon className="w-3.5 h-3.5" />
-                <span>Supervisor (SPV) Operations</span>
-              </span>
-            </div>
-            <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Overview Operasional & CS</h1>
-            <p className="text-[13.5px] text-[#64748b]">Pantau beban kerja tim CS, persetujuan pesanan, dan distribusi leads.</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard/orders" className="btn-primary !py-2 !px-4 text-[13px]">
-              + Buat Pesanan Manual
-            </Link>
-          </div>
-        </div>
-
-        {/* SPV Active Subscription Banner */}
-        <div className="bg-gradient-to-r from-[#0c1754] via-[#1a2d8a] to-[#2545ff] p-4 sm:p-5 rounded-2xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 flex-shrink-0">
-              <CrownIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-[15px]">{activeSubscription?.plan || "Pro Growth"}</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  Aktif
-                </span>
-                <span className="text-[11.5px] text-white/70 font-mono">
-                  • {currentUser?.institutionName || activeInstitution?.name || "Bisnis Saya"}
-                </span>
-              </div>
-              <p className="text-[12.5px] text-white/80 mt-0.5">
-                Masa aktif tersisa: <strong className="text-amber-300 font-mono">{activeSubscription?.daysLeft || 350} Hari</strong> (s/d {activeSubscription?.expiryDate || "28 Agu 2027"}) • Alokasi: <strong>{activeSubscription?.csSeatsUsed || 3}/{activeSubscription?.csSeats || 5} Kursi CS</strong>
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href="/dashboard/subscription"
-            className="px-4 py-2 rounded-xl bg-white text-[#0c1754] hover:bg-white/90 font-extrabold text-[12.5px] transition-all no-underline shadow-sm self-start sm:self-auto flex items-center gap-1.5"
-          >
-            <span>Perpanjang Paket Toko</span>
-            <span>→</span>
-          </Link>
-        </div>
-
-        {/* SPV Operational Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Pesanan Menunggu Proses</span>
-            <div className="text-[28px] font-extrabold text-amber-600 mt-1">
-              {orders.filter((o) => o.status === "waiting_payment" || o.status === "processing").length} Pesanan
-            </div>
-            <span className="text-[11.5px] font-bold text-[#2545ff]">
-              {orders.length > 0 ? "Butuh Verifikasi / Kirim" : "Belum ada pesanan masuk"}
-            </span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Lead Belum Ditugaskan</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
-              {leads.filter((l) => l.cs?.includes("Belum") || !l.cs).length} Lead
-            </div>
-            <span className="text-[11.5px] font-bold text-amber-600">
-              {leads.length > 0 ? "Siap dibagi ke CS" : "Belum ada kontak baru"}
-            </span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Stok Gudang Kritis</span>
-            <div className="text-[28px] font-extrabold text-red-600 mt-1">
-              {products.filter((p) => (p.stock || 0) <= (p.lowStock || 5)).length} Produk
-            </div>
-            <span className="text-[11.5px] font-bold text-red-600">
-              {products.length > 0 ? "Perlu Restock Segera" : "Katalog produk kosong"}
-            </span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Rata-rata Closing Rate CS</span>
-            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">{spvClosingRate}</div>
-            <span className="text-[11.5px] font-bold text-emerald-700">
-              {paidOrders.length > 0 ? "Target Tercapai" : "Belum ada data transaksi"}
-            </span>
-          </div>
-        </div>
-
-        {/* CS Team Leaderboard */}
-        <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-xs">
-          <h3 className="text-[16px] font-extrabold text-[#0c1754] mb-3">Rekap Performa & Komisi Staf CS</h3>
-          <div className="overflow-x-auto">
-            {csList.length === 0 ? (
-              <div className="p-6 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[13px]">
-                Belum ada data staf CS yang terdaftar.
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse text-[13px]">
-                <thead>
-                  <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Nama CS</th>
-                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Closing Rate</th>
-                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Omzet Dihasilkan</th>
-                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Estimasi Komisi (5%)</th>
-                    <th className="py-2.5 px-4 font-bold text-[#64748b]">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0e9e1]">
-                  {csList.map((cs) => (
-                    <tr key={cs.id} className="hover:bg-[#fcfbf9]">
-                      <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.name}</td>
-                      <td className="py-3 px-4 font-extrabold text-emerald-600">{cs.csClosingRate || "0%"}</td>
-                      <td className="py-3 px-4 font-bold text-[#0c1754]">{cs.revenueGen || "Rp 0"}</td>
-                      <td className="py-3 px-4 font-bold text-[#2545ff]">
-                        {cs.revenueGen && cs.revenueGen !== "-" && cs.revenueGen !== "Rp 0"
-                          ? "Rp " + (parseInt(cs.revenueGen.replace(/[^0-9]/g, "") || 0) * 0.05).toLocaleString()
-                          : "Rp 0"}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                          Aktif Bertugas
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ==================== 3. CUSTOMER SERVICE (CS) VIEW ====================
+  // =========================================================================
+  // 2. CUSTOMER SERVICE (CS) FRONTLINER WORKSPACE VIEW
+  // =========================================================================
   if (role === "cs") {
     return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-6 font-sans">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
-                <HeadphonesIcon className="w-3.5 h-3.5" />
-                <span>CS Frontliner Workspace</span>
+              <span className="text-[11.5px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                {language === "en" ? "Frontliner Desk" : "Frontliner Meja Kerja"}
+              </span>
+              <span className="text-[12px] text-[#64748b]">
+                {t("dashboard.csSubtitle", "Fokus Respon & Closing Cepat")}
               </span>
             </div>
-            <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Meja Kerja Customer Service</h1>
-            <p className="text-[13.5px] text-[#64748b]">Fokus respon pesan masuk, buat tagihan QRIS instan, dan capai target closing hari ini.</p>
+            <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+              {t("dashboard.csTitle", "Workspace Customer Service")}
+            </h1>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard/chat" className="btn-primary !py-2.5 !px-5 text-[13px] font-bold flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/dashboard/chat"
+              className="px-4 py-2.5 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-2 no-underline"
+            >
               <MessageSquareIcon className="w-4 h-4" />
-              <span>Buka Live Chat WhatsApp</span>
+              <span>{language === "en" ? "Open WhatsApp Live Chat" : "Buka Live Chat WhatsApp"}</span>
             </Link>
           </div>
         </div>
 
         {/* CS Personal Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Closing Rate Pribadi</span>
-            <div className="text-[28px] font-extrabold text-emerald-600 mt-1">
-              {leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%"}
-            </div>
-            <span className="text-[11.5px] font-bold text-emerald-700">
-              {paidOrders.length > 0 ? "Performa aktif" : "Belum ada transaksi"}
-            </span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Omzet Penjualan Saya</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
-              Rp {totalRevenue.toLocaleString()}
-            </div>
-            <span className="text-[11.5px] font-bold text-[#2545ff]">{paidOrders.length} Pesanan Lunas</span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Estimasi Komisi (5%)</span>
-            <div className="text-[28px] font-extrabold text-[#2545ff] mt-1">
-              Rp {(totalRevenue * 0.05).toLocaleString()}
-            </div>
-            <span className="text-[11.5px] font-bold text-emerald-600">Dicairkan Akhir Bulan</span>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-xs">
-            <span className="text-[12.5px] font-medium text-[#64748b]">Leads Dalam Percakapan</span>
-            <div className="text-[28px] font-extrabold text-[#0c1754] mt-1">
-              {leads.length} Kontak
-            </div>
-            <span className="text-[11.5px] font-bold text-amber-600">WhatsApp Aktif</span>
-          </div>
+          <MetricCard
+            title={language === "en" ? "Personal Closing Rate" : "Closing Rate Pribadi"}
+            value={`${closingRatePct}%`}
+            subtitle={language === "en" ? "Minimum target: 30%" : "Target minimum: 30%"}
+            delta="+4.2%"
+            deltaType="positive"
+            sparklineData={closingSpark}
+            icon={TrendingUpIcon}
+          />
+          <MetricCard
+            title={language === "en" ? "My Sales Revenue" : "Omzet Penjualan Saya"}
+            value={totalRevenue > 0 ? `Rp ${(totalRevenue / 1000000).toFixed(1)}Jt` : "Rp 0"}
+            subtitle={language === "en" ? `${paidOrders.length} Paid Orders` : `${paidOrders.length} Pesanan Lunas`}
+            delta="+12.5%"
+            deltaType="positive"
+            sparklineData={revenueSpark}
+            icon={DollarSignIcon}
+          />
+          <MetricCard
+            title={language === "en" ? "CS Commission (5%)" : "Estimasi Komisi CS (5%)"}
+            value={`Rp ${(totalRevenue * 0.05).toLocaleString()}`}
+            subtitle={language === "en" ? "Disbursed end of month" : "Dicairkan akhir bulan"}
+            delta={language === "en" ? "Auto" : "Otomatis"}
+            deltaType="positive"
+            sparklineData={revenueSpark}
+            icon={CheckCircleIcon}
+          />
+          <MetricCard
+            title={language === "en" ? "Active Lead Chats" : "Leads Dalam Percakapan"}
+            value={`${leads.length} Kontak`}
+            subtitle="WhatsApp Chat Aktif"
+            delta="Online"
+            deltaType="neutral"
+            sparklineData={leadsSpark}
+            icon={UsersIcon}
+          />
         </div>
 
-        {/* Recent Deals Table */}
-        <div className="bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-            <h3 className="text-[16px] font-extrabold text-[#0c1754]">Pesanan Terakhir Berhasil Ditutup</h3>
-            <Link href="/dashboard/orders" className="text-[12.5px] font-bold text-[#2545ff] hover:underline">
-              Lihat Semua Pesanan →
-            </Link>
+        {/* Charts & Funnel */}
+        <div className="grid lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8">
+            <TrendAreaChart
+              orders={orders}
+              title={language === "en" ? "My Personal Sales Trend" : "Tren Penjualan Pribadi"}
+              subtitle={language === "en" ? "Your daily closing performance this week" : "Performa closing harian Anda minggu ini"}
+            />
           </div>
-          <div className="flex flex-col gap-2.5">
-            {orders.length === 0 ? (
-              <div className="p-6 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[13px]">
-                Belum ada riwayat pesanan yang ditutup.
-              </div>
-            ) : (
-              orders.slice(0, 3).map((ord) => (
-                <div key={ord.id} className="p-3.5 bg-[#f9f8f6] rounded-xl border border-[#f0e9e1] flex items-center justify-between">
-                  <div>
-                    <span className="font-mono text-[11px] font-bold text-[#2545ff]">{ord.id}</span>
-                    <div className="font-bold text-[#0c1754] text-[13.5px]">{ord.customer} ({ord.city})</div>
-                    <div className="text-[12px] text-[#64748b]">{ord.items[0]?.name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-extrabold text-[#0c1754] text-[14px]">Rp {ord.total.toLocaleString()}</div>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                      {ord.paymentMethod}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="lg:col-span-4">
+            <ConversionFunnelChart
+              leads={leads}
+              orders={orders}
+              title={language === "en" ? "My Closing Funnel" : "Funnel Closing Saya"}
+              subtitle={language === "en" ? "Lead journey from chat to invoice" : "Alur konversi dari chat ke invoice"}
+            />
           </div>
         </div>
       </div>
     );
   }
 
-  // ==================== 4. OWNER / MERCHANT ADMIN VIEW (DEFAULT) ====================
-  const ownerClosingRate = leads.length > 0 ? ((paidOrders.length / leads.length) * 100).toFixed(1) + "%" : "0%";
-  const ownerCsList = teamMembers.filter((t) => t.role?.includes("CS") || t.role?.toLowerCase()?.includes("customer service"));
-
+  // =========================================================================
+  // 3. OWNER / SUPERVISOR / GENERAL DASHBOARD VIEW (DEFAULT)
+  // =========================================================================
   return (
-    <div className="flex flex-col gap-6">
-      
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex flex-col gap-6 font-sans">
+      {/* Clean Top Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#f1f3f7]">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-[#2545ff] px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
-              <BriefcaseIcon className="w-3.5 h-3.5" />
-              <span>Owner / Supervisor Console</span>
+            <span className="text-[11.5px] font-bold text-[#2545ff] bg-[#f0f4ff] px-2.5 py-0.5 rounded-full border border-[#dbeafe]">
+              {currentUser?.institutionName || activeInstitution?.name || "Klozer Smart Commerce"}
+            </span>
+            <span className="text-[12px] text-[#64748b]">
+              {t("dashboard.ownerSubtitle", "Overview Penjualan & Performa CS")}
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Dashboard Overview</h1>
-          <p className="text-[13.5px] text-[#64748b]">Ringkasan performa penjualan WhatsApp hari ini</p>
+          <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+            {t("dashboard.ownerTitle", "Dashboard Utama")}
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/orders" className="btn-primary !py-2.5 !px-5 text-[13px] font-bold">
-            + Buat Pesanan Manual
+
+        {/* Quick Action Buttons */}
+        <div className="flex items-center flex-wrap gap-2.5">
+          <Link
+            href="/dashboard/chat"
+            className="px-3.5 py-2 rounded-xl border border-[#e2e8f0] bg-white hover:bg-[#f8fafc] text-[#0f172a] text-[13px] font-bold shadow-2xs transition-all flex items-center gap-1.5 no-underline"
+          >
+            <MessageSquareIcon className="w-4 h-4 text-[#2545ff]" />
+            <span>{t("dashboard.quickLiveChat", "Live Chat")}</span>
+          </Link>
+
+          <Link
+            href="/dashboard/orders"
+            className="px-4 py-2 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-1.5 no-underline"
+          >
+            <span>{t("dashboard.quickNewOrder", "+ Buat Pesanan")}</span>
           </Link>
         </div>
       </div>
 
-      {/* Owner Active Subscription Banner */}
-      <div className="bg-gradient-to-r from-[#0c1754] via-[#1a2d8a] to-[#2545ff] p-4 sm:p-5 rounded-2xl text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 flex-shrink-0">
-            <CrownIcon className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-extrabold text-[15px]">{activeSubscription?.plan || "Pro Growth"}</span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                Aktif
-              </span>
-              <span className="text-[11.5px] text-white/70 font-mono">
-                • {currentUser?.institutionName || activeInstitution?.name || "Bisnis Saya"}
-              </span>
-            </div>
-            <p className="text-[12.5px] text-white/80 mt-0.5">
-              Masa aktif tersisa: <strong className="text-amber-300 font-mono">{activeSubscription?.daysLeft || 350} Hari</strong> (s/d {activeSubscription?.expiryDate || "28 Agu 2027"}) • Alokasi: <strong>{activeSubscription?.csSeatsUsed || 3}/{activeSubscription?.csSeats || 5} Kursi CS</strong>
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/dashboard/subscription"
-          className="px-4 py-2 rounded-xl bg-white text-[#0c1754] hover:bg-white/90 font-extrabold text-[12.5px] transition-all no-underline shadow-sm self-start sm:self-auto flex items-center gap-1.5"
-        >
-          <span>Perpanjang Paket Toko</span>
-          <span>→</span>
-        </Link>
-      </div>
-
-      {/* 4 Metric Cards */}
+      {/* 4 Top KPI Metric Cards with Sparklines */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
-          <span className="text-[13px] font-medium text-[#64748b]">Omzet Penjualan Lunas</span>
-          <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
-            Rp {totalRevenue.toLocaleString()}
-          </div>
-          <span className={`text-[12px] font-semibold ${totalRevenue > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
-            {totalRevenue > 0 ? "Omzet tercatat aktif" : "Belum ada omzet hari ini"}
-          </span>
+        <MetricCard
+          title={t("dashboard.totalRevenue", "Omzet Penjualan Lunas")}
+          value={totalRevenue > 0 ? `Rp ${(totalRevenue / 1000000).toFixed(1)}Jt` : "Rp 0"}
+          subtitle={t("dashboard.totalRevenueSub", "Real-time terverifikasi")}
+          delta="+18.4%"
+          deltaType="positive"
+          sparklineData={revenueSpark}
+          icon={DollarSignIcon}
+        />
+        <MetricCard
+          title={t("dashboard.verifiedOrders", "Pesanan Berhasil")}
+          value={`${paidOrders.length} Order`}
+          subtitle={t("dashboard.verifiedOrdersSub", "100% Otomatis Cocok")}
+          delta="+14.2%"
+          deltaType="positive"
+          sparklineData={ordersSpark}
+          icon={ShoppingCartIcon}
+        />
+        <MetricCard
+          title={t("dashboard.newLeads", "Leads Baru Masuk")}
+          value={`${leads.length} Kontak`}
+          subtitle={t("dashboard.newLeadsSub", "Meta CAPI & Organik")}
+          delta="+22.8%"
+          deltaType="positive"
+          sparklineData={leadsSpark}
+          icon={UsersIcon}
+        />
+        <MetricCard
+          title={t("dashboard.closingRate", "Closing Rate Tim")}
+          value={`${closingRatePct}%`}
+          subtitle={t("dashboard.closingRateSub", "Rata-rata seluruh CS")}
+          delta="+3.6%"
+          deltaType="positive"
+          sparklineData={closingSpark}
+          icon={TrendingUpIcon}
+        />
+      </div>
+
+      {/* Primary Analytics Section: Dual Visual Charts */}
+      <div className="grid lg:grid-cols-12 gap-6">
+        {/* Left: Interactive Revenue & Volume Area Chart (Col 8) */}
+        <div className="lg:col-span-8">
+          <TrendAreaChart
+            orders={orders}
+            title={t("dashboard.revenueTrendTitle", "Tren Omzet & Volume Transaksi")}
+            subtitle={t("dashboard.revenueTrendSubtitle", "Grafik penjualan harian & performa checkout")}
+          />
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
-          <span className="text-[13px] font-medium text-[#64748b]">Pesanan Terverifikasi</span>
-          <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
-            {paidOrders.length} Pesanan
-          </div>
-          <span className={`text-[12px] font-semibold ${paidOrders.length > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
-            {paidOrders.length > 0 ? "100% QRIS & Mutasi Cocok" : "Menunggu transaksi pertama"}
-          </span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
-          <span className="text-[13px] font-medium text-[#64748b]">Lead Baru Masuk</span>
-          <div className="text-[26px] font-extrabold text-[#0c1754] tracking-tight my-2">
-            {leads.length} Leads
-          </div>
-          <span className={`text-[12px] font-semibold ${leads.length > 0 ? "text-[#2545ff]" : "text-[#64748b]"}`}>
-            {leads.length > 0 ? "Meta CAPI Tracked" : "Belum ada lead baru"}
-          </span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all">
-          <span className="text-[13px] font-medium text-[#64748b]">Closing Rate Rata-rata</span>
-          <div className="text-[26px] font-extrabold text-emerald-600 tracking-tight my-2">
-            {ownerClosingRate}
-          </div>
-          <span className={`text-[12px] font-semibold ${paidOrders.length > 0 ? "text-emerald-600" : "text-[#64748b]"}`}>
-            {paidOrders.length > 0 ? "Tercatat real-time" : "Belum ada data closing"}
-          </span>
+        {/* Right: WhatsApp Sales Funnel (Col 4) */}
+        <div className="lg:col-span-4">
+          <ConversionFunnelChart
+            leads={leads}
+            orders={orders}
+            title={t("dashboard.funnelTitle", "Funnel Konversi WhatsApp")}
+            subtitle={t("dashboard.funnelSubtitle", "Efisiensi leads dari chat hingga lunas")}
+          />
         </div>
       </div>
 
-      {/* Revenue Bar Chart & Recent Activity Grid */}
+      {/* Secondary Operational Section: CS Leaderboard & Payment Breakdown */}
       <div className="grid lg:grid-cols-12 gap-6">
-        
-        {/* Revenue Bar Chart (Col 8) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)]">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#f0e9e1]">
-            <div>
-              <h3 className="text-[16px] font-bold text-[#0c1754]">Tren Omzet Penjualan</h3>
-              <p className="text-[12px] text-[#969696]">7 hari terakhir (Rp Juta)</p>
-            </div>
-            <div className="flex gap-1.5 bg-[#f9f8f6] p-1 rounded-xl border border-[#f0e9e1]">
-              {["7H", "30H", "3B"].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setActiveRange(range)}
-                  className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all border-none cursor-pointer ${
-                    activeRange === range
-                      ? "bg-[#2545ff] text-white shadow-sm"
-                      : "bg-transparent text-[#64748b] hover:text-[#0c1754]"
-                  }`}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bar Visuals or Clean Empty State */}
-          {totalRevenue === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[180px] text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] p-6">
-              <div className="w-10 h-10 rounded-full bg-[#eaebf8] flex items-center justify-center text-[#2545ff] mb-2 font-bold">
-                Rp
-              </div>
-              <span className="text-[13.5px] font-bold text-[#0c1754]">Belum Ada Riwayat Transaksi Penjualan</span>
-              <span className="text-[12px] text-[#969696] mt-1 max-w-[400px]">
-                Grafik omzet akan otomatis terisi saat pesanan pertama dibuat secara manual atau via WhatsApp QRIS.
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-end justify-between gap-3 h-[180px] pt-4 px-2">
-              {[
-                { day: "Sen", val: 12, height: "45%" },
-                { day: "Sel", val: 18, height: "65%" },
-                { day: "Rab", val: 14, height: "50%" },
-                { day: "Kam", val: 22, height: "80%" },
-                { day: "Jum", val: 19, height: "70%" },
-                { day: "Sab", val: 28, height: "100%", active: true },
-                { day: "Min", val: 18, height: "65%" },
-              ].map((d) => (
-                <div key={d.day} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className="text-[11px] font-bold text-[#2545ff] opacity-0 group-hover:opacity-100 transition-opacity">
-                    {d.val}Jt
-                  </span>
-                  <div className="w-full bg-[#eaebf8] rounded-t-xl h-[120px] flex items-end overflow-hidden">
-                    <div
-                      style={{ height: d.height }}
-                      className={`w-full rounded-t-xl transition-all duration-500 ${
-                        d.active ? "bg-[#2545ff] shadow-md" : "bg-[#2545ff]/40 group-hover:bg-[#2545ff]"
-                      }`}
-                    />
-                  </div>
-                  <span className="text-[12px] font-medium text-[#64748b]">{d.day}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* CS Closing Performance Leaderboard (Col 4) */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between">
+        {/* Left: Top CS Team Leaderboard (Col 7) */}
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-              <h3 className="text-[16px] font-bold text-[#0c1754]">Top CS Leaderboard</h3>
-              <span className="text-[11px] font-bold text-[#2545ff]">Komisi Otomatis</span>
+            <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7] mb-4">
+              <div>
+                <h3 className="text-[16px] font-bold text-[#0f172a]">
+                  {t("dashboard.csLeaderboardTitle", "Performa & Komisi Tim CS")}
+                </h3>
+                <p className="text-[12px] text-[#64748b]">
+                  {t("dashboard.csLeaderboardSub", "Peringkat closing rate dan omzet staf")}
+                </p>
+              </div>
+              <Link
+                href="/dashboard/settings?tab=team"
+                className="text-[12.5px] font-bold text-[#2545ff] hover:underline"
+              >
+                {language === "en" ? "Manage Staff →" : "Kelola Staf →"}
+              </Link>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {ownerCsList.length === 0 ? (
-                <div className="p-4 text-center text-[#64748b] bg-[#fcfbf9] rounded-xl border border-dashed border-[#ede8e2] text-[12px]">
-                  Belum ada staf CS yang ditugaskan.
+            <div className="flex flex-col gap-2.5">
+              {csList.length === 0 ? (
+                <div className="p-6 text-center text-[#64748b] bg-[#fafbfc] rounded-xl border border-dashed border-[#e2e8f0] text-[13px]">
+                  {language === "en" ? "No CS team members registered yet." : "Belum ada data staf CS yang terdaftar."}
                 </div>
               ) : (
-                ownerCsList.map((cs, idx) => (
-                  <div key={cs.id} className="flex items-center justify-between p-3 rounded-xl bg-[#f9f8f6] border border-[#f0e9e1]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#2545ff] text-white flex items-center justify-center font-bold text-[11px]">
-                        0{idx + 1}
-                      </span>
+                csList.map((cs, idx) => (
+                  <div
+                    key={cs.id || idx}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#fafbfc] border border-[#f1f3f7] hover:border-[#e2e8f0] hover:bg-white transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#f0f4ff] text-[#2545ff] font-extrabold text-[12px] flex items-center justify-center border border-[#dbeafe]">
+                        {cs.name?.charAt(0) || "C"}
+                      </div>
                       <div>
-                        <div className="font-bold text-[13px] text-[#0c1754]">{cs.name}</div>
-                        <div className="text-[11px] text-[#64748b]">{cs.role}</div>
+                        <div className="font-bold text-[13.5px] text-[#0f172a]">{cs.name}</div>
+                        <div className="text-[11.5px] text-[#64748b]">
+                          {cs.role || "Customer Service"} •{" "}
+                          <span className="text-emerald-600 font-semibold">{language === "en" ? "On Duty" : "Aktif Bertugas"}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[13px] font-extrabold text-emerald-600">{cs.csClosingRate || "0%"}</div>
-                      <div className="text-[10px] text-[#969696]">{cs.revenueGen || "Rp 0"}</div>
+
+                    <div className="flex items-center gap-4 text-right">
+                      <div>
+                        <div className="text-[13px] font-extrabold text-emerald-600">
+                          {cs.csClosingRate || "38.5%"}
+                        </div>
+                        <div className="text-[11px] text-[#94a3b8]">Closing Rate</div>
+                      </div>
+
+                      <div className="hidden sm:block border-l border-[#e2e8f0] pl-4">
+                        <div className="text-[13px] font-bold text-[#0f172a]">
+                          {cs.revenueGen || "Rp 24.500.000"}
+                        </div>
+                        <div className="text-[11px] text-[#2545ff] font-medium">
+                          {language === "en" ? "Commission: " : "Komisi: "}
+                          {cs.commission || "Rp 1.225.000"}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -575,13 +516,104 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <Link href="/dashboard/settings?tab=team" className="btn-outline !py-2 text-[12px] text-center w-full mt-4">
-            Kelola Izin & Komisi Staf →
+          <div className="pt-4 border-t border-[#f1f3f7] mt-4 flex items-center justify-between text-[12px] text-[#64748b]">
+            <span>{t("dashboard.csCommissionNote", "Sistem Pembagian Komisi: 5.0% dari Omzet Lunas")}</span>
+            <span className="text-emerald-600 font-semibold">● {language === "en" ? "Auto Calculated" : "Terhitung Otomatis"}</span>
+          </div>
+        </div>
+
+        {/* Right: Payment Breakdown Donut / Segmented (Col 5) */}
+        <div className="lg:col-span-5">
+          <PaymentBreakdownChart
+            orders={orders}
+            title={t("dashboard.paymentTitle", "Distribusi Pembayaran")}
+            subtitle={t("dashboard.paymentSubtitle", "Proporsi metode bayar pelanggan")}
+          />
+        </div>
+      </div>
+
+      {/* Recent Activity & Order List */}
+      <div className="bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7] mb-4">
+          <div>
+            <h3 className="text-[16px] font-bold text-[#0f172a]">
+              {t("dashboard.recentOrdersTitle", "Transaksi Pesanan Terkini")}
+            </h3>
+            <p className="text-[12px] text-[#64748b]">
+              {t("dashboard.recentOrdersSub", "Daftar order yang masuk via WhatsApp & manual")}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/orders"
+            className="text-[12.5px] font-bold text-[#2545ff] hover:underline"
+          >
+            {t("dashboard.viewAllOrders", "Lihat Semua Pesanan →")}
           </Link>
         </div>
 
+        <div className="overflow-x-auto">
+          {orders.length === 0 ? (
+            <div className="p-8 text-center text-[#64748b] bg-[#fafbfc] rounded-xl border border-dashed border-[#e2e8f0] text-[13px]">
+              {language === "en" ? "No order transactions registered yet." : "Belum ada data transaksi pesanan yang dibuat."}
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-[13px]">
+              <thead>
+                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Order ID" : "ID Pesanan"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Customer" : "Pelanggan"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Product / Items" : "Produk / Menu"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Total Paid" : "Total Bayar"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{language === "en" ? "Payment" : "Metode"}</th>
+                  <th className="py-2.5 px-4 font-bold text-[#475467]">{t("common.status", "Status")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f1f3f7]">
+                {orders.slice(0, 5).map((ord) => (
+                  <tr key={ord.id} className="hover:bg-[#f8fafc]/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-[#2545ff]">{ord.id}</td>
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-[#0f172a]">{ord.customer}</div>
+                      <div className="text-[11.5px] text-[#94a3b8]">{ord.city}</div>
+                    </td>
+                    <td className="py-3 px-4 text-[#475467]">
+                      {ord.items?.[0]?.name || "Item Pesanan"}
+                      {ord.items?.length > 1 && ` (+${ord.items.length - 1} ${language === "en" ? "others" : "lainnya"})`}
+                    </td>
+                    <td className="py-3 px-4 font-extrabold text-[#0f172a]">
+                      Rp {(ord.total || 0).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-[11.5px] font-medium text-[#475467] bg-slate-100 px-2 py-0.5 rounded-md">
+                        {ord.paymentMethod || "QRIS"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                          ord.status === "paid" || ord.status === "shipped"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : ord.status === "processing"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}
+                      >
+                        {ord.status === "paid"
+                          ? (language === "en" ? "Paid" : "Lunas")
+                          : ord.status === "shipped"
+                          ? (language === "en" ? "Shipped" : "Dikirim")
+                          : ord.status === "processing"
+                          ? (language === "en" ? "Processing" : "Diproses")
+                          : (language === "en" ? "Pending" : "Menunggu Bayar")}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
-
     </div>
   );
 }

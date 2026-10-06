@@ -52,10 +52,67 @@ function DashboardContent({ children }) {
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [openSections, setOpenSections] = useState({});
   const [mounted, setMounted] = useState(false);
 
-  const { role, setRole, activeInstitution, institutions, setActiveInstitutionId, currentUser, logoutUser } = useDashboard();
+  // Live Notification State
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "Pesanan QRIS Lunas",
+      desc: "Pembayaran Rp 938.000 dari Ibu Dian Sastrowardoyo otomatis terverifikasi.",
+      time: "2 mnt lalu",
+      read: false,
+      type: "order",
+      link: "/dashboard/orders",
+    },
+    {
+      id: 2,
+      title: "Lead Baru WhatsApp",
+      desc: "Kontak baru dari iklan Instagram menanyakan ketersediaan produk.",
+      time: "15 mnt lalu",
+      read: false,
+      type: "chat",
+      link: "/dashboard/chat",
+    },
+    {
+      id: 3,
+      title: "Anti-Struk Palsu AI",
+      desc: "Sistem berhasil mendeteksi dan mencegah 1 bukti transfer rekayasa (Rp 650.000).",
+      time: "1 jam lalu",
+      read: true,
+      type: "security",
+      link: "/dashboard/finance",
+    },
+    {
+      id: 4,
+      title: "Gateway WhatsApp Online",
+      desc: "Koneksi Cloud API stabil dengan uptime 99.98%.",
+      time: "3 jam lalu",
+      read: true,
+      type: "system",
+      link: "/dashboard/chat",
+    },
+  ]);
+
+  const unreadNotifs = notifications.filter((n) => !n.read).length;
+  const markAllNotifsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const {
+    role,
+    setRole,
+    activeInstitution,
+    institutions,
+    setActiveInstitutionId,
+    currentUser,
+    logoutUser,
+    language,
+    setLanguage,
+    t,
+  } = useDashboard();
 
   useEffect(() => {
     setMounted(true);
@@ -86,17 +143,16 @@ function DashboardContent({ children }) {
     return pathname === itemHref && !searchParams.get("tab");
   };
 
-  // Role metadata with exact SVG Icons (Zero raw emojis)
+  // Role metadata with exact SVG Icons (Zero raw emojis) and dynamic i18n
   const rolesConfig = {
     superadmin: {
       label: "Super Admin",
       badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
       avatar: "SA",
       icon: <CrownIcon className="w-4 h-4 text-purple-700" />,
-      // Pinned top-level items (no group)
       pinnedItems: [
         {
-          label: "Overview Platform",
+          label: t("nav.overview", "Overview Platform"),
           href: "/dashboard",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,107 +162,104 @@ function DashboardContent({ children }) {
           ),
         },
         {
-          label: "Akun Superadmin",
+          label: t("nav.settings", "Akun Superadmin"),
           href: "/dashboard/settings?tab=account",
           icon: <UserIcon className="w-4.5 h-4.5" />,
         },
       ],
-      // Grouped dropdown sections
       navSections: [
         {
-          sectionLabel: "Master Data",
+          sectionLabel: language === "en" ? "Master Data" : "Master Data",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
             {
-              label: "Instansi",
+              label: t("nav.institutions", "Instansi Tenant"),
               href: "/dashboard/institutions",
               icon: <BuildingIcon className="w-4.5 h-4.5" />,
-              badge: `${institutions.length}`,
             },
           ],
         },
         {
-          sectionLabel: "Operasional",
+          sectionLabel: language === "en" ? "Operations" : "Operasional",
           sectionIcon: <ClipboardListIcon className="w-4 h-4" />,
           items: [
             {
-              label: "Leads Global",
+              label: t("nav.leads", "Leads Global"),
               href: "/dashboard/superadmin/leads",
               icon: <UsersIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Blasting WA",
+              label: t("nav.blasting", "Blasting WA"),
               href: "/dashboard/superadmin/blasting",
               icon: <RadioIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Langganan CS",
+              label: t("nav.subscriptions", "Langganan CS"),
               href: "/dashboard/superadmin/subscriptions",
               icon: <CalendarIcon className="w-4.5 h-4.5" />,
             },
           ],
         },
         {
-          sectionLabel: "Keuangan",
+          sectionLabel: language === "en" ? "Finance" : "Keuangan",
           sectionIcon: <DollarSignIcon className="w-4 h-4" />,
           items: [
             {
-              label: "Transaksi",
+              label: language === "en" ? "Transactions" : "Transaksi",
               href: "/dashboard/superadmin/transactions",
               icon: <DollarSignIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Export Data",
+              label: language === "en" ? "Export Data" : "Export Data",
               href: "/dashboard/superadmin/exports",
               icon: <DownloadIcon className="w-4.5 h-4.5" />,
             },
           ],
         },
         {
-          sectionLabel: "Monitoring",
+          sectionLabel: language === "en" ? "Monitoring" : "Monitoring",
           sectionIcon: <ActivityIcon className="w-4 h-4" />,
           items: [
             {
-              label: "Token AI",
+              label: t("nav.tokenUsage", "Token AI"),
               href: "/dashboard/superadmin/token-usage",
               icon: <CpuIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Server Usage",
+              label: t("nav.serverMetrics", "Server Usage"),
               href: "/dashboard/superadmin/server-metrics",
               icon: <ActivityIcon className="w-4.5 h-4.5" />,
             },
           ],
         },
         {
-          sectionLabel: "Pengaturan",
+          sectionLabel: language === "en" ? "Settings" : "Pengaturan",
           sectionIcon: <SettingsIcon className="w-4 h-4" />,
           items: [
             {
-              label: "Konfigurasi AI",
+              label: t("nav.aiConfig", "Konfigurasi AI"),
               href: "/dashboard/settings?tab=ai-admin",
               icon: <BotIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Pengaturan Global",
+              label: language === "en" ? "Global Settings" : "Pengaturan Global",
               href: "/dashboard/superadmin/settings",
               icon: <SettingsIcon className="w-4.5 h-4.5" />,
             },
             {
-              label: "Test CS AI",
+              label: language === "en" ? "Test CS AI" : "Test CS AI",
               href: "/test-cs-ai",
               icon: <ZapIcon className="w-4.5 h-4.5" />,
-              badge: "NVIDIA",
             },
             {
-              label: "Skenario AI",
+              label: language === "en" ? "AI Scenarios" : "Skenario AI",
               href: "/dashboard/superadmin/ai-scenarios",
               icon: <ClipboardCheckIcon className="w-4.5 h-4.5" />,
             },
           ],
         },
       ],
-      navItems: [], // empty — superadmin uses pinnedItems + navSections instead
+      navItems: [],
     },
     owner: {
       label: "Owner / Supervisor",
@@ -214,42 +267,42 @@ function DashboardContent({ children }) {
       avatar: "OW",
       icon: <BriefcaseIcon className="w-4 h-4 text-[#2545ff]" />,
       pinnedItems: [
-        { label: "Dashboard Toko", href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-        { label: "Inbox WA & Closing", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
-        { label: "Katalog & HPP Produk", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-        { label: "Dynamic QRIS & Kas", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-        { label: "Pesanan & Tiket Dapur", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.dashboard", "Dashboard Utama"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.finance", "Dynamic QRIS"), href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
       ],
       navSections: [
         {
-          sectionLabel: "Operasional Toko & CRM",
+          sectionLabel: language === "en" ? "Store Operations & CRM" : "Operasional Toko & CRM",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
-            { label: "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-            { label: "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" />, badge: "Simulator" },
-            { label: "Hak Akses & Tim", href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
-            { label: "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-[#2545ff]" />, badge: "Aktif" },
+            { label: language === "en" ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "BOM & Recipes" : "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Inventory Stock" : "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-[#2545ff]" /> },
           ],
         },
         {
-          sectionLabel: "Aplikasi Lanjutan",
+          sectionLabel: language === "en" ? "Advanced Apps" : "Aplikasi Lanjutan",
           sectionIcon: <SlidersIcon className="w-4 h-4" />,
           items: [
-            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
+            { label: language === "en" ? "Booking & Appointments" : "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Escalation Queue" : "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
             { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Warehouse Hubs" : "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Batch Receipts" : "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
             { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Blacklist & Anti-Spam" : "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Audit Log" : "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
@@ -261,42 +314,42 @@ function DashboardContent({ children }) {
       avatar: "SP",
       icon: <ClipboardListIcon className="w-4 h-4 text-amber-700" />,
       pinnedItems: [
-        { label: "Dashboard Toko", href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-        { label: "Inbox WA & Closing", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
-        { label: "Katalog & HPP Produk", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-        { label: "Dynamic QRIS & Kas", href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-        { label: "Pesanan & Tiket Dapur", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.dashboard", "Dashboard Toko"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.liveChat", "Inbox WA & Closing"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.finance", "Dynamic QRIS & Kas"), href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+        { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
       ],
       navSections: [
         {
-          sectionLabel: "Operasional Toko & CRM",
+          sectionLabel: language === "en" ? "Store Operations & CRM" : "Operasional Toko & CRM",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
-            { label: "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-            { label: "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" />, badge: "Simulator" },
-            { label: "Hak Akses & Tim", href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
-            { label: "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-amber-600" />, badge: "Perpanjang" },
+            { label: language === "en" ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "BOM & Recipes" : "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Inventory Stock" : "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-amber-600" /> },
           ],
         },
         {
-          sectionLabel: "Aplikasi Lanjutan",
+          sectionLabel: language === "en" ? "Advanced Apps" : "Aplikasi Lanjutan",
           sectionIcon: <SlidersIcon className="w-4 h-4" />,
           items: [
-            { label: "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
+            { label: language === "en" ? "Booking & Appointments" : "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Escalation Queue" : "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
             { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Warehouse Hubs" : "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Batch Receipts" : "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
             { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Blacklist & Anti-Spam" : "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Audit Log" : "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
@@ -309,50 +362,50 @@ function DashboardContent({ children }) {
       icon: <HeadphonesIcon className="w-4 h-4 text-emerald-700" />,
       pinnedItems: [
         {
-          label: "Dashboard Pribadi CS",
+          label: t("nav.dashboard", "Dashboard Pribadi CS"),
           href: "/dashboard",
           icon: <BarChartIcon className="w-4.5 h-4.5" />,
         },
       ],
       navSections: [
         {
-          sectionLabel: "Operasional",
+          sectionLabel: language === "en" ? "Operations" : "Operasional",
           sectionIcon: <MessageSquareIcon className="w-4 h-4" />,
           items: [
-            { label: "Live Chat WhatsApp", href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" />, badge: "Live" },
-            { label: "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: "Quick Reply & Template", href: "/dashboard/templates", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-            { label: "Kredit & Kuota Pesan", href: "/dashboard/credits", icon: <CreditCardIcon className="w-4.5 h-4.5" /> },
-            { label: "Antrean Eskalasi", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" />, badge: "3" },
-            { label: "Blacklist Nomor", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: "Booking Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: "Pesanan & Transaksi", href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
-            { label: "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Quick Replies" : "Quick Reply & Template", href: "/dashboard/templates", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Message Credits" : "Kredit & Kuota Pesan", href: "/dashboard/credits", icon: <CreditCardIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Escalation Queue" : "Antrean Eskalasi", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Blocked Contacts" : "Blacklist Nomor", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Booking & Appointments" : "Booking Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.orders", "Pesanan & Transaksi"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
           ],
         },
         {
-          sectionLabel: "Master Data",
+          sectionLabel: language === "en" ? "Master Data" : "Master Data",
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
-            { label: "Buku Kontak Pelanggan", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: "Katalog Cepat Produk", href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-            { label: "Manajemen Label", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: "Jadwal Roster PIC", href: "/dashboard/pic-roster", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Customer Contacts" : "Buku Kontak Pelanggan", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.products", "Katalog Cepat Produk"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "Label Tags" : "Manajemen Label", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "PIC Roster Schedule" : "Jadwal Roster PIC", href: "/dashboard/pic-roster", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
           ],
         },
         {
-          sectionLabel: "Laporan",
+          sectionLabel: language === "en" ? "Reports" : "Laporan",
           sectionIcon: <TrendingUpIcon className="w-4 h-4" />,
           items: [
-            { label: "Performa & Komisi Saya", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+            { label: language === "en" ? "My Performance & Commission" : "Performa & Komisi Saya", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
           ],
         },
         {
-          sectionLabel: "Pengaturan",
+          sectionLabel: language === "en" ? "Settings" : "Pengaturan",
           sectionIcon: <SettingsIcon className="w-4 h-4" />,
           items: [
-            { label: "Simulator Latihan AI", href: "/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" />, badge: "Sandbox" },
-            { label: "Buku Panduan CS", href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
+            { label: "Simulator Latihan AI", href: "/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" /> },
+            { label: t("nav.doc", "Buku Panduan CS"), href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
@@ -687,16 +740,172 @@ function DashboardContent({ children }) {
             {/* WA Cloud API Status */}
             <div className="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[11px] font-bold text-emerald-700">WA Cloud API Connected</span>
+              <span className="text-[11px] font-bold text-emerald-700">
+                {t("nav.connected", "WA Cloud API Terhubung")}
+              </span>
             </div>
 
-            {/* Notification Button */}
-            <button className="relative p-2 rounded-full hover:bg-[#f9f8f6] border border-[#f0e9e1] bg-white cursor-pointer transition-colors">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0c1754" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            {/* Language Switcher Pill (Bilingual) */}
+            <div className="flex items-center bg-[#f0f4ff] p-0.5 rounded-full border border-[#dbeafe]">
+              <button
+                type="button"
+                onClick={() => setLanguage("id")}
+                className={`px-2 py-0.5 text-[11px] font-extrabold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+                  language === "id"
+                    ? "bg-[#2545ff] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0c1754] bg-transparent"
+                }`}
+                title="Ganti ke Bahasa Indonesia"
+              >
+                <span>🇮🇩</span>
+                <span>ID</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`px-2 py-0.5 text-[11px] font-extrabold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+                  language === "en"
+                    ? "bg-[#2545ff] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0c1754] bg-transparent"
+                }`}
+                title="Switch to English"
+              >
+                <span>🇬🇧</span>
+                <span>EN</span>
+              </button>
+            </div>
+
+            {/* Interactive Notification Button & Popover */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setNotifOpen(!notifOpen);
+                  if (roleDropdownOpen) setRoleDropdownOpen(false);
+                }}
+                className={`relative p-2 rounded-full border cursor-pointer transition-all ${
+                  notifOpen
+                    ? "bg-[#eaebf8] border-[#2545ff] text-[#2545ff]"
+                    : "hover:bg-[#f9f8f6] border-[#f0e9e1] bg-white text-[#0c1754]"
+                }`}
+                title="Pusat Notifikasi"
+                aria-label="Pusat Notifikasi"
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+                )}
+              </button>
+
+              {/* Notification Popover Modal */}
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-[#e8eaef] z-50 overflow-hidden animate-scale-pop">
+                  {/* Header */}
+                  <div className="p-3.5 px-4 bg-[#f8fafc] border-b border-[#e8eaef] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-[14px] font-extrabold text-[#0f172a]">Notifikasi</h4>
+                      {unreadNotifs > 0 ? (
+                        <span className="text-[11px] font-extrabold bg-[#2545ff] text-white px-2 py-0.2 rounded-full">
+                          {unreadNotifs} Baru
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-[#64748b] bg-slate-100 px-2 py-0.2 rounded-full">
+                          Semua Terbaca
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotifs > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllNotifsRead}
+                        className="text-[11.5px] font-bold text-[#2545ff] hover:underline bg-transparent border-none cursor-pointer"
+                      >
+                        Tandai Dibaca
+                      </button>
+                    )}
+                  </div>
+
+                  {/* List of Notification Items */}
+                  <div className="max-h-[340px] overflow-y-auto divide-y divide-[#f1f3f7]">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-[#64748b] text-[13px]">
+                        Tidak ada notifikasi baru saat ini.
+                      </div>
+                    ) : (
+                      notifications.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.link}
+                          onClick={() => {
+                            setNotifOpen(false);
+                            setNotifications((prev) =>
+                              prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+                            );
+                          }}
+                          className={`p-3.5 px-4 flex items-start gap-3 transition-colors no-underline block ${
+                            item.read ? "bg-white hover:bg-[#f8fafc]" : "bg-[#f4f7ff] hover:bg-[#ebf0fe]"
+                          }`}
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              item.type === "order"
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                                : item.type === "chat"
+                                ? "bg-blue-50 text-[#2545ff] border border-blue-200"
+                                : item.type === "security"
+                                ? "bg-purple-50 text-purple-600 border border-purple-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {item.type === "order" ? (
+                              <DollarSignIcon className="w-4 h-4" />
+                            ) : item.type === "chat" ? (
+                              <MessageSquareIcon className="w-4 h-4" />
+                            ) : item.type === "security" ? (
+                              <ShieldCheckIcon className="w-4 h-4" />
+                            ) : (
+                              <ZapIcon className="w-4 h-4" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                              <span className="font-extrabold text-[13px] text-[#0f172a] truncate">
+                                {item.title}
+                              </span>
+                              <span className="text-[10.5px] text-[#94a3b8] font-medium flex-shrink-0">
+                                {item.time}
+                              </span>
+                            </div>
+                            <p className="text-[12px] text-[#64748b] line-clamp-2 leading-relaxed">
+                              {item.desc}
+                            </p>
+                          </div>
+
+                          {!item.read && (
+                            <span className="w-2 h-2 rounded-full bg-[#2545ff] flex-shrink-0 mt-2" />
+                          )}
+                        </Link>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-2.5 bg-[#f8fafc] border-t border-[#e8eaef] text-center">
+                    <Link
+                      href="/dashboard/audit-log"
+                      onClick={() => setNotifOpen(false)}
+                      className="text-[12px] font-bold text-[#2545ff] hover:underline"
+                    >
+                      Buka Log Riwayat Aktivitas Lengkap →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

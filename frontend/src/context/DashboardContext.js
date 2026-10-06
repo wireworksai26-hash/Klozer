@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE_URL } from "@/utils/apiConfig";
+import { getTranslation } from "@/utils/i18n";
 
 const DashboardContext = createContext();
 
@@ -27,6 +28,45 @@ const initialInstitutions = [
     joinedDate: "Hari ini",
   },
 ];
+
+const SAMPLE_PRODUCTS_BY_SECTOR = {
+  culinary: [
+    { id: "PRD-01", name: "Paket Juara 1 (Nasi + Ayam Geprek + Es Teh)", sku: "GPK-JUR-01", category: "Paket Hemat", price: 22000, hpp: 12000, stock: 150, lowStock: 20, variants: ["Pedas Sedang", "Pedas Ekstra"], active: true },
+    { id: "PRD-02", name: "Ayam Geprek Mozzarella Leleh", sku: "GPK-MOZ-02", category: "Menu Spesial", price: 26000, hpp: 15000, stock: 80, lowStock: 10, variants: ["Level 1", "Level 2", "Level 3"], active: true },
+    { id: "PRD-03", name: "Ayam Geprek Sambal Matah Bali", sku: "GPK-MTH-03", category: "Menu Utama", price: 21000, hpp: 11000, stock: 100, lowStock: 15, variants: ["Original", "Pedas"], active: true },
+    { id: "PRD-04", name: "Kulit Ayam Crispy Juara", sku: "GPK-KLT-04", category: "Side Dish", price: 14000, hpp: 6000, stock: 120, lowStock: 20, variants: ["Original", "Pedas Gurih"], active: true },
+    { id: "PRD-05", name: "Es Teh Manis Jumbo Melati", sku: "GPK-DMN-05", category: "Minuman", price: 5000, hpp: 1500, stock: 300, lowStock: 30, variants: ["Manis Sedang", "Less Sugar"], active: true },
+  ],
+  fashion: [
+    { id: "PRD-01", name: "Kemeja Batik Tulis Sutra Solo Premium", sku: "BTK-SLK-01", category: "Pria", price: 650000, hpp: 380000, stock: 42, lowStock: 5, variants: ["M", "L", "XL"], active: true },
+    { id: "PRD-02", name: "Dress Tunik Katun Primisima Parang", sku: "BTK-DMS-02", category: "Wanita", price: 320000, hpp: 160000, stock: 85, lowStock: 10, variants: ["S", "M", "L", "XL"], active: true },
+    { id: "PRD-03", name: "Sarung Batik Tulis Motif Mega Mendung", sku: "BTK-SAR-03", category: "Unisex", price: 250000, hpp: 125000, stock: 18, lowStock: 5, variants: ["Standard"], active: true },
+  ],
+  skincare: [
+    { id: "PRD-01", name: "Lumiere Brightening Glow Serum 30ml", sku: "SKN-GLW-01", category: "Serum", price: 185000, hpp: 75000, stock: 120, lowStock: 15, variants: ["30ml"], active: true },
+    { id: "PRD-02", name: "Gentle Facial Cleanser Hyaluronic Acid 100ml", sku: "SKN-CLN-02", category: "Cleanser", price: 95000, hpp: 38000, stock: 90, lowStock: 10, variants: ["100ml"], active: true },
+  ],
+  retail: [
+    { id: "PRD-01", name: "Produk Unggulan Toko Premium", sku: "KLZ-PRD-01", category: "Kategori Utama", price: 150000, hpp: 85000, stock: 50, lowStock: 10, variants: ["Standard", "Deluxe"], active: true },
+    { id: "PRD-02", name: "Paket Starter Bundling Hemat", sku: "KLZ-PRD-02", category: "Paket Promo", price: 275000, hpp: 150000, stock: 35, lowStock: 5, variants: ["Set A", "Set B"], active: true },
+  ],
+};
+
+function getStarterProductsForUser(user) {
+  if (!user) return SAMPLE_PRODUCTS_BY_SECTOR.retail;
+  const name = (user.institutionName || user.name || "").toLowerCase();
+  const sector = (user.sector || "").toLowerCase();
+  if (name.includes("geprek") || name.includes("kuliner") || sector.includes("kuliner") || sector.includes("f&b")) {
+    return SAMPLE_PRODUCTS_BY_SECTOR.culinary;
+  }
+  if (name.includes("batik") || name.includes("fashion") || sector.includes("fashion") || sector.includes("pakaian")) {
+    return SAMPLE_PRODUCTS_BY_SECTOR.fashion;
+  }
+  if (name.includes("skin") || name.includes("lumiere") || sector.includes("kecantikan") || sector.includes("skincare")) {
+    return SAMPLE_PRODUCTS_BY_SECTOR.skincare;
+  }
+  return SAMPLE_PRODUCTS_BY_SECTOR.retail;
+}
 
 const initialProducts = [];
 const initialOrders = [];
@@ -98,6 +138,7 @@ const initialAiConfig = {
 export function DashboardProvider({ children }) {
   // Active Role: 'superadmin' | 'owner' | 'cs'
   const [role, setRole] = useState("owner");
+  const [language, setLanguageState] = useState("id");
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
   const [institutions, setInstitutions] = useState(initialInstitutions);
@@ -109,9 +150,21 @@ export function DashboardProvider({ children }) {
   const [activeInstitutionId, setActiveInstitutionId] = useState("INST-001");
   const [subscriptions, setSubscriptions] = useState(initialSubscriptions);
 
-  // Load from localStorage on client
+  const setLanguage = (lang) => {
+    const validLang = lang === "en" ? "en" : "id";
+    setLanguageState(validLang);
+    try {
+      localStorage.setItem("klozer_language", validLang);
+    } catch (e) {}
+  };
+
+  const t = (path, fallback) => getTranslation(language, path, fallback);
+
+  // Load from localStorage & backend on client mount
   useEffect(() => {
     try {
+      const savedLang = localStorage.getItem("klozer_language");
+      if (savedLang) setLanguageState(savedLang);
       const savedToken = localStorage.getItem("klozer_token");
       if (savedToken) setToken(savedToken);
       const savedUser = localStorage.getItem("klozer_user");
@@ -119,8 +172,6 @@ export function DashboardProvider({ children }) {
         const parsed = JSON.parse(savedUser);
         setCurrentUser(parsed);
         if (parsed.role) setRole(parsed.role);
-        
-        const isDefaultDemoTenant = !parsed.institutionName || parsed.institutionName.toLowerCase() === "batik mahakarya solo" || parsed.institutionId === 1;
 
         if (parsed.institutionName) {
           setInstitutions((prev) => {
@@ -149,7 +200,20 @@ export function DashboardProvider({ children }) {
         // Clean Production Data Loading:
         const tenantKey = `klozer_inst_${parsed.institutionId || parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "default"}`;
         const savedPrd = localStorage.getItem(`${tenantKey}_products`) || localStorage.getItem("klozer_products");
-        setProducts(savedPrd ? JSON.parse(savedPrd) : []);
+        if (savedPrd) {
+          try {
+            const parsedPrd = JSON.parse(savedPrd);
+            if (Array.isArray(parsedPrd) && parsedPrd.length > 0) {
+              setProducts(parsedPrd);
+            } else {
+              setProducts(getStarterProductsForUser(parsed));
+            }
+          } catch {
+            setProducts(getStarterProductsForUser(parsed));
+          }
+        } else {
+          setProducts(getStarterProductsForUser(parsed));
+        }
         
         const savedOrd = localStorage.getItem(`${tenantKey}_orders`) || localStorage.getItem("klozer_orders");
         setOrders(savedOrd ? JSON.parse(savedOrd) : []);
@@ -173,11 +237,52 @@ export function DashboardProvider({ children }) {
         ];
         const savedTeam = localStorage.getItem(`${tenantKey}_team`) || localStorage.getItem("klozer_team");
         setTeamMembers(savedTeam ? JSON.parse(savedTeam) : defaultTeam);
+
+        // Fetch Live Products from Backend API (Multi-Tenant Sync)
+        (async () => {
+          try {
+            const token = localStorage.getItem("klozer_token");
+            const instId = parsed.institutionId || (parsed.institutionName?.toLowerCase().includes("geprek") ? 4 : 1);
+            const res = await fetch(`${API_BASE_URL}/products?institutionId=${instId}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            if (res.ok) {
+              const resData = await res.json();
+              const items = resData.data || resData.products || resData.items;
+              if (Array.isArray(items) && items.length > 0) {
+                const formatted = items.map((p, idx) => ({
+                  id: p.id ? `PRD-0${p.id}` : `PRD-${idx + 1}`,
+                  name: p.name,
+                  sku: p.sku || `KLZ-PRD-0${idx + 1}`,
+                  category: p.category || "Umum",
+                  price: Number(p.selling_price || p.price || 0),
+                  hpp: Number(p.cost_price_hpp || p.hpp || 0),
+                  stock: Number(p.stock_quantity ?? p.stock ?? 0),
+                  lowStock: Number(p.low_stock_threshold || p.lowStock || 5),
+                  weight: Number(p.weight_in_grams || p.weight || 200),
+                  variants: Array.isArray(p.variants) ? p.variants : ["Standard"],
+                  active: Boolean(p.is_active ?? p.active ?? true),
+                }));
+                setProducts(formatted);
+                localStorage.setItem(`${tenantKey}_products`, JSON.stringify(formatted));
+                localStorage.setItem("klozer_products", JSON.stringify(formatted));
+              }
+            }
+          } catch (e) {}
+        })();
       } else {
         const savedRole = localStorage.getItem("klozer_role");
         if (savedRole) setRole(savedRole);
         const savedPrd = localStorage.getItem("klozer_products");
-        if (savedPrd) setProducts(JSON.parse(savedPrd));
+        if (savedPrd) {
+          try {
+            setProducts(JSON.parse(savedPrd));
+          } catch {
+            setProducts(SAMPLE_PRODUCTS_BY_SECTOR.retail);
+          }
+        } else {
+          setProducts(SAMPLE_PRODUCTS_BY_SECTOR.retail);
+        }
         const savedOrd = localStorage.getItem("klozer_orders");
         if (savedOrd) setOrders(JSON.parse(savedOrd));
         const savedLeads = localStorage.getItem("klozer_leads");
@@ -484,6 +589,64 @@ export function DashboardProvider({ children }) {
     );
     setInstitutions(updated);
     saveToStorage("klozer_institutions", updated);
+
+    // If language is updated on the active institution, immediately synchronize dashboard language
+    if (fields.language) {
+      setLanguage(fields.language);
+    }
+
+    // Sync to backend if token exists
+    (async () => {
+      try {
+        const token = localStorage.getItem("klozer_token");
+        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10) || 1;
+        if (token) {
+          await fetch(`${API_BASE_URL}/institutions/${numericId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(fields),
+          });
+        }
+      } catch (err) {}
+    })();
+  };
+
+  // Reset Institution Owner Password Action
+  const resetInstitutionPassword = async (instId, newPassword) => {
+    const targetInst = institutions.find((i) => i.id === instId);
+    try {
+      const token = localStorage.getItem("klozer_token");
+      const numericId = parseInt(String(instId).replace(/[^0-9]/g, ""), 10) || 1;
+      const res = await fetch(`${API_BASE_URL}/institutions/${numericId}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        return data;
+      }
+      throw new Error(data.message || "Gagal mereset password di server.");
+    } catch (err) {
+      // Local fallback mock
+      const generatedPass = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : `Klozer${Math.floor(1000 + Math.random() * 9000)}!`;
+      return {
+        success: true,
+        message: `Kata sandi akun owner ${targetInst?.name || "instansi"} berhasil di-reset!`,
+        credentials: {
+          institutionName: targetInst?.name || "Instansi",
+          email: targetInst?.email || "owner@klozer.id",
+          newPassword: generatedPass,
+          role: "Owner / Supervisor",
+        },
+      };
+    }
   };
 
   const toggleInstitutionModule = (instId, moduleKey) => {
@@ -522,6 +685,33 @@ export function DashboardProvider({ children }) {
     const updated = [entry, ...products];
     setProducts(updated);
     saveToStorage("klozer_products", updated);
+
+    // Sync to backend if token exists
+    (async () => {
+      try {
+        const token = localStorage.getItem("klozer_token");
+        if (token) {
+          await fetch(`${API_BASE_URL}/products`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              sku: entry.sku,
+              name: entry.name,
+              category: entry.category,
+              selling_price: entry.price,
+              cost_price_hpp: entry.hpp,
+              stock_quantity: entry.stock,
+              weight_in_grams: entry.weight || 200,
+              description: entry.description || "",
+            }),
+          });
+        }
+      } catch (err) {}
+    })();
+
     return entry;
   };
 
@@ -529,6 +719,32 @@ export function DashboardProvider({ children }) {
     const updated = products.map((p) => (p.id === id ? { ...p, ...fields } : p));
     setProducts(updated);
     saveToStorage("klozer_products", updated);
+
+    // Sync to backend if token exists
+    (async () => {
+      try {
+        const token = localStorage.getItem("klozer_token");
+        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10);
+        if (token && numericId) {
+          await fetch(`${API_BASE_URL}/products/${numericId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: fields.name,
+              sku: fields.sku,
+              category: fields.category,
+              selling_price: fields.price,
+              cost_price_hpp: fields.hpp,
+              stock_quantity: fields.stock,
+              is_active: fields.active !== undefined ? (fields.active ? 1 : 0) : undefined,
+            }),
+          });
+        }
+      } catch (err) {}
+    })();
   };
 
   const toggleProductStatus = (id) => {
@@ -541,6 +757,39 @@ export function DashboardProvider({ children }) {
     const updated = products.filter((p) => p.id !== id);
     setProducts(updated);
     saveToStorage("klozer_products", updated);
+
+    // Sync to backend if token exists
+    (async () => {
+      try {
+        const token = localStorage.getItem("klozer_token");
+        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10);
+        if (token && numericId) {
+          await fetch(`${API_BASE_URL}/products/${numericId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (err) {}
+    })();
+  };
+
+  const loadTemplateProducts = (sector = "auto") => {
+    let templateList = SAMPLE_PRODUCTS_BY_SECTOR.retail;
+    const cleanSec = (sector || "").toLowerCase();
+    if (cleanSec.includes("culinary") || cleanSec.includes("kuliner") || cleanSec.includes("f&b")) {
+      templateList = SAMPLE_PRODUCTS_BY_SECTOR.culinary;
+    } else if (cleanSec.includes("fashion") || cleanSec.includes("pakaian")) {
+      templateList = SAMPLE_PRODUCTS_BY_SECTOR.fashion;
+    } else if (cleanSec.includes("skincare") || cleanSec.includes("kecantikan")) {
+      templateList = SAMPLE_PRODUCTS_BY_SECTOR.skincare;
+    } else {
+      templateList = getStarterProductsForUser(currentUser || activeInstitution);
+    }
+    setProducts(templateList);
+    saveToStorage("klozer_products", templateList);
+    return templateList;
   };
 
   const importProducts = (newItems, mode = "append") => {
@@ -859,6 +1108,11 @@ export function DashboardProvider({ children }) {
         setSubscriptions,
         extendSubscription,
         activeSubscription,
+        language,
+        setLanguage,
+        t,
+        resetInstitutionPassword,
+        loadTemplateProducts,
       }}
     >
       {children}

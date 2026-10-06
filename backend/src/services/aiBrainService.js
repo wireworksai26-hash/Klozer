@@ -370,34 +370,51 @@ export async function generateAiCsResponse({
   const rawName = (customerName || "Kakak").trim();
   const shortCustName = rawName.split(" ")[0] || "Kakak";
 
+  // Determine if this is the initial turn (no previous AI responses yet)
+  const hasPreviousAiReplies =
+    Array.isArray(history) &&
+    history.some(
+      (h) =>
+        h.sender === "ai" ||
+        h.sender === "assistant" ||
+        h.role === "assistant" ||
+        h.role === "ai" ||
+        h.sender_type === "ai_cs" ||
+        h.sender_type === "assistant"
+    );
+  const isInitialTurn = !hasPreviousAiReplies;
+
   // 3. Build Strict, Human-Like System Prompt
   const systemPrompt = `
 Kamu adalah Asisten AI Customer Service & Sales resmi dari "${instName}" (${instSector}).
 Tugasmu: Memberikan pelayanan pelanggan via chat WhatsApp yang ramah, sopan, solutif, humanis, to-the-point, dan cerdas.
 
-PEDOMAN PERCAKAPAN HUMANIS (SANGAT PENTING):
-1. ATURAN NAMA PELANGGAN:
-   - Sapa nama pelanggan (contoh "Kak ${shortCustName}") MAKSIMAL SATU KALI di awal respon bila relevan.
-   - JANGAN mengulang-ulang nama pelanggan di setiap kalimat karena terdengar kaku dan seperti robot rusak!
-   - Gunakan kata sapaan wajar seperti "Kak" atau "Kakak".
+PEDOMAN PERCAKAPAN HUMANIS & NATURAL (SANGAT PENTING):
+1. ATURAN SALAM DAN NAMA PELANGGAN:
+   - Sapaan pembuka dengan nama pelanggan (contoh "Halo Kak ${shortCustName}!" atau "Halo ${rawName}!") HANYA BOLEH diucapkan SATU KALI di pesan pertama / awal percakapan (${isInitialTurn ? "YA, ini adalah pesan pertama, silakan sapa ramah di awal" : "TIDAK, ini adalah pesan lanjutan, DILARANG KERAS mengulang 'Halo Kak ${shortCustName}'"}).
+   - PADA PESAN LANJUTAN (FOLLOW-UP / MULTI-TURN): DILARANG KERAS mengulang sapaan pembuka "Halo Kak [Nama]" atau "Halo Kakak!" di awal balasan. Langsung berikan respon to-the-point dengan kata sambung santun (contoh: "Siap Kak,", "Baik Kak,", "Tentu,", "Berikut...", "Untuk pilihan...", dll).
+   - JANGAN mengulang-ulang nama pelanggan di setiap kalimat.
 2. JANGAN MENGULANG SALAM PEMBUKA DI TENGAH OBROLAN:
-   - Jika ini percakapan lanjutan atau pelanggan bertanya pertanyaan spesifik, LANGSUNG jawab pertanyaannya secara to-the-point. Jangan mengulang "Halo Kak! Selamat datang di..." berulang-ulang.
-3. JAWAB PERTANYAAN DETAIL MENU/PRODUK SECARA SPESIFIK:
+   - Langsung jawab pertanyaan pelanggan secara to-the-point tanpa basa-basi pembuka yang berulang.
+3. KETIKA PELANGGAN MEMILIH METODE PEMBAYARAN ATAU NOMOR OPSI (contoh "1", "2", "transfer bank", "qris"):
+   - Jika memilih opsi 1 / QRIS: Rincikan total dan berikan instruksi scan Dynamic QRIS resmi (diskon 10%).
+   - Jika memilih opsi 2 / Transfer Bank: Berikan nomor rekening resmi (${bankTransferSummary}) dan minta info/bukti transfer setelah dikirim.
+4. JAWAB PERTANYAAN DETAIL MENU/PRODUK SECARA SPESIFIK:
    - Jika pelanggan bertanya tentang varian/produk tertentu:
      Jawab langsung dengan jelas berdasarkan info katalog produk di bawah. Jelaskan rincian produk, harga, stok, dan tawarkan varian atau paket pelengkap jika ada.
    - JANGAN asal melempar seluruh daftar katalog jika pelanggan hanya bertanya 1 produk tertentu!
-4. KETIKA PELANGGAN MAU PESAN (ORDER INTENT / MULTI-ITEM CALCULATION):
+5. KETIKA PELANGGAN MAU PESAN (ORDER INTENT / MULTI-ITEM CALCULATION):
    - Jika pelanggan menyebutkan beberapa produk atau menanyakan total:
      Hitung dan rincikan setiap produk dengan harga, subtotal, potongan promo diskon QRIS 10%, dan total akhir!
      Tanyakan alamat pengiriman serta catatan pesanan / varian yang diinginkan.
-5. AFIRMASI PEMESANAN ("boleh kak saya mau", "oke kak", "siap saya mau"):
+6. AFIRMASI PEMESANAN ("boleh kak saya mau", "oke kak", "siap saya mau"):
    - Langsung konfirmasi pesanan dengan antusias, minta alamat pengiriman dan catatan varian, lalu tawarkan Dynamic QRIS atau Transfer Bank.
-6. INFORMASI DISKON & PROMO:
+7. INFORMASI DISKON & PROMO:
    - Gunakan data [PROMO & DISKON AKTIF]. Jika pelanggan bertanya diskon/promo atau saat hendak checkout, sebutkan promo yang relevan.
-7. SIKAP SAAT PELANGGAN BATAL / CANCEL / RAGU:
+8. SIKAP SAAT PELANGGAN BATAL / CANCEL / RAGU:
    - Tetap sangat ramah, santun, dan empatik. Jangan memaksa atau tersinggung.
    - Contoh: "Baik tidak apa-apa Kak, terima kasih banyak sudah mampir dan bertanya. Jika nanti Kakak ingin memesan lagi atau butuh rekomendasi, jangan ragu hubungi kami ya. Semoga harinya menyenangkan!"
-8. ANTI-HALUSINASI: Hanya rekomendasikan produk, stok, dan harga yang ada di [KATALOG PRODUK & MENU RESMI].
+9. ANTI-HALUSINASI: Hanya rekomendasikan produk, stok, dan harga yang ada di [KATALOG PRODUK & MENU RESMI].
 
 [KATALOG PRODUK & MENU RESMI]:
 ${catalogList || "Tidak ada produk terdaftar saat ini."}
@@ -430,9 +447,13 @@ ${bankList}
       .join("\n");
   }
 
+  const turnInstruction = isInitialTurn
+    ? `[Petunjuk: Ini adalah interaksi pesan pertama. Boleh sertakan salam pembuka ramah "Halo Kak ${shortCustName}!" di awal.]`
+    : `[PETUNJUK PENTING: Ini adalah pesan lanjutan dalam obrolan yang sedang berjalan. JANGAN mengulang salam pembuka "Halo Kak ${shortCustName}" atau "Halo!". Langsung jawab inti pesan dengan to-the-point.]`;
+
   const finalUserMessage = formattedHistory
-    ? `Riwayat Obrolan Sebelumnya:\n${formattedHistory}\n\nPesan Baru dari Pelanggan (${shortCustName}):\n${messageText}`
-    : `Pesan dari Pelanggan (${shortCustName}):\n${messageText}`;
+    ? `Riwayat Obrolan Sebelumnya:\n${formattedHistory}\n\n${turnInstruction}\n\nPesan Baru dari Pelanggan (${shortCustName}):\n${messageText}`
+    : `${turnInstruction}\n\nPesan dari Pelanggan (${shortCustName}):\n${messageText}`;
 
   // 5. Attempt AI Generation (Prioritizing NVIDIA NIM per user instruction)
   let aiResponse = null;
@@ -728,7 +749,8 @@ ${bankList}
   else if (hasAddressInput && hasSpicyInquiry) {
     const customerAddr = extractCustomerAddress(lowerMsg, history) || "alamat Kakak";
     intent = "address_and_spicy_inquiry";
-    suggestedReply = `Alamat pengiriman di *${customerAddr}* sudah kami catat ya Kak ${shortCustName}!\n\nUntuk pilihan level kepedasan sambal di *${instName}*:\n• *Level 0*: Tanpa Cabai (Original Gurih Krispi)\n• *Level 1*: Pedas Sedang (1-3 Cabai)\n• *Level 2*: Pedas Mantap (5 Cabai)\n• *Level 3*: Pedas Nampol (10 Cabai - Paling Favorit!)\n• *Level 4*: Pedas Gila (15 Cabai)\n• *Level 5*: Pedas Petir / Max (20+ Cabai)\n\nKakak mau sambal level berapa untuk pesanannya? Dan mau langsung kami antarkan kurir ke alamat sekarang?`;
+    const custTag = isInitialTurn ? ` ya Kak ${shortCustName}` : " ya Kak";
+    suggestedReply = `Alamat pengiriman di *${customerAddr}* sudah kami catat${custTag}!\n\nUntuk pilihan level kepedasan sambal di *${instName}*:\n• *Level 0*: Tanpa Cabai (Original Gurih Krispi)\n• *Level 1*: Pedas Sedang (1-3 Cabai)\n• *Level 2*: Pedas Mantap (5 Cabai)\n• *Level 3*: Pedas Nampol (10 Cabai - Paling Favorit!)\n• *Level 4*: Pedas Gila (15 Cabai)\n• *Level 5*: Pedas Petir / Max (20+ Cabai)\n\nKakak mau sambal level berapa untuk pesanannya? Dan mau langsung kami antarkan kurir ke alamat sekarang?`;
   }
 
   else if (hasAddressInput) {
@@ -738,7 +760,8 @@ ${bankList}
       ? `Untuk tingkat kepedasan sambalnya mau level berapa Kak (Level 0 - 5)? Dan mau langsung kami proses antar sekarang?`
       : `Untuk pilihan varian/ukurannya ada catatan khusus Kak? Dan mau langsung kami proses kirimkan sekarang?`;
 
-    suggestedReply = `Siap Kak ${shortCustName}! Alamat pengiriman di *${customerAddr}* sudah kami catat.\n\n${followUp}`;
+    const custTag = isInitialTurn ? ` Kak ${shortCustName}` : " Kak";
+    suggestedReply = `Siap${custTag}! Alamat pengiriman di *${customerAddr}* sudah kami catat.\n\n${followUp}`;
   }
 
   else if (
@@ -749,7 +772,7 @@ ${bankList}
     suggestedReply = `Pilihan level kepedasan sambal di *${instName}*:\n• *Level 0*: Tanpa Cabai (Original Gurih Krispi)\n• *Level 1*: Pedas Sedang (1-3 Cabai)\n• *Level 2*: Pedas Mantap (5 Cabai)\n• *Level 3*: Pedas Nampol (10 Cabai - Paling Favorit!)\n• *Level 4*: Pedas Gila (15 Cabai)\n• *Level 5*: Pedas Petir / Max (20+ Cabai)\n\nKakak mau yang level berapa untuk pesanannya?`;
   }
 
-  // 6E. DELIVERY CONFIRMATION (Universal across ANY business)
+  // 6E. DELIVERY CONFIRMATION & IMMEDIATE DISPATCH
   else if (
     lowerMsg.includes("di antar") ||
     lowerMsg.includes("diantar") ||
@@ -764,6 +787,7 @@ ${bankList}
     lowerMsg.includes("sicepat") ||
     lowerMsg.includes("jne") ||
     lowerMsg.includes("j&t") ||
+    (lowerMsg.includes("sekarang") && (lowerMsg.includes("iya") || lowerMsg.includes("mau") || lowerMsg.includes("antar") || lowerMsg.includes("kirim"))) ||
     (lowerMsg.includes("antar") && (lowerMsg.includes("ya") || lowerMsg.includes("kak") || lowerMsg.includes("dong") || lowerMsg.includes("aja") || lowerMsg.includes("bisa")))
   ) {
     const customerAddr = extractCustomerAddress(lowerMsg, history) || "alamat Kakak";
@@ -785,7 +809,14 @@ ${bankList}
       .map((it) => `• ${it.qty}x *${it.product.name}* - Rp ${(it.subtotal || it.product.price * it.qty).toLocaleString("id-ID")}`)
       .join("\n");
 
-    suggestedReply = `Siap Kak ${shortCustName}! Pesanan Kakak segera kami siapkan dan diantar kurir langsung ke alamat:\n📍 *${customerAddr}*\n\n${itemLines}\n\nSubtotal: Rp ${subtotal.toLocaleString("id-ID")}\nDiskon Promo QRIS (10%): -Rp ${discountVal.toLocaleString("id-ID")}\n*Total Tagihan: Rp ${finalTotal.toLocaleString("id-ID")}*\n\nSilakan scan kode Dynamic QRIS resmi di bawah ini via m-BCA, GoPay, OVO, ShopeePay, DANA, atau ${bankTransferSummary}.\n\nBegitu pembayaran terverifikasi otomatis (2 detik tanpa perlu kirim bukti transfer manual), pesanan langsung meluncur ke alamat Kakak ya!`;
+    const isTransferPref = lowerMsg.includes("transfer") || lowerMsg.includes("bca") || lowerMsg.includes("bank");
+    const custTag = isInitialTurn ? ` Kak ${shortCustName}` : " Kak";
+
+    if (isTransferPref) {
+      suggestedReply = `Siap${custTag}! Pesanan Kakak segera kami siapkan dan diantar kurir langsung ke alamat:\n📍 *${customerAddr}*\n\n${itemLines}\n\n*Total Tagihan: Rp ${subtotal.toLocaleString("id-ID")}*\n\nSilakan transfer ke rekening resmi kami:\n${bankList}\n\nSetelah transfer, silakan kirimkan bukti transfer di sini agar pesanan Kakak langsung meluncur ke alamat ya!`;
+    } else {
+      suggestedReply = `Siap${custTag}! Pesanan Kakak segera kami siapkan dan diantar kurir langsung ke alamat:\n📍 *${customerAddr}*\n\n${itemLines}\n\nSubtotal: Rp ${subtotal.toLocaleString("id-ID")}\nDiskon Promo QRIS (10%): -Rp ${discountVal.toLocaleString("id-ID")}\n*Total Tagihan: Rp ${finalTotal.toLocaleString("id-ID")}*\n\nSilakan scan kode Dynamic QRIS resmi di bawah ini via m-BCA, GoPay, OVO, ShopeePay, DANA, atau ${bankTransferSummary}.\n\nBegitu pembayaran terverifikasi otomatis (2 detik tanpa perlu kirim bukti transfer manual), pesanan langsung meluncur ke alamat Kakak ya!`;
+    }
 
     orderData = {
       items: orderedItems,
@@ -808,7 +839,44 @@ ${bankList}
     suggestedReply = `Siap Kak! Sambal *Level ${lvlNum}* sudah kami catat untuk pesanan Kakak.\n\nApakah mau langsung kami antarkan kurir ke *${customerAddr}* sekarang? Untuk pembayarannya mau via Dynamic QRIS (diskon 10%) atau Transfer Bank?`;
   }
 
-  // 6G. DINE IN / TAKEAWAY CONFIRMATION
+  // 6G. OPTION 2 / TRANSFER BANK SELECTION
+  else if (
+    lowerMsg === "2" ||
+    lowerMsg === "nomor 2" ||
+    lowerMsg === "no 2" ||
+    lowerMsg === "opsi 2" ||
+    lowerMsg === "pilihan 2" ||
+    lowerMsg === "transfer" ||
+    lowerMsg === "transfer bank" ||
+    lowerMsg === "via transfer" ||
+    lowerMsg === "lewat transfer" ||
+    lowerMsg.includes("transfer bank") ||
+    lowerMsg.includes("rekening bank") ||
+    lowerMsg.includes("pakai transfer") ||
+    lowerMsg.includes("lewat transfer")
+  ) {
+    intent = "bank_transfer_selected";
+    suggestedReply = `Baik Kak, untuk pembayaran via Transfer Bank, silakan transfer ke rekening resmi kami:\n\n${bankList}\n\nSetelah melakukan transfer, silakan kirimkan bukti transfernya di sini agar pesanan Kakak langsung kami verifikasi dan proses pengirimannya ya!`;
+  }
+
+  // 6H. OPTION 1 / DYNAMIC QRIS SELECTION
+  else if (
+    lowerMsg === "1" ||
+    lowerMsg === "nomor 1" ||
+    lowerMsg === "no 1" ||
+    lowerMsg === "opsi 1" ||
+    lowerMsg === "pilihan 1" ||
+    lowerMsg === "qris" ||
+    lowerMsg === "dynamic qris" ||
+    lowerMsg.includes("pakai qris") ||
+    lowerMsg.includes("lewat qris") ||
+    lowerMsg.includes("scan qris")
+  ) {
+    intent = "qris_request";
+    suggestedReply = `Siap Kak! Kode Dynamic QRIS resmi telah kami terbitkan di bawah ini (diskon 10% sudah otomatis diterapkan).\n\nSilakan scan melalui m-BCA, GoPay, OVO, ShopeePay, DANA, atau LinkAja untuk verifikasi otomatis instan lunas dalam 2 detik tanpa perlu kirim bukti transfer manual!`;
+  }
+
+  // 6I. DINE IN / TAKEAWAY CONFIRMATION
   else if (
     lowerMsg.includes("makan di tempat") ||
     lowerMsg.includes("dine in") ||
@@ -817,10 +885,11 @@ ${bankList}
     lowerMsg.includes("bungkus")
   ) {
     intent = "qris_request";
-    suggestedReply = `Siap Kak ${shortCustName}! Pesanan Kakak kami siapkan untuk langsung diambil di outlet resmi *${instName}* (${instAddress}).\n\nSilakan selesaikan pembayaran via Dynamic QRIS di bawah ini agar pesanan langsung kami buatkan ya Kak!`;
+    const custTag = isInitialTurn ? ` Kak ${shortCustName}` : " Kak";
+    suggestedReply = `Siap${custTag}! Pesanan Kakak kami siapkan untuk langsung diambil di outlet resmi *${instName}* (${instAddress}).\n\nSilakan selesaikan pembayaran via Dynamic QRIS di bawah ini agar pesanan langsung kami buatkan ya Kak!`;
   }
 
-  // 6H. CUSTOMER AGREEMENT / ORDER CONFIRMATION ("boleh kak saya mau", "oke kak", "siap saya mau", "mau kak", "deal")
+  // 6J. CUSTOMER AGREEMENT / ORDER CONFIRMATION ("boleh kak saya mau", "oke kak", "siap saya mau", "mau kak", "deal")
   else if (
     lowerMsg.includes("boleh") ||
     lowerMsg.includes("saya mau") ||
@@ -844,7 +913,7 @@ ${bankList}
     suggestedReply = `Mantap Kak! Pesanan Kakak segera kami proses ya.\n\nMohon bantu lengkapi:\n1. Alamat lengkap tujuan pengiriman (atau konfirmasi pengambilan):\n${variantPrompt}\n\nUntuk pembayaran, Kakak ingin scan Dynamic QRIS langsung (dapat diskon 10%) atau Transfer Bank?`;
   }
 
-  // 6I. PAYMENT / CHECKOUT / REKENING / QRIS INQUIRY
+  // 6K. PAYMENT / CHECKOUT / REKENING / QRIS INQUIRY
   else if (
     lowerMsg.includes("bayar") ||
     lowerMsg.includes("rekening") ||
@@ -857,7 +926,7 @@ ${bankList}
     suggestedReply = `Untuk pembayaran di *${instName}*, Kakak bisa menggunakan salah satu metode resmi berikut:\n\n1. *Dynamic QRIS 1-Klik* (BCA, Mandiri, BRI, BNI, GoPay, OVO, ShopeePay, DANA) — verifikasi lunas instan otomatis dalam 2 detik tanpa perlu kirim struk manual!\n2. *${bankTransferSummary}*\n\nKode Dynamic QRIS resmi telah kami terbitkan di bawah ini ya Kak. Silakan scan untuk langsung menyelesaikan pembayaran!`;
   }
 
-  // 6J. SINGLE ITEM ORDER INTENT
+  // 6L. SINGLE ITEM ORDER INTENT
   else if (
     lowerMsg.includes("pesan") ||
     lowerMsg.includes("order") ||
@@ -896,7 +965,7 @@ ${bankList}
     }
   }
 
-  // 6K. DISKON & PROMO INQUIRY
+  // 6M. DISKON & PROMO INQUIRY
   else if (
     lowerMsg.includes("diskon") ||
     lowerMsg.includes("promo") ||
@@ -906,10 +975,10 @@ ${bankList}
     lowerMsg.includes("cashback")
   ) {
     intent = "promo_inquiry";
-    suggestedReply = `Kabar baik Kak! Promo menarik yang sedang aktif di *${instName}* hari ini:\n\n${promoList}\n\nKakak bisa langsung nikmati potongan harga ini sekarang dengan pembayaran via Dynamic QRIS ya!`;
+    suggestedReply = `Promo menarik yang sedang aktif di *${instName}* hari ini:\n\n${promoList}\n\nKakak bisa langsung nikmati potongan harga ini sekarang dengan pembayaran via Dynamic QRIS ya!`;
   }
 
-  // 6L. STORE LOCATION / OUTLET INQUIRY
+  // 6N. STORE LOCATION / OUTLET INQUIRY
   else if (
     !hasAddressInput &&
     (
@@ -925,10 +994,11 @@ ${bankList}
     )
   ) {
     intent = "location_inquiry";
-    suggestedReply = `Outlet resmi *${instName}* berlokasi di:\n📍 *${instAddress}*\n🕒 Jam Operasional: ${instHours}\n🛵 Layanan Pengantaran: Kurir Instant dan ekspedisi reguler.\n\nKakak mau mampir langsung atau mau kami antar ke alamat hari ini?`;
+    const greetingHeader = isInitialTurn ? `Halo Kak ${shortCustName}!\n\n` : "";
+    suggestedReply = `${greetingHeader}Outlet resmi *${instName}* berlokasi di:\n📍 *${instAddress}*\n🕒 Jam Operasional: ${instHours}\n🛵 Layanan Pengantaran: Kurir Instant dan ekspedisi reguler.\n\nKakak mau mampir langsung atau mau kami antar ke alamat hari ini?`;
   }
 
-  // 6M. GENERAL CATALOG INQUIRY ("ready stock", "ada produk apa", "jual apa", "katalog", "daftar menu")
+  // 6O. GENERAL CATALOG INQUIRY ("ready stock", "ada produk apa", "jual apa", "katalog", "daftar menu")
   else if (
     lowerMsg.includes("produk") ||
     lowerMsg.includes("menu") ||
@@ -937,7 +1007,10 @@ ${bankList}
     lowerMsg.includes("jual apa") ||
     lowerMsg.includes("harga") ||
     lowerMsg.includes("katalog") ||
-    lowerMsg.includes("barang")
+    lowerMsg.includes("barang") ||
+    lowerMsg.includes("laper") ||
+    lowerMsg.includes("makanan") ||
+    lowerMsg.includes("minuman")
   ) {
     intent = "product_inquiry";
     if (activeProducts.length > 0) {
@@ -945,13 +1018,15 @@ ${bankList}
         .slice(0, 6)
         .map((p) => `• *${p.name}* (Rp ${(p.price || 0).toLocaleString("id-ID")}) - Stok: ${p.stock || 0} unit`)
         .join("\n");
-      suggestedReply = `Halo Kak ${shortCustName}! Berikut daftar produk ready stok di *${instName}*:\n\n${topItems}\n\nAda produk yang ingin Kakak pesan hari ini?`;
+      const greetingHeader = isInitialTurn ? `Halo Kak ${shortCustName}! ` : "";
+      suggestedReply = `${greetingHeader}Berikut daftar produk ready stok di *${instName}*:\n\n${topItems}\n\nAda produk yang ingin Kakak pesan hari ini?`;
     } else {
-      suggestedReply = `Halo Kak! Untuk katalog produk ${instName}, silakan beri tahu produk yang sedang dicari agar langsung kami cek ketersediaannya ya Kak.`;
+      const greetingHeader = isInitialTurn ? `Halo Kak ${shortCustName}! ` : "Halo Kak! ";
+      suggestedReply = `${greetingHeader}Untuk katalog produk ${instName}, silakan beri tahu produk yang sedang dicari agar langsung kami cek ketersediaannya ya Kak.`;
     }
   }
 
-  // 6N. GREETING
+  // 6P. GREETING
   else if (
     lowerMsg.includes("halo") ||
     lowerMsg.includes("hai") ||
@@ -962,10 +1037,14 @@ ${bankList}
     lowerMsg.includes("assalamu")
   ) {
     intent = "greeting";
-    suggestedReply = `Halo Kak ${shortCustName}! Selamat datang di layanan pelanggan resmi *${instName}*. Ada yang bisa kami bantu seputar produk, promo, atau pesanan hari ini?`;
+    if (isInitialTurn) {
+      suggestedReply = `Halo Kak ${shortCustName}! Selamat datang di layanan pelanggan resmi *${instName}*. Ada yang bisa kami bantu seputar produk, promo, atau pesanan hari ini?`;
+    } else {
+      suggestedReply = `Ada yang bisa kami bantu lagi seputar produk atau pesanan di *${instName}* Kak?`;
+    }
   }
 
-  // 6O. CONTEXTUAL HELPFUL FALLBACK
+  // 6Q. CONTEXTUAL HELPFUL FALLBACK
   else {
     suggestedReply = `Ada yang bisa kami bantu seputar produk atau pesanan di *${instName}* Kak? Kakak bisa tanya rekomendasi produk, promo diskon, lokasi outlet, atau langsung melakukan pemesanan ya.`;
   }

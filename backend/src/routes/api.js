@@ -50,6 +50,7 @@ router.post("/whatsapp/heartbeat", async (req, res) => {
 router.get("/institutions", authenticate, instCtrl.getAllInstitutions);
 router.post("/institutions", authenticate, requireRole("superadmin"), instCtrl.createInstitution);
 router.put("/institutions/:id", authenticate, requireRole("superadmin", "owner", "supervisor"), instCtrl.updateInstitution);
+router.post("/institutions/:id/reset-password", authenticate, requireRole("superadmin"), instCtrl.resetInstitutionPassword);
 router.delete("/institutions/:id", authenticate, requireRole("superadmin"), instCtrl.deleteInstitution);
 
 // ==================== 4. MASTER DATA (PRODUCTS) ====================

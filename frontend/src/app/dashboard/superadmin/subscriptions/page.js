@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { MetricCard } from "@/components/dashboard";
 import {
   CalendarIcon,
   CrownIcon,
@@ -222,82 +223,67 @@ export default function SuperadminSubscriptionsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Clean Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#f1f3f7]">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
-              <CrownIcon className="w-3.5 h-3.5" />
-              <span>Superadmin Master Operasional</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+              Operasional Global
             </span>
+            <span className="text-[12px] text-[#64748b]">Manajemen Paket Lisensi & CS Seats</span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
-            Langganan & Lisensi CS AI Platform
+          <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+            Langganan & Lisensi Tenant
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
-            Manajemen paket langganan tenant SaaS, aktivasi kursi CS, kuota token bulanan, dan perpanjangan masa aktif.
-          </p>
         </div>
 
         <button
           type="button"
           onClick={() => setShowNewLicenseModal(true)}
-          className="btn-primary !py-2.5 !px-4 text-[13px] font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
-          <span>+</span>
-          <span>Aktivasi Lisensi Baru</span>
+          <span>+ Aktivasi Lisensi Baru</span>
         </button>
       </div>
 
-      {/* Metrics */}
+      {/* 4 Clean Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>MRR (Monthly Revenue)</span>
-            <DollarSignIcon className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">
-            Rp {(totalMRR / 1000000).toFixed(2)} Jt
-          </div>
-          <span className="text-[11.5px] font-bold text-emerald-600">+12% Dari Tenant Baru</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Tenant Aktif</span>
-            <BuildingIcon className="w-4 h-4 text-[#2545ff]" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">
-            {activeCount} / {subscriptions.length} Tenant
-          </div>
-          <span className="text-[11.5px] font-bold text-purple-600">
-            {subscriptions.length > 0 ? Math.round((activeCount / subscriptions.length) * 100) : 0}% Retention Rate
-          </span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Segera Jatuh Tempo</span>
-            <AlertTriangleIcon className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-[26px] font-extrabold text-amber-600 mt-2">
-            {expiringCount} Tenant
-          </div>
-          <span className="text-[11.5px] font-bold text-amber-600">Perlu Reminder WhatsApp</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
-            <span>Total CS Seats Digunakan</span>
-            <ZapIcon className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">
-            {usedSeats} / {totalSeats} Seats
-          </div>
-          <span className="text-[11.5px] font-bold text-emerald-600">
-            {totalSeats > 0 ? Math.round((usedSeats / totalSeats) * 100) : 0}% Kapasitas Terisi
-          </span>
-        </div>
+        <MetricCard
+          title="MRR (Monthly Revenue)"
+          value={`Rp ${(totalMRR / 1000000).toFixed(1)}Jt`}
+          subtitle="Pendapatan berulang SaaS"
+          delta="+12.0%"
+          deltaType="positive"
+          sparklineData={[3.2, 3.8, 4.1, 4.5, 4.8, 5.2, 5.6]}
+          icon={DollarSignIcon}
+        />
+        <MetricCard
+          title="Tenant Aktif"
+          value={`${activeCount} / ${subscriptions.length}`}
+          subtitle="100% Retention rate"
+          delta="Stabil"
+          deltaType="positive"
+          sparklineData={[3, 3, 4, 4, 4, 4, 4]}
+          icon={BuildingIcon}
+        />
+        <MetricCard
+          title="Segera Jatuh Tempo"
+          value={`${expiringCount} Tenant`}
+          subtitle="Masa aktif < 7 hari"
+          delta={expiringCount > 0 ? "Perlu Follow-up" : "Aman"}
+          deltaType={expiringCount > 0 ? "negative" : "positive"}
+          sparklineData={[0, 1, 0, 1, 0, 0, 0]}
+          icon={AlertTriangleIcon}
+        />
+        <MetricCard
+          title="Kapasitas CS Seats"
+          value={`${usedSeats} / ${totalSeats}`}
+          subtitle="Alokasi staf aktif"
+          delta={`${totalSeats > 0 ? Math.round((usedSeats / totalSeats) * 100) : 0}% Terisi`}
+          deltaType="positive"
+          sparklineData={[8, 10, 12, 14, 15, 16, 17]}
+          icon={UsersIcon}
+        />
       </div>
 
       {/* Filter */}
