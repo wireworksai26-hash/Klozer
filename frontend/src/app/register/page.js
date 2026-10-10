@@ -14,7 +14,7 @@ import {
   HeadphonesIcon,
   CheckIcon,
 } from "@/components/icons";
-import { API_BASE_URL } from "@/utils/apiConfig";
+import { apiFetch } from "@/utils/api";
 
 export default function RegisterPage() {
   const [institutionName, setInstitutionName] = useState("");
@@ -29,30 +29,6 @@ export default function RegisterPage() {
   const [copied, setCopied] = useState(false);
   const [copiedItem, setCopiedItem] = useState("");
 
-  // Quick Demo Auto-Fill Handlers for Fast Local Testing
-  const handleQuickFill = (preset) => {
-    if (preset === "laundry") {
-      setInstitutionName("Mahalaundry");
-      setSector("Jasa & Laundry");
-      setMode("business");
-      setOwnerName("Budi Santoso");
-      setPhone("081234567890");
-    } else if (preset === "fashion") {
-      setInstitutionName("Batik Solo");
-      setSector("Fashion & Retail");
-      setMode("business");
-      setOwnerName("Hendra Wijaya");
-      setPhone("081987654321");
-    } else if (preset === "kuliner") {
-      setInstitutionName("Kopi Kencana");
-      setSector("Kuliner & F&B");
-      setMode("business");
-      setOwnerName("Bayu Wicaksono");
-      setPhone("085711223344");
-    }
-    setErrorMsg("");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!institutionName) {
@@ -64,56 +40,12 @@ export default function RegisterPage() {
     setErrorMsg("");
 
     try {
-      let data = null;
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            institutionName,
-            sector,
-            mode,
-            ownerName,
-            phone,
-          }),
-        });
-        data = await res.json();
-      } catch (err) {
-        // Local simulation fallback
-        const cleanSlug = institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis";
-        data = {
-          success: true,
-          credentialsBundle: {
-            institutionName,
-            sector,
-            loginUrl: "/login",
-            spv: {
-              name: ownerName || `SPV - ${institutionName}`,
-              email: `spv@${cleanSlug}.id`,
-              password: Math.floor(100000 + Math.random() * 900000).toString(),
-              role: "Supervisor / Owner",
-            },
-            cs1: {
-              name: `CS 1 - ${institutionName}`,
-              email: `cs1@${cleanSlug}.id`,
-              password: Math.floor(100000 + Math.random() * 900000).toString(),
-              role: "Customer Service 1",
-            },
-            cs2: {
-              name: `CS 2 - ${institutionName}`,
-              email: `cs2@${cleanSlug}.id`,
-              password: Math.floor(100000 + Math.random() * 900000).toString(),
-              role: "Customer Service 2",
-            },
-          },
-        };
-      }
-
-      if (data && data.credentialsBundle) {
-        setCredentialsBundle(data.credentialsBundle);
-      } else {
-        setErrorMsg(data?.message || "Pendaftaran gagal. Silakan coba lagi.");
-      }
+      const data = await apiFetch("/auth/register", {
+        method: "POST",
+        auth: false,
+        body: { institutionName, sector, mode, ownerName: ownerName || undefined, phone: phone || undefined },
+      });
+      setCredentialsBundle(data.credentialsBundle);
     } catch (err) {
       setErrorMsg(err.message || "Gagal terhubung ke server pendaftaran.");
     } finally {
@@ -132,17 +64,17 @@ Login URL : ${b.loginUrl || "http://localhost:3000/login"}
 ----------------------------------------
 1. AKUN SUPERVISOR (SPV / OWNER):
    • Email    : ${b.spv?.email}
-   • Password : ${b.spv?.password} (Angka)
+   • Password : ${b.spv?.password}
    • Akses    : Penuh (Laporan, Keuangan, AI)
 
 2. AKUN CS 1 (CUSTOMER SERVICE):
    • Email    : ${b.cs1?.email}
-   • Password : ${b.cs1?.password} (Angka)
+   • Password : ${b.cs1?.password}
    • Akses    : WhatsApp Inbox & Closing Order
 
 3. AKUN CS 2 (CUSTOMER SERVICE):
    • Email    : ${b.cs2?.email}
-   • Password : ${b.cs2?.password} (Angka)
+   • Password : ${b.cs2?.password}
    • Akses    : WhatsApp Inbox & Closing Order
 ----------------------------------------
 Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
@@ -159,74 +91,74 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-12 font-sans bg-white">
+    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-12 bg-white">
       {/* LEFT COLUMN: Full Height Deep Ink Navy Showcase (5 Cols) */}
-      <div className="lg:col-span-5 relative hidden lg:flex flex-col justify-between p-10 xl:p-14 overflow-hidden bg-gradient-to-b from-[#0c1754] via-[#08103d] to-[#040821] text-white">
+      <div className="lg:col-span-5 relative hidden lg:flex flex-col justify-between p-10 xl:p-14 overflow-hidden bg-gradient-to-b from-ink via-[#08103d] to-[#040821] text-white">
         {/* Ambient Glows */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#2545ff]/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand/25 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#38bdf8]/15 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Logo */}
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3 no-underline group" title="Kembali ke Beranda">
             <KlozerIcon className="w-11 h-11 rounded-xl shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform" />
-            <span className="text-[28px] font-black tracking-tight text-white leading-none">
-              klozer<span className="text-[#2545ff]">.</span>
+            <span className="text-heading-md font-bold tracking-tight text-white leading-none">
+              klozer<span className="text-brand">.</span>
             </span>
           </Link>
         </div>
 
         {/* Center Editorial Showcase */}
         <div className="relative z-10 my-auto py-8 max-w-[440px]">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2545ff]/25 border border-[#2545ff]/40 text-[11px] font-extrabold tracking-wider uppercase text-[#38bdf8] mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/25 border border-brand/40 text-caption font-bold tracking-wider uppercase text-[#38bdf8] mb-4">
             <SparklesIcon className="w-3.5 h-3.5" />
             <span>Auto-Generate Akun SPV & CS Instan</span>
           </div>
 
-          <h1 className="text-[32px] xl:text-[36px] font-black text-white leading-[1.2] tracking-tight mb-4">
+          <h1 className="text-heading-lg font-bold text-white leading-[1.2] tracking-tight mb-4">
             Otomatiskan Penjualan WhatsApp Bisnis Anda
           </h1>
 
-          <p className="text-[14.5px] text-[#eaebf8]/80 leading-relaxed mb-8">
+          <p className="text-body-sm text-brand-soft/80 leading-relaxed mb-8">
             Daftarkan bisnis Anda dan dapatkan username email <code className="text-[#38bdf8] font-bold">spv@bisnis.id</code> & <code className="text-[#38bdf8] font-bold">cs@bisnis.id</code> beserta kata sandi angka otomatis yang siap langsung dipakai login.
           </p>
 
           {/* Value Checklist */}
           <div className="space-y-4 pt-6 border-t border-white/15">
             <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2545ff] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
+              <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
                 <QrIcon className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="text-[14px] font-extrabold text-white">In-Chat Dynamic QRIS</div>
-                <div className="text-[12.5px] text-[#eaebf8]/70">Checkout instan flat Rp 750 tanpa biaya langganan QRIS</div>
+                <div className="text-body-sm font-bold text-white">In-Chat Dynamic QRIS</div>
+                <div className="text-label text-brand-soft/70">Checkout instan flat Rp 750 tanpa biaya langganan QRIS</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2545ff] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
+              <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
                 <MicIcon className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="text-[14px] font-extrabold text-white">AI Voice Note Engine</div>
-                <div className="text-[12.5px] text-[#eaebf8]/70">Transkripsi & balasan suara otomatis logat lokal Indonesia</div>
+                <div className="text-body-sm font-bold text-white">AI Voice Note Engine</div>
+                <div className="text-label text-brand-soft/70">Transkripsi & balasan suara otomatis logat lokal Indonesia</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2545ff] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
+              <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
                 <ShieldCheckIcon className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="text-[14px] font-extrabold text-white">Anti-Fraud OCR & Mutasi Bank</div>
-                <div className="text-[12.5px] text-[#eaebf8]/70">Verifikasi struk transfer otomatis anti-struk palsu</div>
+                <div className="text-body-sm font-bold text-white">Anti-Fraud OCR & Mutasi Bank</div>
+                <div className="text-label text-brand-soft/70">Verifikasi struk transfer otomatis anti-struk palsu</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bottom Social Proof */}
-        <div className="relative z-10 pt-6 border-t border-white/15 text-[12.5px] text-[#eaebf8]/60 font-medium">
+        <div className="relative z-10 pt-6 border-t border-white/15 text-label text-brand-soft/60 font-medium">
           Dipercaya oleh 1.400+ Brand, Toko Online & UMKM di Indonesia
         </div>
       </div>
@@ -238,8 +170,8 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
           {/* Mobile Brand Logo */}
           <Link href="/" className="lg:hidden inline-flex items-center gap-2.5 mb-8 no-underline" title="Kembali ke Beranda">
             <KlozerIcon className="w-10 h-10 rounded-xl shadow-md flex-shrink-0" />
-            <span className="text-[26px] font-black tracking-tight text-[#0c1754]">
-              klozer<span className="text-[#2545ff]">.</span>
+            <span className="text-heading-md font-bold tracking-tight text-ink">
+              klozer<span className="text-brand">.</span>
             </span>
           </Link>
 
@@ -247,51 +179,21 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
             <div>
               {/* Header with Quick Fill Presets */}
               <div className="mb-5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#2545ff] bg-[#eaebf8] px-3 py-1 rounded-full border border-[#2545ff]/20 inline-block mb-2">
+                <span className="text-caption font-bold uppercase tracking-wider text-brand bg-brand-soft px-3 py-1 rounded-full border border-brand/20 inline-block mb-2">
                   Pendaftaran Tenant Baru
                 </span>
 
-                <h2 className="text-[28px] sm:text-[32px] font-black text-[#0c1754] tracking-tight leading-tight">
+                <h2 className="text-heading-md sm:text-heading font-bold text-ink tracking-tight leading-tight">
                   Buat Akun Bisnis Anda
                 </h2>
-                <p className="text-[14px] text-[#64748b] mt-1 font-medium">
-                  Sistem akan otomatis men-generate akun <strong>spv@bisnis.id</strong> dan <strong>cs@bisnis.id</strong> dengan password angka.
+                <p className="text-body-sm text-fg-muted mt-1 font-medium">
+                  Sistem akan otomatis men-generate akun <strong>spv@bisnis.id</strong> dan <strong>cs@bisnis.id</strong> dengan password acak yang kuat. Simpan password tersebut, hanya ditampilkan sekali.
                 </p>
 
-                {/* 1-Click Fast Fill for Local Testing */}
-                <div className="mt-3.5 p-2.5 bg-[#fbfaf8] border border-[#ede8e2] rounded-xl flex items-center justify-between gap-2">
-                  <span className="text-[11.5px] font-bold text-[#64748b] flex items-center gap-1">
-                    <SparklesIcon className="w-3.5 h-3.5 text-[#2545ff]" />
-                    <span>Contoh Cepat (Auto-Fill):</span>
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill("laundry")}
-                      className="text-[11px] font-bold px-2.5 py-1 bg-white border border-[#f0e9e1] hover:border-[#2545ff] hover:text-[#2545ff] text-[#0c1754] rounded-md cursor-pointer transition-colors shadow-2xs"
-                    >
-                      Laundry
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill("fashion")}
-                      className="text-[11px] font-bold px-2.5 py-1 bg-white border border-[#f0e9e1] hover:border-[#2545ff] hover:text-[#2545ff] text-[#0c1754] rounded-md cursor-pointer transition-colors shadow-2xs"
-                    >
-                      Fashion
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill("kuliner")}
-                      className="text-[11px] font-bold px-2.5 py-1 bg-white border border-[#f0e9e1] hover:border-[#2545ff] hover:text-[#2545ff] text-[#0c1754] rounded-md cursor-pointer transition-colors shadow-2xs"
-                    >
-                      Kuliner
-                    </button>
-                  </div>
-                </div>
               </div>
 
               {errorMsg && (
-                <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[13px] font-semibold flex items-center gap-2.5">
+                <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-body-sm font-semibold flex items-center gap-2.5">
                   <AlertTriangleIcon className="w-4.5 h-4.5 text-rose-600 flex-shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
@@ -299,7 +201,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-[13px] font-bold text-[#171417] mb-1">
+                  <label className="block text-body-sm font-bold text-charcoal mb-1">
                     Nama Toko / Bisnis / Instansi *
                   </label>
                   <input
@@ -308,10 +210,10 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                     placeholder="Contoh: Mahalaundry / Batik Solo"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[14px] text-[#171417] font-semibold placeholder-[#969696] outline-none focus:border-[#2545ff] focus:bg-white transition-all shadow-xs"
+                    className="w-full px-4 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-semibold placeholder-fg-subtle outline-none focus:border-brand focus:bg-white transition-all shadow-xs"
                   />
                   {institutionName && (
-                    <div className="text-[11px] text-[#2545ff] font-medium mt-1">
+                    <div className="text-caption text-brand font-medium mt-1">
                       Preview Email Login: <span className="font-mono font-bold">spv@{institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis"}.id</span>
                     </div>
                   )}
@@ -319,13 +221,13 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[13px] font-bold text-[#171417] mb-1">
+                    <label className="block text-body-sm font-bold text-charcoal mb-1">
                       Tipe Operasional
                     </label>
                     <select
                       value={mode}
                       onChange={(e) => setMode(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13px] text-[#171417] font-bold outline-none focus:border-[#2545ff] focus:bg-white"
+                      className="w-full px-3 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-bold outline-none focus:border-brand focus:bg-white"
                     >
                       <option value="business">Bisnis / Retail E-Commerce</option>
                       <option value="ngo">NGO / Lembaga ZISWAF</option>
@@ -333,13 +235,13 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-bold text-[#171417] mb-1">
+                    <label className="block text-body-sm font-bold text-charcoal mb-1">
                       Sektor Industri
                     </label>
                     <select
                       value={sector}
                       onChange={(e) => setSector(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13px] text-[#171417] font-bold outline-none focus:border-[#2545ff] focus:bg-white"
+                      className="w-full px-3 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-bold outline-none focus:border-brand focus:bg-white"
                     >
                       <option value="Fashion & Retail">Fashion & Retail</option>
                       <option value="Kecantikan & Skincare">Kecantikan & Skincare</option>
@@ -351,8 +253,8 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#f0e9e1]">
-                  <label className="block text-[13px] font-bold text-[#171417] mb-1">
+                <div className="pt-2 border-t border-line">
+                  <label className="block text-body-sm font-bold text-charcoal mb-1">
                     Nama Pemilik / Supervisor (SPV)
                   </label>
                   <input
@@ -360,12 +262,12 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                     placeholder="Contoh: Budi Santoso (Opsional)"
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13.5px] text-[#171417] font-semibold placeholder-[#969696] outline-none focus:border-[#2545ff] focus:bg-white transition-all shadow-xs"
+                    className="w-full px-4 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-semibold placeholder-fg-subtle outline-none focus:border-brand focus:bg-white transition-all shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-bold text-[#171417] mb-1">
+                  <label className="block text-body-sm font-bold text-charcoal mb-1">
                     No. WhatsApp Aktif (Opsional)
                   </label>
                   <input
@@ -373,14 +275,14 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                     placeholder="081234567890"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#f0e9e1] bg-[#f9f8f6] text-[13.5px] text-[#171417] font-semibold placeholder-[#969696] outline-none focus:border-[#2545ff] focus:bg-white transition-all shadow-xs"
+                    className="w-full px-4 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-semibold placeholder-fg-subtle outline-none focus:border-brand focus:bg-white transition-all shadow-xs"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full btn-primary !py-3.5 text-[14.5px] font-extrabold shadow-md hover:shadow-xl cursor-pointer flex items-center justify-center gap-2 mt-4 transition-all"
+                  className="w-full btn-primary !py-3.5 text-body-sm font-bold shadow-md hover:shadow-xl cursor-pointer flex items-center justify-center gap-2 mt-4 transition-all"
                 >
                   {isLoading ? (
                     <>
@@ -396,9 +298,9 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                 </button>
               </form>
 
-              <div className="mt-6 text-center text-[13px] text-[#64748b]">
+              <div className="mt-6 text-center text-body-sm text-fg-muted">
                 Sudah punya akun?{" "}
-                <Link href="/login" className="font-extrabold text-[#2545ff] hover:underline">
+                <Link href="/login" className="font-bold text-brand hover:underline">
                   Masuk di sini
                 </Link>
               </div>
@@ -406,14 +308,14 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
           ) : (
             /* Direct Credentials Presentation View */
             <div className="flex flex-col gap-3.5 animate-scale-pop">
-              <div className="p-5 bg-gradient-to-b from-emerald-50 to-[#f9f8f6] rounded-2xl border border-emerald-200 text-center">
+              <div className="p-5 bg-gradient-to-b from-emerald-50 to-canvas rounded-2xl border border-emerald-200 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white mx-auto flex items-center justify-center mb-2 shadow-md shadow-emerald-600/20">
                   <CheckCircleIcon className="w-6 h-6" />
                 </div>
-                <h3 className="text-[20px] font-black text-emerald-950">
+                <h3 className="text-subheading font-bold text-emerald-950">
                   Akun SPV & CS Berhasil Dibuat!
                 </h3>
-                <p className="text-[13px] text-emerald-700 mt-1 font-medium">
+                <p className="text-body-sm text-emerald-700 mt-1 font-medium">
                   Berikut adalah kredensial login resmi untuk instansi <strong>{credentialsBundle.institutionName}</strong>:
                 </p>
               </div>
@@ -421,27 +323,27 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
               {/* Stacked Interactive Credential Cards with Numeric Passwords */}
               <div className="space-y-2.5">
                 {/* 1. SPV Account */}
-                <div className="p-3.5 bg-white rounded-2xl border-2 border-[#2545ff]/30 shadow-sm flex flex-col gap-2">
+                <div className="p-3.5 bg-white rounded-2xl border-2 border-brand/30 shadow-sm flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[#0c1754] text-[13.5px] flex items-center gap-2">
+                    <span className="font-bold text-ink text-body-sm flex items-center gap-2">
                       <CrownIcon className="w-4 h-4 text-amber-500" />
                       <span>Akun Supervisor (SPV / Owner)</span>
                     </span>
-                    <span className="text-[10px] bg-[#2545ff] text-white px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-micro bg-brand text-white px-2 py-0.5 rounded-full font-bold">
                       Akses Penuh
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12.5px] bg-[#f9f8f6] p-2.5 rounded-xl border border-[#f0e9e1]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-label bg-canvas p-2.5 rounded-xl border border-line">
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Email Login:</span>
-                      <span className="font-mono font-bold text-[#0c1754] text-[13px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Email Login:</span>
+                      <span className="font-mono font-bold text-ink text-body-sm select-all">
                         {credentialsBundle.spv?.email}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Password (Angka):</span>
-                      <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-[13.5px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Password:</span>
+                      <span className="font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-body-sm select-all">
                         {credentialsBundle.spv?.password}
                       </span>
                     </div>
@@ -450,7 +352,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                   <button
                     type="button"
                     onClick={() => copySingle("SPV", `${credentialsBundle.spv?.email} / ${credentialsBundle.spv?.password}`)}
-                    className="text-[11px] font-bold text-[#2545ff] hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    className="text-caption font-bold text-brand hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <ClipboardListIcon className="w-3.5 h-3.5" />
                     <span>{copiedItem === "SPV" ? "Tersalin!" : "Salin Akun SPV"}</span>
@@ -458,27 +360,27 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                 </div>
 
                 {/* 2. CS 1 Account */}
-                <div className="p-3.5 bg-white rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-2">
+                <div className="p-3.5 bg-white rounded-2xl border border-line shadow-xs flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[#0c1754] text-[13px] flex items-center gap-2">
+                    <span className="font-bold text-ink text-body-sm flex items-center gap-2">
                       <HeadphonesIcon className="w-4 h-4 text-emerald-600" />
                       <span>Akun CS 1 (Customer Service)</span>
                     </span>
-                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-micro bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
                       CS Frontliner
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12.5px] bg-[#f9f8f6] p-2.5 rounded-xl border border-[#f0e9e1]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-label bg-canvas p-2.5 rounded-xl border border-line">
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Email Login:</span>
-                      <span className="font-mono font-bold text-[#0c1754] text-[13px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Email Login:</span>
+                      <span className="font-mono font-bold text-ink text-body-sm select-all">
                         {credentialsBundle.cs1?.email}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Password (Angka):</span>
-                      <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-[13.5px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Password:</span>
+                      <span className="font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-body-sm select-all">
                         {credentialsBundle.cs1?.password}
                       </span>
                     </div>
@@ -487,7 +389,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                   <button
                     type="button"
                     onClick={() => copySingle("CS1", `${credentialsBundle.cs1?.email} / ${credentialsBundle.cs1?.password}`)}
-                    className="text-[11px] font-bold text-[#2545ff] hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    className="text-caption font-bold text-brand hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <ClipboardListIcon className="w-3.5 h-3.5" />
                     <span>{copiedItem === "CS1" ? "Tersalin!" : "Salin Akun CS 1"}</span>
@@ -495,27 +397,27 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                 </div>
 
                 {/* 3. CS 2 Account */}
-                <div className="p-3.5 bg-white rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-2">
+                <div className="p-3.5 bg-white rounded-2xl border border-line shadow-xs flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[#0c1754] text-[13px] flex items-center gap-2">
+                    <span className="font-bold text-ink text-body-sm flex items-center gap-2">
                       <HeadphonesIcon className="w-4 h-4 text-emerald-600" />
                       <span>Akun CS 2 (Customer Service)</span>
                     </span>
-                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-micro bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
                       CS Frontliner
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12.5px] bg-[#f9f8f6] p-2.5 rounded-xl border border-[#f0e9e1]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-label bg-canvas p-2.5 rounded-xl border border-line">
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Email Login:</span>
-                      <span className="font-mono font-bold text-[#0c1754] text-[13px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Email Login:</span>
+                      <span className="font-mono font-bold text-ink text-body-sm select-all">
                         {credentialsBundle.cs2?.email}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10.5px] text-[#64748b] font-bold block">Password (Angka):</span>
-                      <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-[13.5px] select-all">
+                      <span className="text-micro text-fg-muted font-bold block">Password:</span>
+                      <span className="font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-body-sm select-all">
                         {credentialsBundle.cs2?.password}
                       </span>
                     </div>
@@ -524,7 +426,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                   <button
                     type="button"
                     onClick={() => copySingle("CS2", `${credentialsBundle.cs2?.email} / ${credentialsBundle.cs2?.password}`)}
-                    className="text-[11px] font-bold text-[#2545ff] hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    className="text-caption font-bold text-brand hover:underline self-end flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <ClipboardListIcon className="w-3.5 h-3.5" />
                     <span>{copiedItem === "CS2" ? "Tersalin!" : "Salin Akun CS 2"}</span>
@@ -536,9 +438,9 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
               <button
                 type="button"
                 onClick={handleCopyCredentials}
-                className="w-full btn-outline !py-3 text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all mt-1"
+                className="w-full btn-outline !py-3 text-body-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all mt-1"
               >
-                <ClipboardListIcon className="w-4 h-4 text-[#2545ff]" />
+                <ClipboardListIcon className="w-4 h-4 text-brand" />
                 <span>{copied ? "Seluruh Kredensial Berhasil Disalin!" : "Salin Semua Akun (SPV & CS)"}</span>
               </button>
 
@@ -546,7 +448,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
               <div className="flex flex-col gap-2 pt-1">
                 <Link
                   href="/login"
-                  className="w-full btn-primary !py-3.5 text-[14px] font-extrabold text-center block shadow-md hover:shadow-xl"
+                  className="w-full btn-primary !py-3.5 text-body-sm font-bold text-center block shadow-md hover:shadow-xl"
                 >
                   Lanjut ke Halaman Login Sekarang →
                 </Link>
@@ -554,7 +456,7 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                 <button
                   type="button"
                   onClick={() => setCredentialsBundle(null)}
-                  className="w-full py-2 text-[12.5px] font-bold text-[#64748b] hover:text-[#0c1754] text-center border-none bg-transparent cursor-pointer transition-colors"
+                  className="w-full py-2 text-label font-bold text-fg-muted hover:text-ink text-center border-none bg-transparent cursor-pointer transition-colors"
                 >
                   ← Daftarkan Bisnis Lain
                 </button>

@@ -21,6 +21,7 @@ export default function InstitutionsPage() {
     toggleInstitutionModule,
     deleteInstitution,
     resetInstitutionPassword,
+    notify,
     language,
     t,
   } = useDashboard();
@@ -114,27 +115,29 @@ export default function InstitutionsPage() {
     setCopied(false);
   };
 
-  const handleSaveForm = (e) => {
+  const [createdCreds, setCreatedCreds] = useState(null);
+
+  const handleSaveForm = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
     if (editingInst) {
-      updateInstitution(editingInst.id, formData);
-      setEditingInst(null);
+      const ok = await updateInstitution(editingInst.id, formData);
+      if (ok) setEditingInst(null);
     } else {
-      addInstitution(formData);
-      setShowAddModal(false);
+      const created = await addInstitution(formData);
+      if (created) {
+        setShowAddModal(false);
+        setCreatedCreds(created.credentialsBundle);
+      }
     }
   };
 
   // Generate random password helper
   const handleGeneratePassword = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-    let pass = "Klz!";
-    for (let i = 0; i < 6; i++) {
-      pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setResetPasswordInput(pass);
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    setResetPasswordInput(Array.from(bytes, (b) => chars[b % chars.length]).join(""));
   };
 
   // Execute password reset
@@ -143,15 +146,14 @@ export default function InstitutionsPage() {
     setIsResetting(true);
     setResetFeedback(null);
 
-    const res = await resetInstitutionPassword(editingInst.id, resetPasswordInput);
-    setIsResetting(false);
-    if (res && res.success) {
-      setResetFeedback(res.credentials || {
-        institutionName: editingInst.name,
-        email: editingInst.email || "owner@klozer.id",
-        newPassword: resetPasswordInput || "Klozer123!",
-      });
+    let res = null;
+    try {
+      res = await resetInstitutionPassword(editingInst.id, resetPasswordInput);
+    } catch (err) {
+      notify("error", err.message);
     }
+    setIsResetting(false);
+    if (res && res.success) setResetFeedback(res.credentials);
   };
 
   const handleCopyCredentials = () => {
@@ -160,7 +162,7 @@ export default function InstitutionsPage() {
 Instansi: ${resetFeedback.institutionName}
 Email: ${resetFeedback.email}
 Password Baru: ${resetFeedback.newPassword}
-Login URL: http://localhost:3000/login`;
+Login URL: ${window.location.origin}/login`;
 
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
@@ -180,20 +182,33 @@ Login URL: http://localhost:3000/login`;
   });
 
   return (
-    <div className="flex flex-col gap-6 font-sans">
+    <div className="flex flex-col gap-6">
+      {createdCreds && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[460px] p-6 shadow-2xl border border-line">
+            <h3 className="card-title mb-1">Instansi dibuat: {createdCreds.institutionName}</h3>
+            <p className="text-label text-fg-muted mb-3">Berikan kredensial owner ini kepada pemilik. Password hanya ditampilkan sekali.</p>
+            <pre className="font-mono text-label bg-canvas border border-line rounded-lg p-3 whitespace-pre-wrap break-all">{`Email: ${createdCreds.email}\nPassword: ${createdCreds.temporaryPassword}\nLogin: ${createdCreds.loginUrl}`}</pre>
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => navigator.clipboard.writeText(`Email: ${createdCreds.email}\nPassword: ${createdCreds.temporaryPassword}\nLogin: ${createdCreds.loginUrl}`)} className="btn-outline !py-2 !px-4 text-body-sm">Salin</button>
+              <button type="button" onClick={() => setCreatedCreds(null)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">Selesai</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#f1f3f7]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-line">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+            <span className="text-caption font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
               Super Admin Control
             </span>
-            <span className="text-[12px] text-[#64748b]">Multi-Tenant & Akses Instansi</span>
+            <span className="text-label text-fg-muted">Multi-Tenant & Akses Instansi</span>
           </div>
-          <h1 className="text-[24px] font-extrabold text-[#0f172a] tracking-tight">
+          <h1 className="page-title">
             {t("institutions.title", "Manajemen Instansi & Multi-Tenant")}
           </h1>
-          <p className="text-[12.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             {t("institutions.subtitle", "Kelola data tenant, kuota pesan, bahasa dashboard, dan reset kata sandi akun.")}
           </p>
         </div>
@@ -201,30 +216,30 @@ Login URL: http://localhost:3000/login`;
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-4 py-2 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <span>{t("institutions.addBtn", "+ Tambah Instansi")}</span>
         </button>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#e8eaef] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-[320px]">
           <input
             type="text"
             placeholder="Cari nama instansi, pemilik, ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-[13px] bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3.5 py-2 text-[#0f172a] placeholder:text-[#94a3b8] outline-none focus:border-[#2545ff] focus:bg-white transition-all font-medium"
+            className="w-full text-body-sm bg-soft border border-line rounded-xl px-3.5 py-2 text-fg placeholder:text-fg-subtle outline-none focus:border-brand focus:bg-white transition-all font-medium"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[12px] font-bold text-[#64748b] whitespace-nowrap">Sektor:</span>
+          <span className="text-label font-bold text-fg-muted whitespace-nowrap">Sektor:</span>
           <select
             value={selectedSector}
             onChange={(e) => setSelectedSector(e.target.value)}
-            className="text-[12.5px] font-semibold bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-1.5 text-[#0f172a] outline-none cursor-pointer"
+            className="text-label font-semibold bg-soft border border-line rounded-xl px-3 py-1.5 text-fg outline-none cursor-pointer"
           >
             <option value="all">Semua Sektor ({institutions.length})</option>
             <option value="Fashion">Fashion & Retail</option>
@@ -236,44 +251,44 @@ Login URL: http://localhost:3000/login`;
       </div>
 
       {/* Institutions Table */}
-      <div className="bg-white rounded-2xl border border-[#e8eaef] shadow-[0_1px_3px_rgba(16,24,40,0.04)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-line shadow-[0_1px_3px_rgba(16,24,40,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[13px]">
+          <table className="w-full text-left border-collapse text-body-sm">
             <thead>
-              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th className="py-3 px-4 font-bold text-[#475467]">Instansi & Pemilik</th>
-                <th className="py-3 px-4 font-bold text-[#475467]">Sektor & Paket</th>
-                <th className="py-3 px-4 font-bold text-[#475467]">Bahasa Dashboard</th>
-                <th className="py-3 px-4 font-bold text-[#475467]">Penggunaan Kuota WA</th>
-                <th className="py-3 px-4 font-bold text-[#475467]">Status</th>
-                <th className="py-3 px-4 font-bold text-[#475467] text-right">Aksi</th>
+              <tr className="bg-soft border-b border-line">
+                <th className="py-3 px-4 font-bold text-fg-muted">Instansi & Pemilik</th>
+                <th className="py-3 px-4 font-bold text-fg-muted">Sektor & Paket</th>
+                <th className="py-3 px-4 font-bold text-fg-muted">Bahasa Dashboard</th>
+                <th className="py-3 px-4 font-bold text-fg-muted">Penggunaan Kuota WA</th>
+                <th className="py-3 px-4 font-bold text-fg-muted">Status</th>
+                <th className="py-3 px-4 font-bold text-fg-muted text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f1f3f7]">
+            <tbody className="divide-y divide-line">
               {filtered.map((inst) => (
-                <tr key={inst.id} className="hover:bg-[#f8fafc]/80 transition-colors">
+                <tr key={inst.id} className="hover:bg-soft/80 transition-colors">
                   <td className="py-3.5 px-4">
-                    <div className="font-extrabold text-[#0f172a] text-[13.5px]">{inst.name}</div>
-                    <div className="text-[11.5px] text-[#64748b]">
+                    <div className="font-bold text-fg text-body-sm">{inst.name}</div>
+                    <div className="text-caption text-fg-muted">
                       Owner: <strong>{inst.owner || "Owner"}</strong> • {inst.email}
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <div className="text-[#0f172a] font-medium">{inst.sector}</div>
-                    <span className="text-[11px] font-bold text-[#2545ff] bg-[#f0f4ff] px-2 py-0.5 rounded-md border border-[#dbeafe] inline-block mt-0.5">
+                    <div className="text-fg font-medium">{inst.sector}</div>
+                    <span className="text-caption font-bold text-brand bg-brand-soft px-2 py-0.5 rounded-md border border-brand-soft inline-block mt-0.5">
                       {inst.tier}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#0f172a] border border-slate-200">
+                    <span className="inline-flex items-center gap-1 text-caption font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-fg border border-slate-200">
                       {inst.language === "en" ? "🇬🇧 English" : "🇮🇩 Indonesia"}
                     </span>
                   </td>
                   <td className="py-3.5 px-4 font-mono">
-                    <div className="text-[#0f172a] font-bold">
-                      {(inst.quotaUsed || 0).toLocaleString()} / {(inst.quotaMax || 50000).toLocaleString()}
+                    <div className="text-fg font-bold">
+                      {(inst.quotaUsed || 0).toLocaleString("id-ID")} / {(inst.quotaMax || 50000).toLocaleString("id-ID")}
                     </div>
-                    <div className="w-24 h-1.5 bg-[#f1f3f7] rounded-full overflow-hidden mt-1">
+                    <div className="w-24 h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                       <div
                         style={{
                           width: `${Math.min(
@@ -281,12 +296,12 @@ Login URL: http://localhost:3000/login`;
                             Math.round(((inst.quotaUsed || 0) / (inst.quotaMax || 50000)) * 100)
                           )}%`,
                         }}
-                        className="h-full bg-[#2545ff] rounded-full"
+                        className="h-full bg-brand rounded-full"
                       />
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    <span className="text-caption font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                       Aktif
                     </span>
                   </td>
@@ -295,14 +310,14 @@ Login URL: http://localhost:3000/login`;
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(inst)}
-                        className="px-3 py-1.5 text-[12px] font-bold text-[#2545ff] bg-[#f0f4ff] hover:bg-[#e0e7ff] border border-[#dbeafe] rounded-lg cursor-pointer transition-colors"
+                        className="px-3 py-1.5 text-label font-bold text-brand bg-brand-soft hover:bg-[#e0e7ff] border border-brand-soft rounded-lg cursor-pointer transition-colors"
                       >
                         Edit & Reset
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(inst.id)}
-                        className="px-2.5 py-1.5 text-[12px] font-bold text-rose-600 hover:bg-rose-50 border border-transparent rounded-lg cursor-pointer transition-colors"
+                        className="px-2.5 py-1.5 text-label font-bold text-rose-600 hover:bg-rose-50 border border-transparent rounded-lg cursor-pointer transition-colors"
                       >
                         Hapus
                       </button>
@@ -317,14 +332,14 @@ Login URL: http://localhost:3000/login`;
 
       {/* Add / Edit Institution Modal */}
       {(showAddModal || editingInst) && (
-        <div className="fixed inset-0 bg-[#0f172a]/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[620px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-[#e8eaef] animate-scale-pop font-sans">
-            <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7] mb-4">
+        <div className="fixed inset-0 bg-fg/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[720px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-line animate-scale-pop">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
               <div>
-                <h3 className="text-[17px] font-bold text-[#0f172a]">
+                <h3 className="card-title">
                   {editingInst ? t("institutions.editTitle", "Edit Konfigurasi Instansi") : t("institutions.addTitle", "Registrasi Instansi Baru")}
                 </h3>
-                <p className="text-[12px] text-[#64748b]">
+                <p className="text-label text-fg-muted">
                   {editingInst
                     ? `Perbarui profil, bahasa dashboard, dan reset kata sandi ${editingInst.name}`
                     : "Tambahkan tenant bisnis baru ke dalam sistem Klozer"}
@@ -336,15 +351,15 @@ Login URL: http://localhost:3000/login`;
                   setShowAddModal(false);
                   setEditingInst(null);
                 }}
-                className="p-1 rounded-lg hover:bg-[#f1f3f7] text-[#64748b] bg-transparent border-none cursor-pointer"
+                className="p-1 rounded-lg hover:bg-sunken text-fg-muted bg-transparent border-none cursor-pointer"
               >
                 <XIcon className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="space-y-4 text-[13px]">
+            <form onSubmit={handleSaveForm} className="space-y-4 text-body-sm">
               <div>
-                <label className="font-bold text-[#0f172a] block mb-1">
+                <label className="font-bold text-fg block mb-1">
                   {t("institutions.nameLabel", "Nama Instansi / Bisnis")}
                 </label>
                 <input
@@ -353,19 +368,19 @@ Login URL: http://localhost:3000/login`;
                   placeholder="Contoh: Batik Mahakarya Solo"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium focus:border-[#2545ff] focus:bg-white"
+                  className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium focus:border-brand focus:bg-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0f172a] block mb-1">
+                  <label className="font-bold text-fg block mb-1">
                     {t("institutions.sectorLabel", "Sektor Usaha")}
                   </label>
                   <select
                     value={formData.sector}
                     onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium"
+                    className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium"
                   >
                     <option value="Fashion & Retail">Fashion & Retail</option>
                     <option value="Beauty & Healthcare">Beauty & Healthcare</option>
@@ -376,13 +391,13 @@ Login URL: http://localhost:3000/login`;
                 </div>
 
                 <div>
-                  <label className="font-bold text-[#0f172a] block mb-1">
+                  <label className="font-bold text-fg block mb-1">
                     {t("institutions.tierLabel", "Paket Langganan")}
                   </label>
                   <select
                     value={formData.tier}
                     onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium"
+                    className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium"
                   >
                     <option value="Starter">Starter (10.000 Pesan)</option>
                     <option value="Pro Plan">Pro Plan (50.000 Pesan)</option>
@@ -392,22 +407,22 @@ Login URL: http://localhost:3000/login`;
               </div>
 
               {/* Multi-Language Setting per Institution */}
-              <div className="p-3.5 bg-[#f0f4ff] rounded-xl border border-[#dbeafe]">
-                <label className="font-bold text-[#0f172a] flex items-center gap-1.5 mb-1">
-                  <GlobeIcon className="w-4 h-4 text-[#2545ff]" />
+              <div className="p-3.5 bg-brand-soft rounded-xl border border-brand-soft">
+                <label className="font-bold text-fg flex items-center gap-1.5 mb-1">
+                  <GlobeIcon className="w-4 h-4 text-brand" />
                   <span>{t("institutions.languageLabel", "Bahasa Tampilan Dashboard Tenant")}</span>
                 </label>
-                <p className="text-[11.5px] text-[#64748b] mb-2">
+                <p className="text-caption text-fg-muted mb-2">
                   Mengatur bahasa antarmuka dashboard untuk akun Owner & CS instansi ini.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, language: "id" })}
-                    className={`py-2 px-3 rounded-xl text-[12.5px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
                       formData.language === "id"
-                        ? "bg-[#2545ff] text-white border-[#2545ff] shadow-xs"
-                        : "bg-white text-[#475467] border-[#e2e8f0] hover:bg-slate-50"
+                        ? "bg-brand text-white border-brand shadow-xs"
+                        : "bg-white text-fg-muted border-line hover:bg-slate-50"
                     }`}
                   >
                     <span>🇮🇩</span>
@@ -416,10 +431,10 @@ Login URL: http://localhost:3000/login`;
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, language: "en" })}
-                    className={`py-2 px-3 rounded-xl text-[12.5px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
                       formData.language === "en"
-                        ? "bg-[#2545ff] text-white border-[#2545ff] shadow-xs"
-                        : "bg-white text-[#475467] border-[#e2e8f0] hover:bg-slate-50"
+                        ? "bg-brand text-white border-brand shadow-xs"
+                        : "bg-white text-fg-muted border-line hover:bg-slate-50"
                     }`}
                   >
                     <span>🇬🇧</span>
@@ -428,9 +443,9 @@ Login URL: http://localhost:3000/login`;
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0f172a] block mb-1">
+                  <label className="font-bold text-fg block mb-1">
                     {t("institutions.ownerLabel", "Nama Pemilik (Owner)")}
                   </label>
                   <input
@@ -439,11 +454,11 @@ Login URL: http://localhost:3000/login`;
                     placeholder="Nama Lengkap"
                     value={formData.owner}
                     onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium focus:bg-white"
+                    className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium focus:bg-white"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#0f172a] block mb-1">
+                  <label className="font-bold text-fg block mb-1">
                     {t("institutions.phoneLabel", "Nomor WhatsApp Cloud")}
                   </label>
                   <input
@@ -452,13 +467,13 @@ Login URL: http://localhost:3000/login`;
                     placeholder="+62 812-xxxx"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium focus:bg-white"
+                    className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium focus:bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-[#0f172a] block mb-1">
+                <label className="font-bold text-fg block mb-1">
                   {t("institutions.emailLabel", "Email Akun Owner (Login)")}
                 </label>
                 <input
@@ -467,20 +482,20 @@ Login URL: http://localhost:3000/login`;
                   placeholder="owner@brand.id"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-[#0f172a] outline-none font-medium focus:bg-white"
+                  className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium focus:bg-white"
                 />
               </div>
 
               {/* 🔑 RESET PASSWORD SECTION (For Edit Modal) */}
               {editingInst && (
                 <div className="p-4 bg-[#faf5ff] rounded-2xl border border-[#e9d5ff]">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
                     <KeyIcon className="w-4 h-4 text-purple-700" />
-                    <span className="font-extrabold text-[13.5px] text-[#0f172a]">
+                    <span className="font-bold text-body-sm text-fg">
                       {t("institutions.resetPasswordSection", "Reset Kata Sandi Akun Owner")}
                     </span>
                   </div>
-                  <p className="text-[12px] text-[#64748b] mb-3">
+                  <p className="text-label text-fg-muted mb-3">
                     {t("institutions.resetPasswordDesc", "Atur ulang kata sandi login untuk akun Owner/Admin instansi ini.")}
                   </p>
 
@@ -490,12 +505,12 @@ Login URL: http://localhost:3000/login`;
                       placeholder={t("institutions.newPasswordPlaceholder", "Masukkan kata sandi baru (min 6 karakter)")}
                       value={resetPasswordInput}
                       onChange={(e) => setResetPasswordInput(e.target.value)}
-                      className="w-full bg-white border border-[#e2e8f0] rounded-xl px-3 py-2 text-[12.5px] font-mono text-[#0f172a] outline-none focus:border-purple-600"
+                      className="w-full bg-white border border-line rounded-xl px-3 py-2 text-label font-mono text-fg outline-none focus:border-purple-600"
                     />
                     <button
                       type="button"
                       onClick={handleGeneratePassword}
-                      className="w-full sm:w-auto px-3 py-2 text-[12px] font-bold rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300 transition-colors whitespace-nowrap cursor-pointer"
+                      className="w-full sm:w-auto px-3 py-2 text-label font-bold rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       {t("institutions.autoGenerateBtn", "⚡ Generate Sandi")}
                     </button>
@@ -503,7 +518,7 @@ Login URL: http://localhost:3000/login`;
                       type="button"
                       disabled={isResetting}
                       onClick={handleExecuteResetPassword}
-                      className="w-full sm:w-auto px-3.5 py-2 text-[12px] font-extrabold rounded-xl bg-purple-700 hover:bg-purple-800 text-white shadow-xs transition-colors whitespace-nowrap cursor-pointer"
+                      className="w-full sm:w-auto px-3.5 py-2 text-label font-bold rounded-xl bg-purple-700 hover:bg-purple-800 text-white shadow-xs transition-colors whitespace-nowrap cursor-pointer"
                     >
                       {isResetting ? "Memproses..." : t("institutions.resetPasswordBtn", "Reset Password")}
                     </button>
@@ -513,11 +528,11 @@ Login URL: http://localhost:3000/login`;
                   {resetFeedback && (
                     <div className="mt-3 p-3 bg-white rounded-xl border border-emerald-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-scale-pop">
                       <div>
-                        <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[12.5px]">
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-label">
                           <CheckCircleIcon className="w-4 h-4" />
                           <span>{t("institutions.passwordResetSuccess", "Kata sandi berhasil di-reset!")}</span>
                         </div>
-                        <div className="text-[12px] text-[#475467] font-mono mt-0.5">
+                        <div className="text-label text-fg-muted font-mono mt-0.5">
                           Email: <strong>{resetFeedback.email}</strong> • Password Baru:{" "}
                           <strong className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
                             {resetFeedback.newPassword}
@@ -528,7 +543,7 @@ Login URL: http://localhost:3000/login`;
                       <button
                         type="button"
                         onClick={handleCopyCredentials}
-                        className="px-3 py-1.5 text-[11.5px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs transition-colors self-end sm:self-auto"
+                        className="px-3 py-1.5 text-caption font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs transition-colors self-end sm:self-auto"
                       >
                         {copied ? t("institutions.copied", "Tersalin! ✓") : t("institutions.copyCredentials", "Salin Kredensial")}
                       </button>
@@ -539,10 +554,10 @@ Login URL: http://localhost:3000/login`;
 
               {/* Feature Toggles */}
               <div className="pt-2">
-                <label className="font-bold text-[#0f172a] block mb-2">
+                <label className="font-bold text-fg block mb-2">
                   Hak Akses Modul Fitur:
                 </label>
-                <div className="grid grid-cols-2 gap-2 bg-[#f8fafc] p-3.5 rounded-xl border border-[#e2e8f0] max-h-[180px] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2 bg-soft p-3.5 rounded-xl border border-line max-h-[180px] overflow-y-auto">
                   {[
                     { key: "personaAi", label: "Persona AI CS" },
                     { key: "autoLabel", label: "Auto-Label AI" },
@@ -561,7 +576,7 @@ Login URL: http://localhost:3000/login`;
                   ].map((m) => (
                     <label
                       key={m.key}
-                      className="flex items-center gap-2 cursor-pointer text-[12px] font-medium text-[#0f172a]"
+                      className="flex items-center gap-2 cursor-pointer text-label font-medium text-fg"
                     >
                       <input
                         type="checkbox"
@@ -572,7 +587,7 @@ Login URL: http://localhost:3000/login`;
                             modules: { ...formData.modules, [m.key]: e.target.checked },
                           })
                         }
-                        className="accent-[#2545ff]"
+                        className="accent-brand"
                       />
                       <span>{m.label}</span>
                     </label>
@@ -580,20 +595,20 @@ Login URL: http://localhost:3000/login`;
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#f1f3f7] mt-2">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingInst(null);
                   }}
-                  className="px-4 py-2 rounded-xl border border-[#e2e8f0] text-[#64748b] hover:bg-slate-50 text-[13px] font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-line text-fg-muted hover:bg-slate-50 text-body-sm font-semibold cursor-pointer"
                 >
                   {t("common.cancel", "Batal")}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#2545ff] hover:bg-[#1d37cc] text-white text-[13px] font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer"
                 >
                   {editingInst ? t("common.save", "Simpan Perubahan") : t("institutions.addBtn", "Tambahkan Institusi")}
                 </button>
@@ -605,20 +620,20 @@ Login URL: http://localhost:3000/login`;
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 bg-[#0f172a]/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 shadow-2xl border border-[#e8eaef] animate-scale-pop text-center font-sans">
+        <div className="fixed inset-0 bg-fg/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 shadow-2xl border border-line animate-scale-pop text-center">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
               <AlertTriangleIcon className="w-6 h-6" />
             </div>
-            <h3 className="text-[17px] font-extrabold text-[#0f172a] mb-1.5">Hapus Data Institusi?</h3>
-            <p className="text-[13px] text-[#64748b] mb-5">
+            <h3 className="card-title mb-1.5">Hapus Data Institusi?</h3>
+            <p className="text-body-sm text-fg-muted mb-5">
               Apakah Anda yakin ingin menghapus institusi ini? Semua kuota pesan dan konfigurasi modul akan dinonaktifkan.
             </p>
             <div className="flex items-center justify-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 rounded-xl border border-[#e2e8f0] text-[#64748b] text-[13px] font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-line text-fg-muted text-body-sm font-semibold cursor-pointer"
               >
                 Batal
               </button>
@@ -628,7 +643,7 @@ Login URL: http://localhost:3000/login`;
                   deleteInstitution(deleteConfirmId);
                   setDeleteConfirmId(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[13px] border-none cursor-pointer shadow-xs"
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-body-sm border-none cursor-pointer shadow-xs"
               >
                 Ya, Hapus
               </button>

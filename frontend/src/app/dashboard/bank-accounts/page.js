@@ -1,218 +1,151 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import {
-  BuildingIcon,
-  CrownIcon,
-  CheckCircleIcon,
-  ShieldCheckIcon,
-  QrIcon,
-  XIcon,
-} from "@/components/icons";
+import { api } from "@/utils/api";
+import { XIcon } from "@/components/icons";
 
-export default function SupervisorBankAccountsPage() {
-  const { currentUser, activeInstitution } = useDashboard();
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [bankName, setBankName] = useState("BCA");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountHolder, setAccountHolder] = useState("");
+const input = "w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand";
+const EMPTY = { bank_code: "BCA", account_number: "", account_holder: "", branch_office: "", transfer_instruction: "" };
 
-  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko / Instansi";
-  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+export default function BankAccountsPage() {
+  const { notify, isManager } = useDashboard();
+  const [banks, setBanks] = useState(null);
+  const [form, setForm] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
-  const [banks, setBanks] = useState(
-    isDefaultDemo
-      ? [
-          {
-            id: "BNK-01",
-            bankName: "Bank Central Asia (BCA)",
-            accountNumber: "8809123847",
-            accountHolder: "PT Batik Mahakarya Indonesia",
-            type: "Rekening Operasional Utama",
-            autoMutation: true,
-            status: "active",
-          },
-          {
-            id: "BNK-02",
-            bankName: "QRIS Dinamis (Xendit Settlement)",
-            accountNumber: "NMID: ID1029384756102",
-            accountHolder: "BATIK MAHAKARYA SOLO",
-            type: "Payment Gateway In-Chat",
-            autoMutation: true,
-            status: "active",
-          },
-        ]
-      : [
-          {
-            id: "BNK-01",
-            bankName: "In-Chat Dynamic QRIS (Settlement Otomatis)",
-            accountNumber: `NMID: ID${Math.floor(1000000000000 + Math.random() * 9000000000000)}`,
-            accountHolder: cleanInstName.toUpperCase(),
-            type: "Payment Gateway WhatsApp In-Chat",
-            autoMutation: true,
-            status: "active",
-          },
-        ]
-  );
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get("/bank-accounts");
+      setBanks(res.items);
+    } catch (err) {
+      notify("error", err.message);
+      setBanks([]);
+    }
+  }, [notify]);
 
-  const handleAddSubmit = (e) => {
+  useEffect(() => {
+    // Initial fetch on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
+  const save = async (e) => {
     e.preventDefault();
-    if (!accountNumber.trim()) return;
+    const { id, ...body } = form;
+    const clean = Object.fromEntries(Object.entries(body).filter(([, v]) => v !== "" && v !== null));
+    try {
+      if (id) await api.put(`/bank-accounts/${id}`, clean);
+      else await api.post("/bank-accounts", clean);
+      notify("success", "Rekening tersimpan.");
+      setForm(null);
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    }
+  };
 
-    const newEntry = {
-      id: `BNK-0${banks.length + 1}`,
-      bankName: bankName,
-      accountNumber: accountNumber,
-      accountHolder: accountHolder || "Nama Pemilik Rekening",
-      type: "Rekening Tambahan",
-      autoMutation: true,
-      status: "active",
-    };
-    setBanks([...banks, newEntry]);
-    setShowAddModal(false);
-    setAccountNumber("");
-    setAccountHolder("");
-    alert("Rekening bank resmi berhasil ditambahkan ke database toko!");
+  const toggle = async (b) => {
+    try {
+      await api.put(`/bank-accounts/${b.id}`, { is_active: !b.is_active });
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    }
+  };
+
+  const remove = async (id) => {
+    try {
+      await api.delete(`/bank-accounts/${id}`);
+      setConfirmId(null);
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    }
   };
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-[#2545ff] px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
-              <BuildingIcon className="w-3.5 h-3.5" />
-              <span>Master Rekening Resmi</span>
-            </span>
-          </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
-            Rekening Bank & QRIS Resmi Toko
-          </h1>
-          <p className="text-[13.5px] text-[#64748b]">
-            Daftar nomor rekening bank resmi instansi yang digunakan bot AI untuk menerbitkan instruksi pembayaran.
-          </p>
+          <h1 className="page-title">Rekening Pembayaran</h1>
+          <p className="text-body-sm text-fg-muted">Rekening aktif di sini boleh disebutkan AI kepada pelanggan untuk transfer manual. AI tidak akan menyebut rekening yang tidak terdaftar.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-        >
-          <BuildingIcon className="w-4 h-4" />
-          <span>+ Tambah Rekening Baru</span>
-        </button>
+        {isManager && (
+          <button onClick={() => setForm(EMPTY)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">
+            + Tambah Rekening
+          </button>
+        )}
       </div>
 
-      {/* Info Banner */}
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 text-[13px]">
-        <ShieldCheckIcon className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-        <div>
-          <span className="font-bold block">Proteksi Anti-Phishing Aktif:</span>
-          <span>Bot AI CS hanya akan memberikan rekening yang terdaftar di halaman ini kepada calon pembeli.</span>
-        </div>
-      </div>
-
-      {/* Bank Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {banks.map((b) => (
-          <div key={b.id} className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col justify-between gap-4">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-3">
-                <div className="font-extrabold text-[16px] text-[#1e2640] flex items-center gap-2">
-                  {b.bankName.includes("QRIS") ? <QrIcon className="w-4 h-4 text-[#2545ff]" /> : <BuildingIcon className="w-4 h-4 text-purple-700" />}
-                  <span>{b.bankName}</span>
+      {banks === null ? (
+        <div className="text-fg-muted">Memuat...</div>
+      ) : banks.length === 0 ? (
+        <div className="bg-white p-10 rounded-2xl border border-line text-center text-fg-muted">Belum ada rekening. Tambahkan rekening agar AI dapat memberi tahu pelanggan tujuan transfer.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {banks.map((b) => (
+            <div key={b.id} className={`bg-white p-5 rounded-2xl border border-line ${b.is_active ? "" : "opacity-60"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-label font-bold text-brand uppercase">{b.bank_code}</div>
+                  <div className="text-heading-md font-bold text-ink font-mono">{b.account_number}</div>
+                  <div className="text-body-sm text-fg-muted">a.n. {b.account_holder}{b.branch_office ? ` • ${b.branch_office}` : ""}</div>
                 </div>
-                <span className="badge badge-success text-[11px]">Aktif</span>
+                <span className={`px-2.5 py-0.5 rounded-full text-caption font-bold ${b.is_active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"}`}>{b.is_active ? "Aktif" : "Nonaktif"}</span>
               </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-[11.5px] text-[#8f95a8] uppercase font-bold">Nomor Rekening / NMID:</span>
-                <span className="text-[20px] font-extrabold font-mono text-[#2545ff] tracking-wider">{b.accountNumber}</span>
-                <span className="text-[13px] font-bold text-[#1e2640] mt-1">a.n. {b.accountHolder}</span>
-                <span className="text-[12px] text-[#5a6380]">{b.type}</span>
-              </div>
+              {b.transfer_instruction && <p className="mt-3 text-label text-fg-muted">{b.transfer_instruction}</p>}
+              {isManager && (
+                <div className="flex gap-2 mt-4 pt-3 border-t border-line">
+                  <button onClick={() => setForm({ ...EMPTY, ...b, branch_office: b.branch_office || "", transfer_instruction: b.transfer_instruction || "" })} className="px-2.5 py-1 text-caption font-bold text-brand bg-brand-soft rounded-lg border-none cursor-pointer">Ubah</button>
+                  <button onClick={() => toggle(b)} className="px-2.5 py-1 text-caption font-bold text-ink bg-canvas rounded-lg border border-line cursor-pointer">{b.is_active ? "Nonaktifkan" : "Aktifkan"}</button>
+                  {confirmId === b.id ? (
+                    <button onClick={() => remove(b.id)} className="px-2.5 py-1 text-caption font-bold text-white bg-red-600 rounded-lg border-none cursor-pointer">Yakin hapus?</button>
+                  ) : (
+                    <button onClick={() => setConfirmId(b.id)} className="px-2.5 py-1 text-caption font-bold text-red-600 bg-transparent rounded-lg border-none cursor-pointer">Hapus</button>
+                  )}
+                </div>
+              )}
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="pt-3 border-t border-[#ede8e2] flex items-center justify-between text-[12px]">
-              <span className="text-[#8f95a8]">Auto-Mutasi Bank:</span>
-              <span className="font-bold text-emerald-600">
-                {b.autoMutation ? "Otomatis (Webhook)" : "Manual CS"}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal: Add Bank */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-[#ede8e2] animate-scale-pop">
-            <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-4">
-              <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Rekening Bank Resmi</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
-              >
+      {form && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <form onSubmit={save} className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop flex flex-col gap-3.5 text-body-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <h3 className="card-title">{form.id ? "Ubah Rekening" : "Tambah Rekening"}</h3>
+              <button type="button" onClick={() => setForm(null)} className="w-7 h-7 rounded-full bg-canvas flex items-center justify-center border-none cursor-pointer" aria-label="Tutup">
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
-
-            <form onSubmit={handleAddSubmit} className="flex flex-col gap-3.5 text-[13px]">
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Nama Bank / Gateway</label>
-                <select
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none font-bold"
-                >
-                  <option value="Bank Central Asia (BCA)">Bank Central Asia (BCA)</option>
-                  <option value="Bank Mandiri">Bank Mandiri</option>
-                  <option value="Bank Rakyat Indonesia (BRI)">Bank Rakyat Indonesia (BRI)</option>
-                  <option value="Bank Syariah Indonesia (BSI)">Bank Syariah Indonesia (BSI)</option>
-                  <option value="Bank Negara Indonesia (BNI)">Bank Negara Indonesia (BNI)</option>
-                  <option value="QRIS Dinamis">QRIS Dinamis Aggregator</option>
-                </select>
+                <label className="font-bold text-ink block mb-1">Bank *</label>
+                <input required maxLength={20} className={input} value={form.bank_code} onChange={(e) => setForm({ ...form, bank_code: e.target.value })} />
               </div>
-
-              <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Nomor Rekening / VA *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: 8809123847"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] font-mono outline-none focus:border-[#2545ff]"
-                />
+              <div className="col-span-2">
+                <label className="font-bold text-ink block mb-1">Nomor Rekening *</label>
+                <input required className={`${input} font-mono`} value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} />
               </div>
-
-              <div>
-                <label className="font-bold text-[#1e2640] block mb-1">Atas Nama (Account Holder) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: PT Batik Mahakarya Indonesia"
-                  value={accountHolder}
-                  onChange={(e) => setAccountHolder(e.target.value)}
-                  className="w-full bg-[#f5f4f2] border border-[#ede8e2] rounded-xl p-2.5 text-[#1e2640] outline-none font-semibold focus:border-[#2545ff]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#ede8e2] mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary !py-2 !px-5 text-[13px] font-bold">
-                  Simpan Rekening
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div>
+              <label className="font-bold text-ink block mb-1">Atas Nama *</label>
+              <input required maxLength={150} className={input} value={form.account_holder} onChange={(e) => setForm({ ...form, account_holder: e.target.value })} />
+            </div>
+            <div>
+              <label className="font-bold text-ink block mb-1">Cabang</label>
+              <input maxLength={100} className={input} value={form.branch_office} onChange={(e) => setForm({ ...form, branch_office: e.target.value })} />
+            </div>
+            <div>
+              <label className="font-bold text-ink block mb-1">Instruksi transfer</label>
+              <textarea rows={2} maxLength={2000} className={input} value={form.transfer_instruction} onChange={(e) => setForm({ ...form, transfer_instruction: e.target.value })} placeholder="Contoh: kirim bukti transfer ke chat ini" />
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-line">
+              <button type="button" onClick={() => setForm(null)} className="btn-outline !py-2 !px-4">Batal</button>
+              <button type="submit" className="btn-primary !py-2 !px-5 font-bold">Simpan</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

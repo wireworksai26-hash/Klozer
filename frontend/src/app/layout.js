@@ -1,4 +1,4 @@
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, JetBrains_Mono, Noto_Naskh_Arabic } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,6 +13,18 @@ const playfair = Playfair_Display({
   display: "swap",
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const notoNaskh = Noto_Naskh_Arabic({
+  variable: "--font-naskh",
+  subsets: ["arabic"],
+  display: "swap",
 });
 
 export const metadata = {
@@ -32,7 +44,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
+    <html
+      lang="id"
+      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} ${notoNaskh.variable}`}
+    >
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

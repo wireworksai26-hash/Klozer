@@ -35,23 +35,21 @@ export default function LiveDemo() {
   };
 
   return (
-    <section id="demo" className="py-20 md:py-28 bg-[#f4f1ea] border-b border-[#e8e3d9] relative">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
+    <section id="demo" className="py-20 md:py-28 bg-sand border-b border-line relative">
+      <div className="container-page">
         
         {/* Section Header */}
         <div className="text-center max-w-[720px] mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2545ff]/10 border border-[#2545ff]/20 text-[#2545ff] text-[12px] font-bold tracking-wide uppercase mb-3">
-            <span>Simulasi Interaktif</span>
-          </div>
-          <h2 className="editorial-headline text-[28px] sm:text-[38px] md:text-[44px] mt-1 mb-4">
-            Coba langsung <span className="editorial-italic">kemudahan fitur</span> Klozer
+          <span className="eyebrow-label text-brand block mb-3">Simulasi Interaktif</span>
+          <h2 className="section-title">
+            Coba langsung <span className="italic-signature">kemudahan fitur</span> Klozer
           </h2>
-          <p className="text-[16px] sm:text-[17px] text-[#334155] leading-relaxed">
+          <p className="section-lead">
             Pilih simulasi di bawah untuk melihat bagaimana sistem Klozer bekerja dalam hitungan detik.
           </p>
 
           {/* Simulator switcher tabs */}
-          <div className="inline-flex flex-wrap justify-center p-1.5 rounded-full bg-white border border-[#e8e3d9] shadow-sm mt-6 gap-1">
+          <div className="inline-flex flex-wrap justify-center p-1.5 rounded-full bg-white border border-line shadow-sm mt-6 gap-1">
             {[
               { id: "qris", label: "QRIS Otomatis di Chat", icon: <QrIcon className="w-4 h-4" /> },
               { id: "fraud", label: "Deteksi Struk Palsu", icon: <ShieldCheckIcon className="w-4 h-4" /> },
@@ -60,10 +58,10 @@ export default function LiveDemo() {
               <button
                 key={tab.id}
                 onClick={() => setActiveSimulator(tab.id)}
-                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-[13px] sm:text-[14px] font-bold transition-all cursor-pointer border-none flex items-center gap-2 ${
+                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-body-sm font-bold transition-all cursor-pointer border-none flex items-center gap-2 ${
                   activeSimulator === tab.id
-                    ? "bg-[#2545ff] text-white shadow-md"
-                    : "bg-transparent text-[#334155] hover:text-[#080e2b]"
+                    ? "bg-brand text-white shadow-md"
+                    : "bg-transparent text-fg hover:text-ink"
                 }`}
               >
                 {tab.icon}
@@ -78,20 +76,20 @@ export default function LiveDemo() {
           
           {/* 1. Dynamic QRIS Sandbox */}
           {activeSimulator === "qris" && (
-            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-[#e8e3d9] shadow-sm grid md:grid-cols-2 gap-8 items-center">
+            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-[12px] font-bold text-[#2545ff] uppercase tracking-wider mb-2">
+                <div className="text-label font-bold text-brand uppercase tracking-wider mb-2">
                   Fitur Pembayaran Instan
                 </div>
-                <h3 className="text-[20px] sm:text-[22px] font-bold text-[#080e2b] mb-3">
+                <h3 className="text-subheading font-bold text-ink mb-3">
                   Simulasi Bayar QRIS Otomatis
                 </h3>
-                <p className="text-[14px] text-[#334155] leading-relaxed mb-5">
+                <p className="text-body-sm text-fg leading-relaxed mb-5">
                   Saat pembeli setuju memesan, QRIS dengan total harga yang tepat langsung muncul di WhatsApp. Pembeli tidak perlu mengetik angka atau upload struk.
                 </p>
 
                 <div className="mb-5">
-                  <label className="text-[13px] font-bold text-[#0f172a] block mb-2">
+                  <label className="text-body-sm font-bold text-fg block mb-2">
                     Pilih Contoh Nominal Belanja:
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -102,10 +100,10 @@ export default function LiveDemo() {
                           setQrisAmount(amt);
                           setIsPaid(false);
                         }}
-                        className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold border transition-all cursor-pointer ${
+                        className={`px-3.5 py-2 rounded-xl text-body-sm font-semibold border transition-all cursor-pointer ${
                           qrisAmount === amt
-                            ? "bg-[#2545ff] text-white border-[#2545ff]"
-                            : "bg-[#faf9f6] text-[#0f172a] border-[#e8e3d9] hover:border-[#2545ff]"
+                            ? "bg-brand text-white border-brand"
+                            : "bg-canvas text-fg border-line hover:border-brand"
                         }`}
                       >
                         Rp {amt.toLocaleString("id-ID")}
@@ -118,7 +116,7 @@ export default function LiveDemo() {
                   {!isPaid && (
                     <button
                       onClick={triggerPaymentSuccess}
-                      className="btn-primary !py-3 !text-[14px] text-center w-full justify-center"
+                      className="btn-primary !py-3 !text-body-sm text-center w-full justify-center"
                     >
                       <DollarSignIcon className="w-4 h-4" />
                       <span>Simulasikan Pembeli Scan & Bayar</span>
@@ -127,7 +125,7 @@ export default function LiveDemo() {
                   {isPaid && (
                     <button
                       onClick={() => setIsPaid(false)}
-                      className="btn-secondary !py-2.5 !text-[13px] text-center w-full justify-center"
+                      className="btn-secondary !py-2.5 !text-body-sm text-center w-full justify-center"
                     >
                       <RefreshCwIcon className="w-4 h-4" />
                       <span>Ulangi Simulasi</span>
@@ -137,32 +135,32 @@ export default function LiveDemo() {
               </div>
 
               {/* QR Preview Widget */}
-              <div className="bg-[#faf9f6] p-6 rounded-2xl border border-[#e8e3d9] flex flex-col items-center justify-center text-center">
+              <div className="bg-canvas p-6 rounded-2xl border border-line flex flex-col items-center justify-center text-center">
                 {isPaid ? (
                   <div className="py-4">
                     <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-inner">
                       <CheckCircleIcon className="w-8 h-8" />
                     </div>
-                    <div className="text-[18px] font-bold text-emerald-700 mb-1">
+                    <div className="text-title font-bold text-emerald-700 mb-1">
                       Pembayaran Rp {qrisAmount.toLocaleString("id-ID")} LUNAS!
                     </div>
-                    <p className="text-[13px] text-[#334155]">
+                    <p className="text-body-sm text-fg">
                       Pesanan otomatis berstatus <strong>Lunas</strong>. Invoice PDF terkirim detik itu juga ke pembeli.
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <div className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-1">
+                    <div className="text-caption font-bold text-fg-muted uppercase tracking-wider mb-1">
                       QRIS Berlaku 15 Menit
                     </div>
-                    <div className="text-[22px] font-bold text-[#080e2b] mb-3">
+                    <div className="text-subheading font-bold text-ink mb-3">
                       Rp {qrisAmount.toLocaleString("id-ID")}
                     </div>
                     
-                    <div className="w-44 h-44 bg-white p-3 rounded-2xl shadow-sm border border-[#e8e3d9] mx-auto flex items-center justify-center">
-                      <QrIcon className="w-32 h-32 text-[#080e2b]" />
+                    <div className="w-44 h-44 bg-white p-3 rounded-2xl shadow-sm border border-line mx-auto flex items-center justify-center">
+                      <QrIcon className="w-32 h-32 text-ink" />
                     </div>
-                    <span className="text-[11px] text-[#64748b] mt-2 block">
+                    <span className="text-caption text-fg-muted mt-2 block">
                       Dapat di-scan semua aplikasi m-Banking & e-Wallet
                     </span>
                   </div>
@@ -173,40 +171,40 @@ export default function LiveDemo() {
 
           {/* 2. Fraud Scanner Sandbox */}
           {activeSimulator === "fraud" && (
-            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-[#e8e3d9] shadow-sm grid md:grid-cols-2 gap-8 items-center">
+            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-[12px] font-bold text-red-600 uppercase tracking-wider mb-2">
+                <div className="text-label font-bold text-red-600 uppercase tracking-wider mb-2">
                   Proteksi Bukti Transfer Palsu
                 </div>
-                <h3 className="text-[20px] sm:text-[22px] font-bold text-[#080e2b] mb-3">
+                <h3 className="text-subheading font-bold text-ink mb-3">
                   Verifikasi Keaslian Struk Otomatis
                 </h3>
-                <p className="text-[14px] text-[#334155] leading-relaxed mb-5">
+                <p className="text-body-sm text-fg leading-relaxed mb-5">
                   Setiap kali ada pelanggan yang mengirim foto bukti transfer manual, AI memeriksa keaslian font dan mencocokkan nominal dengan mutasi rekening bank secara otomatis.
                 </p>
 
                 <button
                   onClick={triggerFraudScan}
                   disabled={analyzing}
-                  className="btn-primary w-full text-center !py-3 !text-[14px] justify-center"
+                  className="btn-primary w-full text-center !py-3 !text-body-sm justify-center"
                 >
                   <ShieldCheckIcon className="w-4 h-4" />
                   <span>{analyzing ? "Memeriksa Mutasi Bank..." : "Uji Cek Keabsahan Struk Transfer"}</span>
                 </button>
               </div>
 
-              <div className="bg-[#faf9f6] p-6 rounded-2xl border border-[#e8e3d9] flex flex-col items-center justify-center text-center">
-                <div className="w-full bg-white rounded-xl p-4 border border-[#e8e3d9] mb-4">
-                  <div className="text-[11px] font-bold text-[#64748b] uppercase mb-1">Status Verifikasi Rekening</div>
-                  <div className="text-[32px] font-extrabold text-emerald-600 leading-tight">
+              <div className="bg-canvas p-6 rounded-2xl border border-line flex flex-col items-center justify-center text-center">
+                <div className="w-full bg-white rounded-xl p-4 border border-line mb-4">
+                  <div className="text-caption font-bold text-fg-muted uppercase mb-1">Status Verifikasi Rekening</div>
+                  <div className="text-heading font-bold text-emerald-600 leading-tight">
                     {analyzing ? "..." : "Terverifikasi Asli"}
                   </div>
-                  <div className="text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full inline-block mt-2">
+                  <div className="text-label font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full inline-block mt-2">
                     Uang Masuk di Bank BCA Rp 312.000 Cocok
                   </div>
                 </div>
 
-                <div className="text-[12px] text-[#334155] text-left w-full space-y-1 bg-white p-3 rounded-lg border border-[#e8e3d9]">
+                <div className="text-label text-fg text-left w-full space-y-1 bg-white p-3 rounded-lg border border-line">
                   <div><strong>Bank Tujuan:</strong> BCA - Rekening Utama Toko</div>
                   <div><strong>Status:</strong> Uang sudah masuk rekening</div>
                   <div><strong>Tindakan:</strong> Pesanan aman untuk dikirim</div>
@@ -217,31 +215,31 @@ export default function LiveDemo() {
 
           {/* 3. Voice AI Sandbox */}
           {activeSimulator === "voice" && (
-            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-[#e8e3d9] shadow-sm grid md:grid-cols-2 gap-8 items-center">
+            <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-[12px] font-bold text-[#2545ff] uppercase tracking-wider mb-2">
+                <div className="text-label font-bold text-brand uppercase tracking-wider mb-2">
                   Teknologi Suara AI
                 </div>
-                <h3 className="text-[20px] sm:text-[22px] font-bold text-[#080e2b] mb-3">
+                <h3 className="text-subheading font-bold text-ink mb-3">
                   Transkripsi Voice Note Bahasa Indonesia
                 </h3>
-                <p className="text-[14px] text-[#334155] leading-relaxed mb-4">
+                <p className="text-body-sm text-fg leading-relaxed mb-4">
                   AI mendengarkan pesan suara pembeli dan langsung mengenali maksudnya. CS tidak perlu membuang waktu mendengarkan rekaman suara panjang.
                 </p>
-                <div className="p-3 bg-[#faf9f6] rounded-xl border border-[#e8e3d9] text-[13px] text-[#0f172a]">
+                <div className="p-3 bg-canvas rounded-xl border border-line text-body-sm text-fg">
                   <strong>Contoh Pesan Suara Masuk:</strong><br />
-                  "Kak kaos polos hitam ukuran XL masih ada ga ya? Mau ambil dua pcs kirim ke Jakarta."
+                  &quot;Kak kaos polos hitam ukuran XL masih ada ga ya? Mau ambil dua pcs kirim ke Jakarta.&quot;
                 </div>
               </div>
 
-              <div className="bg-[#faf9f6] p-6 rounded-2xl border border-[#e8e3d9]">
-                <div className="text-[11px] font-bold text-[#2545ff] uppercase mb-2">
+              <div className="bg-canvas p-6 rounded-2xl border border-line">
+                <div className="text-caption font-bold text-brand uppercase mb-2">
                   Balasan Otomatis AI (Teks & Suara):
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-[#e8e3d9] text-[13px] text-[#0f172a] leading-relaxed">
-                  "Halo kak! Kaos Hitam XL masih ready stok 142 pcs. Total untuk 2 pcs adalah Rp 300.000 + ongkir Rp 12.000. Mau dibantu kirim dengan QRIS instan kak?"
+                <div className="bg-white p-4 rounded-xl border border-line text-body-sm text-fg leading-relaxed">
+                  &quot;Halo kak! Kaos Hitam XL masih ready stok 142 pcs. Total untuk 2 pcs adalah Rp 300.000 + ongkir Rp 12.000. Mau dibantu kirim dengan QRIS instan kak?&quot;
                 </div>
-                <div className="flex justify-between items-center text-[11px] text-[#64748b] mt-3">
+                <div className="flex justify-between items-center text-caption text-fg-muted mt-3">
                   <span>Waktu Balas: 1.4 detik</span>
                   <span className="text-emerald-700 font-bold">Siap Closing</span>
                 </div>

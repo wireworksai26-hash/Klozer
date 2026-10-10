@@ -1,99 +1,47 @@
 import { query } from "../config/db.js";
 
-/**
- * Idempotency Service
- * Prevents race conditions, double charging, and duplicate order processing on webhooks
- */
+const STALE_PENDING_MINUTES = 5;
 
 /**
- * Check if an idempotency key has already been processed or is currently pending
- * @param {string} idempotencyKey
- * @returns {Promise<{ isDuplicate: boolean, status: string|null, existingResult: any }>}
+ * Atomically claim an idempotency key. The unique index on
+ * webhook_logs.idempotency_key makes INSERT IGNORE the single point of
+ * arbitration, so two simultaneous deliveries cannot both proceed.
+ *
+ * A key is re-claimable when its previous attempt FAILED or has been PENDING
+ * longer than STALE_PENDING_MINUTES (the worker crashed mid-way).
  */
-export async function checkIdempotency(idempotencyKey) {
-  if (!idempotencyKey) return { isDuplicate: false, status: null, existingResult: null };
-
-  const rows = await query(
-    `SELECT id, status, result_json, error_message, processed_at 
-     FROM webhook_logs 
-     WHERE idempotency_key = ? 
-     LIMIT 1`,
-    [idempotencyKey]
+export async function claimIdempotencyKey({ key, provider, eventType, payload, institutionId = null }) {
+  const inserted = await query(
+    `INSERT IGNORE INTO webhook_logs (institution_id, idempotency_key, provider, event_type, payload_json, status)
+     VALUES (?, ?, ?, ?, ?, 'PENDING')`,
+    [institutionId, key, provider, eventType, JSON.stringify(payload ?? {})]
   );
+  if (inserted.affectedRows === 1) return { claimed: true };
 
-  if (!rows || rows.length === 0) {
-    return { isDuplicate: false, status: null, existingResult: null };
-  }
+  const reclaimed = await query(
+    `UPDATE webhook_logs
+        SET status = 'PENDING', error_message = NULL, created_at = UTC_TIMESTAMP()
+      WHERE idempotency_key = ?
+        AND (status = 'FAILED'
+             OR (status = 'PENDING' AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)))`,
+    [key, STALE_PENDING_MINUTES]
+  );
+  if (reclaimed.affectedRows === 1) return { claimed: true };
 
-  const record = rows[0];
-  const isDuplicate = record.status === "PROCESSED" || record.status === "PENDING";
-  let parsedResult = null;
-
-  try {
-    parsedResult = typeof record.result_json === "string" ? JSON.parse(record.result_json) : record.result_json;
-  } catch (e) {
-    parsedResult = record.result_json;
-  }
-
-  return {
-    isDuplicate,
-    status: record.status,
-    existingResult: parsedResult,
-  };
+  const existing = await query("SELECT status, result_json FROM webhook_logs WHERE idempotency_key = ? LIMIT 1", [key]);
+  return { claimed: false, status: existing[0]?.status ?? null, previousResult: existing[0]?.result_json ?? null };
 }
 
-/**
- * Record the start of an idempotent operation
- */
-export async function recordIdempotentStart({
-  idempotencyKey,
-  provider = "midtrans",
-  eventType = "payment.settlement",
-  payload = {},
-  institutionId = null,
-}) {
-  const payloadStr = JSON.stringify(payload);
-  try {
-    await query(
-      `INSERT INTO webhook_logs (institution_id, idempotency_key, provider, event_type, payload_json, status)
-       VALUES (?, ?, ?, ?, ?, 'PENDING')
-       ON DUPLICATE KEY UPDATE status = 'PENDING', payload_json = VALUES(payload_json)`,
-      [institutionId, idempotencyKey, provider, eventType, payloadStr]
-    );
-  } catch (err) {
-    console.error("[Idempotency] Error recording start:", err.message);
-  }
+export async function markIdempotentSuccess(key, result = {}) {
+  await query("UPDATE webhook_logs SET status = 'PROCESSED', result_json = ?, processed_at = UTC_TIMESTAMP() WHERE idempotency_key = ?", [
+    JSON.stringify(result),
+    key,
+  ]);
 }
 
-/**
- * Mark the idempotent operation as successfully processed
- */
-export async function markIdempotentSuccess(idempotencyKey, result = {}) {
-  const resultStr = JSON.stringify(result);
-  try {
-    await query(
-      `UPDATE webhook_logs 
-       SET status = 'PROCESSED', result_json = ?, processed_at = NOW() 
-       WHERE idempotency_key = ?`,
-      [resultStr, idempotencyKey]
-    );
-  } catch (err) {
-    console.error("[Idempotency] Error marking success:", err.message);
-  }
-}
-
-/**
- * Mark the idempotent operation as failed
- */
-export async function markIdempotentFailed(idempotencyKey, errorMessage = "") {
-  try {
-    await query(
-      `UPDATE webhook_logs 
-       SET status = 'FAILED', error_message = ?, processed_at = NOW() 
-       WHERE idempotency_key = ?`,
-      [errorMessage, idempotencyKey]
-    );
-  } catch (err) {
-    console.error("[Idempotency] Error marking failed:", err.message);
-  }
+export async function markIdempotentFailed(key, errorMessage = "") {
+  await query("UPDATE webhook_logs SET status = 'FAILED', error_message = ?, processed_at = UTC_TIMESTAMP() WHERE idempotency_key = ?", [
+    String(errorMessage).slice(0, 1000),
+    key,
+  ]);
 }

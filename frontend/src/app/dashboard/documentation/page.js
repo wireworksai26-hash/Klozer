@@ -16,69 +16,78 @@ export default function SupervisorDocumentationPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeGuide, setActiveGuide] = useState("wa-connect");
 
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
   const guides = [
     {
       id: "wa-connect",
-      title: "1. Menghubungkan WhatsApp Cloud API & Baileys",
-      icon: <MessageSquareIcon className="w-4 h-4 text-[#2545ff]" />,
-      summary: "Panduan setup nomor WhatsApp resmi Meta Cloud API atau gateway Baileys untuk live inbox.",
+      title: "1. Menghubungkan WhatsApp Cloud API",
+      icon: <MessageSquareIcon className="w-4 h-4 text-brand" />,
+      summary: "Menghubungkan nomor WhatsApp Business resmi lewat Meta Cloud API.",
       content: `
 ### Langkah Menghubungkan WhatsApp:
-1. Buka menu **Pengaturan > Profil Usaha & WA API**.
-2. Masukkan **WABA Phone Number ID** dan **Permanent Access Token** dari Meta Business Suite.
-3. Konfigurasikan Webhook URL ke endpoint: \`https://api.klozer.id/v1/webhook/whatsapp\`.
-4. Masukkan Verify Token yang telah dibuat.
-5. Klik **Tes Koneksi Webhook** untuk memastikan status 200 OK.
+1. Buat aplikasi di Meta for Developers dan tambahkan produk **WhatsApp**.
+2. Buka **Pengaturan > Profil Usaha dan WhatsApp** di Klozer, lalu isi **Phone Number ID** dan **Access Token permanen** dari Meta.
+3. Di Meta, daftarkan Webhook URL: \`${origin}/api/v1/webhooks/whatsapp\` dan Verify Token yang sama dengan yang diatur admin Klozer. Aktifkan field **messages**.
+4. Kirim pesan ke nomor Anda dari HP lain. Pesan akan muncul di **Live Chat** dan AI membalas otomatis.
+
+Token disimpan terenkripsi dan tidak pernah ditampilkan lagi. Satu nomor WhatsApp hanya bisa dipakai oleh satu tenant.
       `,
     },
     {
       id: "ai-persona",
-      title: "2. Setting Gaya Bahasa & Larangan Persona AI",
+      title: "2. Mengatur Persona AI",
       icon: <BotIcon className="w-4 h-4 text-purple-600" />,
-      summary: "Mengatur nama bot CS, nada bicara (ramah, formal, santai), dan guardrails larangan bicara.",
+      summary: "Nama bot, gaya bahasa, dan sapaan pembuka yang dipakai AI saat membalas pelanggan.",
       content: `
-### Aturan Prompting Persona CS:
-- **Nama Bot**: Berikan nama yang ramah seperti *Sarah*, *Nabila*, atau *Kak Maya*.
-- **Tone of Voice**: Gunakan sapaan *"Kak"* atau *"Bunda"* untuk meningkatkan kehangatan interaksi.
-- **Guardrails Larangan**: Bot secara ketat dilarang menjanjikan diskon di luar wewenang SPV (>10%) atau memberikan nomor rekening pribadi.
-- **RAG Knowledge**: AI secara otomatis membaca stok katalog produk dan daftar rekening resmi toko.
+### Cara kerja AI:
+- Atur nama, gaya bahasa, dan sapaan di **Pengaturan > Persona dan Script AI**.
+- AI hanya memakai data toko Anda: **katalog produk aktif beserta stok**, **rekening yang Anda daftarkan**, dan persona tersebut. AI tidak boleh mengarang harga, promo, atau nomor rekening.
+- Jika kuota token habis, AI tidak aktif, atau pelanggan mengirim gambar atau suara, percakapan diteruskan ke tim CS dan Anda mendapat notifikasi di lonceng dashboard.
+- Saat CS manusia sudah membalas dalam sebuah percakapan, AI berhenti membalas di percakapan itu.
+- Gunakan **Simulator AI** untuk mencoba balasan sebelum dipakai pelanggan. Setiap percobaan memakai kuota token.
       `,
     },
     {
       id: "qris-settle",
-      title: "3. Konfigurasi Dynamic QRIS & Auto-Mutasi",
+      title: "3. Pembayaran QRIS (Midtrans)",
       icon: <QrIcon className="w-4 h-4 text-emerald-600" />,
-      summary: "Penerbitan QRIS otomatis di dalam room chat dan verifikasi pelunasan tanpa kirim struk.",
+      summary: "Menerbitkan QRIS dari chat dan pelunasan otomatis.",
       content: `
-### Cara Kerja In-Chat QRIS:
-1. Ketika pelanggan mengonfirmasi pesanan, AI otomatis menghitung total order + ongkir.
-2. Bot menerbitkan gambar QRIS Dinamis unik langsung di dalam room chat WhatsApp.
-3. Begitu pembeli scan QRIS via BCA/GoPay/OVO, webhook Xendit mengirim notifikasi lunas dalam < 2 detik.
-4. Status order otomatis berubah menjadi **Paid** dan notifikasi diteruskan ke bagian packing.
+### Cara kerja QRIS:
+1. Di Live Chat, klik **Terbitkan QRIS**, pilih produk dan jumlah. Klozer membuat pesanan sungguhan (stok berkurang) lalu mengirim tautan QRIS ke pelanggan.
+2. Nominal selalu diambil dari pesanan di server, bukan dari yang diketik.
+3. Setelah pelanggan membayar, Midtrans mengirim notifikasi ke \`${origin}/api/v1/payments/webhook\`. Tanda tangan notifikasi diperiksa, nominal dicocokkan, dan pesanan otomatis menjadi **Lunas**.
+4. Notifikasi ganda diabaikan, jadi komisi CS hanya dihitung sekali.
+
+QRIS membutuhkan Midtrans Server Key yang diatur admin di server. Untuk pembayaran transfer manual, pesanan dikonfirmasi oleh owner, supervisor, atau finance di menu **Keuangan**.
       `,
     },
     {
-      id: "anti-fraud",
-      title: "4. Proteksi Struk Transfer Palsu (Image Forensics)",
+      id: "security",
+      title: "4. Keamanan Akun dan Tim",
       icon: <ShieldCheckIcon className="w-4 h-4 text-rose-600" />,
-      summary: "Mendeteksi manipulasi gambar struk palsu menggunakan OCR forensics AI.",
+      summary: "Hak akses staf, password, dan jejak aktivitas.",
       content: `
-### Deteksi Kecurangan Pembayaran:
-- Model Computer Vision AI memindai metadata gambar dan pixel font struk m-banking.
-- Jika terdeteksi editan Photoshop/Canva, AI otomatis memasang label **High Risk Fraud** dan mengunci pesanan.
-- CS manusia akan mendapatkan notifikasi eskalasi untuk pengecekan manual.
+### Praktik yang disarankan:
+- Buat akun terpisah untuk setiap staf di **Pengaturan > Hak Akses Tim**. Password awal hanya ditampilkan sekali saat dibuat atau direset.
+- Menonaktifkan staf langsung mengeluarkan mereka dari semua perangkat.
+- Mengubah password mengeluarkan perangkat lain. Gunakan minimal 12 karakter.
+- Semua tindakan penting (login, perubahan pesanan, impor, perubahan rekening) tercatat di **Log Aktivitas**.
+- Akun terkunci sementara setelah beberapa kali salah password.
       `,
     },
     {
-      id: "safe-blast",
-      title: "5. Panduan Broadcast Blasting Anti-Banned",
+      id: "import",
+      title: "5. Impor Produk dan Stok",
       icon: <RadioIcon className="w-4 h-4 text-amber-500" />,
-      summary: "Strategi safe rate limiter agar nomor WhatsApp bisnis tidak diblokir pihak Meta.",
+      summary: "Memasukkan banyak produk atau memperbarui stok dari Excel.",
       content: `
-### Tips Broadcast Aman:
-- Gunakan jeda pengiriman minimal 2-4 detik antar pesan.
-- Segmentasikan pesan hanya ke pelanggan yang pernah berinteraksi (Opt-in).
-- Selalu gunakan variasi teks dengan variabel \`{{nama}}\` agar pola pesan tidak dianggap robotik.
+### Cara impor:
+- Di **Katalog Produk**, buka **Impor / Ekspor** dan unduh templatenya. SKU adalah kuncinya: SKU yang sudah ada diperbarui, SKU baru dibuat.
+- Mode **Ganti semua** menonaktifkan produk yang tidak ada di file (tidak dihapus, bisa diaktifkan kembali).
+- Di **Stok Inventaris**, impor mengatur stok absolut per SKU. SKU yang tidak dikenal dilaporkan, tidak dibuat.
+- Satu file maksimal 500 produk. Jika ada satu baris yang tidak valid, seluruh impor dibatalkan dan tidak ada yang berubah.
       `,
     },
   ];
@@ -91,15 +100,15 @@ export default function SupervisorDocumentationPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-[#2545ff] px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
+            <span className="text-caption font-bold uppercase tracking-wider bg-blue-100 text-brand px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
               <HelpCircleIcon className="w-3.5 h-3.5" />
               <span>Pusat Bantuan & Panduan</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="page-title">
             Dokumentasi & Panduan In-App
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-body-sm text-fg-muted">
             Pelajari cara memaksimalkan fitur WhatsApp AI, QRIS dinamis, segmentasi label, dan mitigasi penipuan di platform Klozer.
           </p>
         </div>
@@ -116,33 +125,33 @@ export default function SupervisorDocumentationPage() {
               onClick={() => setActiveGuide(g.id)}
               className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col gap-1 ${
                 activeGuide === g.id
-                  ? "border-[#2545ff] bg-white shadow-xs"
-                  : "border-[#ede8e2] bg-[#fcfbf9] hover:bg-white text-[#5a6380]"
+                  ? "border-brand bg-white shadow-xs"
+                  : "border-line bg-soft hover:bg-white text-fg-muted"
               }`}
             >
               <div className="flex items-center gap-2">
                 {g.icon}
-                <span className="font-extrabold text-[13.5px] text-[#1e2640]">{g.title}</span>
+                <span className="font-bold text-body-sm text-fg">{g.title}</span>
               </div>
-              <p className="text-[11.5px] text-[#64748b] line-clamp-2">{g.summary}</p>
+              <p className="text-caption text-fg-muted line-clamp-2">{g.summary}</p>
             </button>
           ))}
         </div>
 
         {/* Right Article Viewer */}
-        <div className="md:col-span-2 bg-white p-8 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-4 min-h-[500px]">
-          <div className="pb-4 border-b border-[#ede8e2] flex items-center gap-2">
+        <div className="md:col-span-2 bg-white p-8 rounded-2xl border border-line shadow-xs flex flex-col gap-4 min-h-[500px]">
+          <div className="pb-4 border-b border-line flex items-center gap-2">
             {current.icon}
-            <h2 className="text-[20px] font-extrabold text-[#1e2640]">{current.title}</h2>
+            <h2 className="text-subheading font-bold text-fg">{current.title}</h2>
           </div>
 
-          <div className="text-[13.5px] text-[#5a6380] leading-relaxed whitespace-pre-line font-medium">
+          <div className="text-body-sm text-fg-muted leading-relaxed whitespace-pre-line font-medium">
             {current.content}
           </div>
 
-          <div className="mt-auto pt-6 border-t border-[#ede8e2] flex items-center justify-between text-[12px] text-[#8f95a8]">
+          <div className="mt-auto pt-6 border-t border-line flex items-center justify-between text-label text-fg-subtle">
             <span>Butuh bantuan lebih lanjut? Hubungi Dedicated Account Manager Klozer.</span>
-            <span className="badge badge-success text-[11px]">Bantuan 24/7 Aktif</span>
+            <span className="badge badge-success">Bantuan 24/7 Aktif</span>
           </div>
         </div>
       </div>

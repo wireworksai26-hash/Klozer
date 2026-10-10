@@ -1,41 +1,34 @@
+import { forbidden } from "../utils/errors.js";
+
 /**
- * Multi-Tenant Data Isolation Context Middleware
- * Enforces strict institution_id isolation across all relational queries
- * Eliminates security data leaks between merchants
+ * Pin every tenant-scoped request to exactly one institution.
+ *
+ * The tenant always comes from the authenticated user. Only a superadmin may
+ * act on another tenant, by sending `x-institution-id`. There is no
+ * unauthenticated path and no default tenant: a request without a resolvable
+ * tenant is rejected instead of falling through to "tenant 1".
  */
 export function tenantContext(req, res, next) {
-  // 1. Authenticated regular user (owner, cs, supervisor, finance) -> STRICTLY tied to their institution
-  if (req.user && req.user.institution_id) {
-    req.tenantId = Number(req.user.institution_id);
-    req.institutionId = req.tenantId;
-    return next();
-  }
+  if (!req.user) return next(forbidden("Tenant context memerlukan otentikasi."));
 
-  // 2. Superadmin can inspect specific institution via header or query parameter
-  if (req.user && req.user.role === "superadmin") {
-    const overrideId = req.headers["x-institution-id"] || req.query.institution_id;
-    if (overrideId) {
-      req.tenantId = parseInt(overrideId, 10);
-      req.institutionId = req.tenantId;
-      return next();
+  let tenantId = Number(req.user.institution_id);
+
+  if (req.user.role === "superadmin") {
+    const override = req.headers["x-institution-id"] || req.query.institution_id;
+    if (override !== undefined && override !== "") {
+      const parsed = Number(override);
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        return next(forbidden("x-institution-id tidak valid."));
+      }
+      tenantId = parsed;
     }
-    // Default superadmin view
-    req.tenantId = 1;
-    req.institutionId = 1;
-    return next();
   }
 
-  // 3. Public Webhook / Unauthenticated Gateway Call
-  const headerTenantId = req.headers["x-institution-id"] || req.query.institution_id;
-  if (headerTenantId) {
-    req.tenantId = parseInt(headerTenantId, 10);
-    req.institutionId = req.tenantId;
-    return next();
+  if (!Number.isInteger(tenantId) || tenantId <= 0) {
+    return next(forbidden("Tenant context (institution_id) tidak ditemukan."));
   }
 
-  // 4. Reject un-scoped access to tenant endpoints
-  return res.status(403).json({
-    success: false,
-    message: "Akses ditolak: Tenant context (institution_id) tidak ditemukan atau tidak valid.",
-  });
+  req.tenantId = tenantId;
+  req.institutionId = tenantId;
+  next();
 }

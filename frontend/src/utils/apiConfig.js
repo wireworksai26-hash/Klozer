@@ -1,14 +1,10 @@
-// Dynamic API & Server Base URL Configuration for Klozer
-// Supports Localhost Development, Docker, and Production VPS Deployments
+// API location for the browser.
+//
+// By default the API is reached on the same origin as the site (/api/v1):
+//   - production: the reverse proxy (Caddy) sends /api/* to the backend;
+//   - development: next.config.mjs rewrites /api/* to http://localhost:5000.
+// Same origin means no CORS and no hardcoded host. Set NEXT_PUBLIC_API_URL / NEXT_PUBLIC_SOCKET_URL
+// at build time only if the API lives on a different origin.
 
-export const API_BASE_URL =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  (typeof window !== "undefined" && !window.location.hostname.includes("localhost")
-    ? `${window.location.origin}/api/v1`
-    : "http://localhost:5000/api/v1");
-
-export const SERVER_BASE_URL =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SOCKET_URL) ||
-  (typeof window !== "undefined" && !window.location.hostname.includes("localhost")
-    ? window.location.origin
-    : "http://localhost:5000");
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+export const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "";

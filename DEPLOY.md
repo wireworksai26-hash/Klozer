@@ -1,284 +1,111 @@
-# 🚀 Panduan Lengkap Deploy Klozer ke VPS (Ubuntu / Debian)
+# Deploy Klozer ke VPS (Docker Compose + Caddy)
 
-Dokumentasi ini menjelaskan langkah-langkah praktis untuk mendeploy platform **Klozer** (Next-Gen AI Conversational Commerce & CRM) ke VPS (seperti DigitalOcean, Linode, AWS EC2, Biznet Gio, IDCloudHost, Niagahoster, atau Contabo).
+Satu server Ubuntu/Debian, satu domain. Compose menjalankan MySQL, backend, frontend, Caddy (HTTPS otomatis), dan backup harian. Hanya port 80/443 yang terbuka ke internet; database dan API berada di jaringan privat.
 
----
+## 1. Kebutuhan
 
-## 📋 1. Kebutuhan Sistem Minimum VPS
+- VPS 2 vCPU, RAM minimal 2 GB (4 GB disarankan untuk build pertama), SSD 25 GB
+- Domain (misal `app.bisnisanda.com`) dengan A record ke IP VPS
+- Port 80 dan 443 terbuka di firewall
 
-Untuk performa optimal (Next.js SSR + Express API + MySQL 8.0 + LLM Telemetry):
-- **OS**: Ubuntu 22.04 LTS atau Ubuntu 24.04 LTS (64-bit)
-- **RAM**: Minimal 2 GB (Disarankan 4 GB untuk build Next.js)
-- **CPU**: 2 vCPU Core
-- **Penyimpanan**: SSD/NVMe minimal 25 GB
-- **Domain**: Sudah memiliki domain / subdomain (misal: `app.bisnisanda.com`) yang diarahkan A Record ke IP Publik VPS.
+## 2. Siapkan server
 
----
-
-## 🛠️ Pilihan Metode Deployment
-
-Tersedia 2 metode deployment yang bisa Anda pilih sesuai kebutuhan:
-1. **Metode A (Rekomendasi Utama)**: **Docker & Docker Compose** (Cepat, bersih, terisolasi, 1-perintah).
-2. **Metode B (Tradisional)**: **PM2 + Nginx + MySQL Native**.
-
----
-
-## 🐳 METODE A: Deploy Menggunakan Docker & Docker Compose (Paling Praktis)
-
-Metode ini otomatis menjalankan MySQL 8.0, Backend Express, Frontend Next.js, dan Nginx Reverse Proxy dalam container terisolasi.
-
-### Langkah 1: Hubungkan ke VPS melalui SSH
-Buka Terminal / PowerShell di komputer Anda:
 ```bash
-ssh root@IP_VPS_ANDA
-```
-
-### Langkah 2: Install Docker & Docker Compose di VPS
-Jalankan script instalasi resmi Docker:
-```bash
-# Update repository
-sudo apt update && sudo apt upgrade -y
-
-# Install Docker otomatis
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Verifikasi Docker & Docker Compose
-docker --version
-docker compose version
-```
-
-### Langkah 3: Clone Repository Klozer
-```bash
+curl -fsSL https://get.docker.com | sudo sh
 git clone https://github.com/ethermindagency/Klozer.git
 cd Klozer
 ```
 
-### Langkah 4: Siapkan Konfigurasi Lingkungan (`.env`)
-Salin file konfigurasi backend:
+## 3. Isi konfigurasi
+
 ```bash
-cp backend/.env.example backend/.env
-nano backend/.env
-```
-> *Tips Edit Nano*: Gunakan panah untuk navigasi, sesuaikan kredensial API (`NVIDIA_API_KEY`, `GEMINI_API_KEY`, dll.), tekan `Ctrl + O` lalu `Enter` untuk simpan, dan `Ctrl + X` untuk keluar.
-
-### Langkah 5: Jalankan Seluruh Sistem dengan Docker Compose
-```bash
-docker compose up -d --build
-```
-Docker akan otomatis mengunduh image, melakukan build container backend & frontend, serta mengaktifkan Nginx.
-
-### Langkah 6: Jalankan Migrasi & Database Seeder
-Setelah container aktif, buat tabel database:
-```bash
-docker compose exec backend npm run migrate
-docker compose exec backend npm run seed
-```
-
-**Selesai!** Platform Klozer sekarang sudah aktif dan dapat diakses langsung melalui browser di:
-`http://IP_VPS_ANDA`
-
----
-
-## ⚡ METODE B: Deploy Manual Menggunakan PM2, Nginx & MySQL Native
-
-Gunakan metode ini jika Anda ingin mengelola service secara native tanpa Docker.
-
-### Langkah 1: Update VPS & Install Node.js 20 LTS
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git build-essential nginx
-
-# Install Node.js 20 LTS via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Install PM2 Process Manager secara global
-sudo npm install -g pm2
-```
-
-### Langkah 2: Install & Konfigurasi MySQL Server
-```bash
-sudo apt install -y mysql-server
-sudo mysql_secure_installation
-```
-Masuk ke prompt MySQL untuk membuat database dan user:
-```bash
-sudo mysql
-```
-Jalankan perintah SQL berikut:
-```sql
-CREATE DATABASE klozer_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'klozer_user'@'localhost' IDENTIFIED WITH mysql_native_password BY 'PasswordKlozerKuat2026!';
-GRANT ALL PRIVILEGES ON klozer_db.* TO 'klozer_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-### Langkah 3: Clone Repository Klozer
-```bash
-cd /var/www
-sudo git clone https://github.com/ethermindagency/Klozer.git klozer
-sudo chown -R $USER:$USER /var/www/klozer
-cd /var/www/klozer
-```
-
-### Langkah 4: Setup & Jalankan Backend
-```bash
-cd /var/www/klozer/backend
 cp .env.example .env
 nano .env
 ```
-Sesuaikan isi `.env`:
-```ini
-PORT=5000
-NODE_ENV=production
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=klozer_user
-DB_PASSWORD=PasswordKlozerKuat2026!
-DB_NAME=klozer_db
-JWT_SECRET=klozer_ultra_secure_jwt_secret_key_prod_2026
-```
-Install dependensi dan migrasi database:
+
+Wajib diisi (compose menolak start jika kosong):
+
+| Variabel | Cara membuat |
+|---|---|
+| `DOMAIN` | domain Anda |
+| `ACME_EMAIL` | email Anda (pendaftaran dan pemberitahuan sertifikat Let's Encrypt) |
+| `DB_ROOT_PASSWORD`, `DB_PASSWORD` | `openssl rand -base64 32 \| tr -d '/+=' \| cut -c1-32` |
+| `JWT_SECRET` | `openssl rand -hex 48` |
+| `DB_ENCRYPTION_KEY` | `openssl rand -hex 32` (64 karakter hex) |
+| `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` | admin platform pertama, password minimal 12 karakter |
+
+Server menolak start di production jika secret kosong, terlalu pendek, memakai nilai placeholder, atau memakai nilai default lama yang pernah ada di repository.
+
+> **Simpan `DB_ENCRYPTION_KEY` terpisah dari database.** Token WhatsApp tenant dienkripsi dengan kunci ini. Jika hilang, token tidak bisa dibaca lagi dan tenant harus memasukkannya ulang.
+
+Integrasi opsional (kosongkan jika belum dipakai): `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, `MIDTRANS_SERVER_KEY`, `NVIDIA_API_KEY` / `GEMINI_API_KEY`, `SMTP_*`. Tanpa kunci AI, percakapan diteruskan ke CS manusia. Tanpa Midtrans, QRIS tidak tersedia (tidak ada QR palsu).
+
+## 4. Jalankan
+
 ```bash
-npm install --omit=dev
-npm run migrate
-npm run seed
-```
-Jalankan backend dengan PM2:
-```bash
-pm2 start src/server.js --name klozer-backend
-```
-
-### Langkah 5: Setup & Jalankan Frontend Next.js
-```bash
-cd /var/www/klozer/frontend
-npm install
-npm run build
-```
-Jalankan frontend dengan PM2:
-```bash
-pm2 start npm --name klozer-frontend -- start
-```
-Simpan proses PM2 agar otomatis start saat VPS reboot:
-```bash
-pm2 startup
-# Salin dan jalankan baris perintah yang dimunculkan oleh pm2 di terminal Anda
-pm2 save
-```
-
-### Langkah 6: Konfigurasi Nginx Reverse Proxy
-Buat file konfigurasi Nginx:
-```bash
-sudo nano /etc/nginx/sites-available/klozer
-```
-Isi dengan konfigurasi berikut (ganti `domainanda.com` dengan domain Anda):
-```nginx
-server {
-    listen 80;
-    server_name domainanda.com www.domainanda.com;
-
-    client_max_body_size 25M;
-
-    # Frontend Next.js
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Backend API Express
-    location /api/ {
-        proxy_pass http://127.0.0.1:5000/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # WebSocket Socket.io Gateway
-    location /socket.io/ {
-        proxy_pass http://127.0.0.1:5000/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-Aktifkan konfigurasi Nginx:
-```bash
-sudo ln -s /etc/nginx/sites-available/klozer /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
----
-
-## 🔒 3. Setup SSL HTTPS Gratis (Certbot Let's Encrypt)
-
-Untuk mengaktifkan gembok hijau HTTPS dan keamanan transaksi perbankan / QRIS:
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d domainanda.com -d www.domainanda.com
-```
-Certbot akan otomatis memperbarui konfigurasi SSL Nginx dan menyetel auto-renewal berkala.
-
----
-
-## 🌐 4. Konfigurasi Webhook WhatsApp & Payment Gateway
-
-Setelah domain ber-SSL aktif (`https://domainanda.com`):
-1. **Meta WhatsApp Cloud API Webhook**:
-   - Webhook URL: `https://domainanda.com/api/v1/webhook/whatsapp`
-   - Verify Token: Isikan token yang Anda buat di file `.env` (`META_WEBHOOK_VERIFY_TOKEN`).
-2. **Midtrans / Xendit Webhook**:
-   - Webhook URL: `https://domainanda.com/api/v1/payments/webhook`
-
----
-
-## 🔄 5. Perintah Pemeliharaan & Update Kode Selanjutnya
-
-Ketika ada update kode baru dari GitHub:
-
-### Jika Menggunakan Docker:
-```bash
-cd /path/to/Klozer
-git pull origin main
 docker compose up -d --build
-docker compose exec backend npm run migrate
+docker compose ps          # semua service harus healthy
+docker compose logs -f backend
 ```
 
-### Jika Menggunakan PM2:
+Migrasi database berjalan otomatis saat backend start, dan superadmin dibuat dari `SUPERADMIN_EMAIL` jika belum ada. Setelah login pertama berhasil, kosongkan `SUPERADMIN_PASSWORD` di `.env`.
+
+Buka `https://DOMAIN`, login sebagai superadmin, lalu buat tenant di menu **Institusi** atau biarkan pelanggan mendaftar sendiri di `/register`.
+
+## 5. Hubungkan layanan eksternal
+
+| Layanan | URL yang didaftarkan |
+|---|---|
+| Meta WhatsApp webhook | `https://DOMAIN/api/v1/webhooks/whatsapp` (verify token = `META_WEBHOOK_VERIFY_TOKEN`, aktifkan field `messages`) |
+| Midtrans notification URL | `https://DOMAIN/api/v1/payments/webhook` |
+
+Nomor WhatsApp dan access token tiap tenant diisi oleh owner di **Pengaturan > Profil Usaha dan WhatsApp**. Status integrasi platform terlihat di **Pengaturan > Integrasi Platform** (superadmin).
+
+## 6. Backup dan restore
+
+Layanan `backup` membuat dump terkompresi tiap 24 jam ke `./backups` dan menyimpan 14 hari terakhir. Dump yang ukurannya mencurigakan kecil ditolak. **Salin folder `backups` ke luar server secara berkala.**
+
 ```bash
-cd /var/www/klozer
-git pull origin main
-
-# Update Backend
-cd backend && npm install && npm run migrate && pm2 restart klozer-backend
-
-# Update Frontend
-cd ../frontend && npm install && npm run build && pm2 restart klozer-frontend
+./scripts/backup.sh                              # dump manual
+docker compose stop backend
+./scripts/restore.sh backups/klozer-YYYYMMDD-HHMMSS.sql.gz
+docker compose up -d backend
 ```
 
-### Cek Status & Log Aplikasi:
+Uji restore sekali di server cadangan sebelum Anda membutuhkannya.
+
+## 7. Update
+
 ```bash
-# Cek status proses
-pm2 status
+git pull
+docker compose up -d --build
+```
 
-# Cek log error backend real-time
-pm2 logs klozer-backend
+Migrasi baru berjalan otomatis. Migrasi yang sudah pernah diterapkan tidak boleh diubah isinya; backend menolak start jika checksum berubah.
 
-# Jika menggunakan docker:
-docker compose logs -f --tail=50
+## 8. Pemecahan masalah
+
+| Gejala | Periksa |
+|---|---|
+| Backend langsung berhenti | `docker compose logs backend`: pesan `[FATAL] Konfigurasi production tidak valid` menyebut variabel yang salah |
+| Sertifikat HTTPS gagal | DNS belum mengarah ke server, atau port 80/443 tertutup |
+| Login selalu 429 | pembatas laju: tunggu beberapa menit, atau akun terkunci sementara setelah salah password berulang |
+| WhatsApp tidak masuk | webhook belum terdaftar, `META_APP_SECRET` salah (tanda tangan ditolak, 401), atau nomor belum diisi tenant |
+| AI tidak membalas | kuota token tenant habis, kunci AI belum diisi, atau percakapan sedang ditangani CS manusia |
+| Disk penuh | `docker system prune`, dan pindahkan `backups` ke luar server |
+
+## Menjalankan secara lokal (tanpa Docker untuk app)
+
+```bash
+# MySQL 8 harus berjalan; database dibuat otomatis di mode development
+cd backend  && cp .env.example .env && npm ci && npm run dev      # http://localhost:5000
+cd frontend && npm ci && npm run dev                               # http://localhost:3000, /api diteruskan ke backend
+npm run seed   # (backend) opsional: dua tenant demo, hanya untuk development
+```
+
+Test backend memerlukan MySQL (default `127.0.0.1:3307`, password `testroot`, atur dengan `TEST_DB_*`):
+
+```bash
+docker run -d --name klozer_test_mysql -p 3307:3306 -e MYSQL_ROOT_PASSWORD=testroot mysql:8.0
+cd backend && npm test
 ```

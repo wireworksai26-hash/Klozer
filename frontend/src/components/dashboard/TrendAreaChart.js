@@ -177,29 +177,29 @@ export default function TrendAreaChart({
   };
 
   return (
-    <div className={`bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] ${className}`}>
+    <div className={`bg-white rounded-2xl border border-line p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] ${className}`}>
       {/* Top Header: Controls & Switchers */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f1f3f7]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-line">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-[16px] font-bold text-[#0f172a]">{title}</h3>
-            <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+            <h3 className="card-title">{title}</h3>
+            <span className="text-caption font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
               Live Real-Time
             </span>
           </div>
-          <p className="text-[12.5px] text-[#64748b] mt-0.5">{subtitle}</p>
+          <p className="text-label text-fg-muted mt-0.5">{subtitle}</p>
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
           {/* Metric Toggle */}
-          <div className="flex p-0.5 bg-[#f1f3f7] rounded-xl border border-[#e2e8f0]">
+          <div className="flex p-0.5 bg-sunken rounded-xl border border-line">
             <button
               type="button"
               onClick={() => setActiveMetric("revenue")}
-              className={`px-3 py-1 text-[12px] font-bold rounded-lg transition-all border-none cursor-pointer ${
+              className={`px-3 py-1 text-label font-bold rounded-lg transition-all border-none cursor-pointer ${
                 activeMetric === "revenue"
-                  ? "bg-white text-[#2545ff] shadow-xs"
-                  : "bg-transparent text-[#64748b] hover:text-[#0f172a]"
+                  ? "bg-white text-brand shadow-xs"
+                  : "bg-transparent text-fg-muted hover:text-fg"
               }`}
             >
               Omzet (Rp)
@@ -207,10 +207,10 @@ export default function TrendAreaChart({
             <button
               type="button"
               onClick={() => setActiveMetric("orders")}
-              className={`px-3 py-1 text-[12px] font-bold rounded-lg transition-all border-none cursor-pointer ${
+              className={`px-3 py-1 text-label font-bold rounded-lg transition-all border-none cursor-pointer ${
                 activeMetric === "orders"
-                  ? "bg-white text-[#2545ff] shadow-xs"
-                  : "bg-transparent text-[#64748b] hover:text-[#0f172a]"
+                  ? "bg-white text-brand shadow-xs"
+                  : "bg-transparent text-fg-muted hover:text-fg"
               }`}
             >
               Volume Pesanan
@@ -218,16 +218,16 @@ export default function TrendAreaChart({
           </div>
 
           {/* Date Range Selector */}
-          <div className="flex p-0.5 bg-[#f1f3f7] rounded-xl border border-[#e2e8f0]">
+          <div className="flex p-0.5 bg-sunken rounded-xl border border-line">
             {["7H", "30H", "3B", "1T"].map((range) => (
               <button
                 key={range}
                 type="button"
                 onClick={() => setActiveRange(range)}
-                className={`px-2.5 py-1 text-[11.5px] font-bold rounded-lg transition-all border-none cursor-pointer ${
+                className={`px-2.5 py-1 text-caption font-bold rounded-lg transition-all border-none cursor-pointer ${
                   activeRange === range
-                    ? "bg-[#2545ff] text-white shadow-xs"
-                    : "bg-transparent text-[#64748b] hover:text-[#0f172a]"
+                    ? "bg-brand text-white shadow-xs"
+                    : "bg-transparent text-fg-muted hover:text-fg"
                 }`}
               >
                 {range}
@@ -238,18 +238,18 @@ export default function TrendAreaChart({
       </div>
 
       {/* KPI Highlight Strip */}
-      <div className="grid grid-cols-3 gap-3 py-3 px-4 my-4 bg-[#fafbfc] rounded-xl border border-[#f1f3f7]">
+      <div className="grid grid-cols-3 gap-3 py-3 px-4 my-4 bg-soft rounded-xl border border-line">
         <div>
-          <span className="text-[11.5px] text-[#64748b] font-medium">Total Periode Ini</span>
-          <div className="text-[15px] font-extrabold text-[#0f172a] mt-0.5">{formatVal(totalPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium">Total Periode Ini</span>
+          <div className="text-body font-bold text-fg mt-0.5">{formatVal(totalPeriod)}</div>
         </div>
         <div>
-          <span className="text-[11.5px] text-[#64748b] font-medium">Rata-rata / Titik</span>
-          <div className="text-[15px] font-extrabold text-[#2545ff] mt-0.5">{formatVal(avgPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium">Rata-rata / Titik</span>
+          <div className="text-body font-bold text-brand mt-0.5">{formatVal(avgPeriod)}</div>
         </div>
         <div>
-          <span className="text-[11.5px] text-[#64748b] font-medium">Puncak Tertinggi</span>
-          <div className="text-[15px] font-extrabold text-emerald-600 mt-0.5">{formatVal(peakPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium">Puncak Tertinggi</span>
+          <div className="text-body font-bold text-emerald-600 mt-0.5">{formatVal(peakPeriod)}</div>
         </div>
       </div>
 
@@ -282,7 +282,7 @@ export default function TrendAreaChart({
                 y1={yPos}
                 x2={svgWidth - padX}
                 y2={yPos}
-                stroke="#f1f3f7"
+                stroke="#f5f4f2"
                 strokeWidth="1"
                 strokeDasharray="4 4"
               />
@@ -348,14 +348,14 @@ export default function TrendAreaChart({
               top: `${(hoveredPoint.y / svgHeight) * 100}%`,
               transform: "translate(-50%, -125%)",
             }}
-            className="absolute z-20 pointer-events-none bg-[#0c1754] text-white p-2.5 rounded-xl shadow-xl text-center border border-white/10 min-w-[120px] animate-scale-pop"
+            className="absolute z-20 pointer-events-none bg-ink text-white p-2.5 rounded-xl shadow-xl text-center border border-white/10 min-w-[120px] animate-scale-pop"
           >
-            <div className="text-[11px] text-blue-200 font-medium">{hoveredPoint.data.date}</div>
-            <div className="text-[13px] font-extrabold text-white mt-0.5">
+            <div className="text-caption text-blue-200 font-medium">{hoveredPoint.data.date}</div>
+            <div className="text-body-sm font-bold text-white mt-0.5">
               {formatVal(hoveredPoint.val)}
             </div>
             {activeMetric === "revenue" && (
-              <div className="text-[10px] text-blue-300 mt-0.5">
+              <div className="text-micro text-blue-300 mt-0.5">
                 {hoveredPoint.data.orders} Transaksi Berhasil
               </div>
             )}
@@ -364,7 +364,7 @@ export default function TrendAreaChart({
       </div>
 
       {/* Bottom X-Axis Date Labels */}
-      <div className="flex items-center justify-between text-[11px] font-medium text-[#94a3b8] px-2 pt-2 border-t border-[#f8fafc]">
+      <div className="flex items-center justify-between text-caption font-medium text-fg-subtle px-2 pt-2 border-t border-soft">
         {chartData.map((d, i) => (
           <span key={i} className="text-center">{d.label}</span>
         ))}

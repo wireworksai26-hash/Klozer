@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/common/Logo";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
 import {
@@ -54,69 +54,46 @@ function DashboardContent({ children }) {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [openSections, setOpenSections] = useState({});
-  const [mounted, setMounted] = useState(false);
 
-  // Live Notification State
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Pesanan QRIS Lunas",
-      desc: "Pembayaran Rp 938.000 dari Ibu Dian Sastrowardoyo otomatis terverifikasi.",
-      time: "2 mnt lalu",
-      read: false,
-      type: "order",
-      link: "/dashboard/orders",
-    },
-    {
-      id: 2,
-      title: "Lead Baru WhatsApp",
-      desc: "Kontak baru dari iklan Instagram menanyakan ketersediaan produk.",
-      time: "15 mnt lalu",
-      read: false,
-      type: "chat",
-      link: "/dashboard/chat",
-    },
-    {
-      id: 3,
-      title: "Anti-Struk Palsu AI",
-      desc: "Sistem berhasil mendeteksi dan mencegah 1 bukti transfer rekayasa (Rp 650.000).",
-      time: "1 jam lalu",
-      read: true,
-      type: "security",
-      link: "/dashboard/finance",
-    },
-    {
-      id: 4,
-      title: "Gateway WhatsApp Online",
-      desc: "Koneksi Cloud API stabil dengan uptime 99.98%.",
-      time: "3 jam lalu",
-      read: true,
-      type: "system",
-      link: "/dashboard/chat",
-    },
-  ]);
-
-  const unreadNotifs = notifications.filter((n) => !n.read).length;
-  const markAllNotifsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
+  const router = useRouter();
   const {
+    status,
+    isBooting,
     role,
-    setRole,
     activeInstitution,
-    institutions,
-    setActiveInstitutionId,
     currentUser,
     logoutUser,
     language,
     setLanguage,
     t,
+    notice,
+    dismissNotice,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    whatsappStatus,
   } = useDashboard();
 
+  const unreadNotifs = notifications.filter((n) => !n.read).length;
+  const markAllNotifsRead = markAllNotificationsRead;
+
+  // The server decides what each user may do; this only keeps the UI from showing pages that would just 403.
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (status === "anonymous") router.replace("/login");
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "ready" && role !== "superadmin" && pathname.startsWith("/dashboard/superadmin")) {
+      router.replace("/dashboard");
+    }
+  }, [status, role, pathname, router]);
+
+  // Notices disappear on their own so they never pile up over the page.
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timer = setTimeout(dismissNotice, notice.type === "error" ? 9000 : 4500);
+    return () => clearTimeout(timer);
+  }, [notice, dismissNotice]);
 
   // Precise Active Navigation Detector (fixes multi-active button highlight bug)
   const isItemActive = (itemHref) => {
@@ -248,7 +225,7 @@ function DashboardContent({ children }) {
             },
             {
               label: language === "en" ? "Test CS AI" : "Test CS AI",
-              href: "/test-cs-ai",
+              href: "/dashboard/test-cs-ai",
               icon: <ZapIcon className="w-4.5 h-4.5" />,
             },
             {
@@ -263,9 +240,9 @@ function DashboardContent({ children }) {
     },
     owner: {
       label: "Owner / Supervisor",
-      badgeColor: "bg-blue-100 text-[#2545ff] border-blue-200",
+      badgeColor: "bg-blue-100 text-brand border-blue-200",
       avatar: "OW",
-      icon: <BriefcaseIcon className="w-4 h-4 text-[#2545ff]" />,
+      icon: <BriefcaseIcon className="w-4 h-4 text-brand" />,
       pinnedItems: [
         { label: t("nav.dashboard", "Dashboard Utama"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
         { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
@@ -284,9 +261,9 @@ function DashboardContent({ children }) {
             { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/dashboard/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
             { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-[#2545ff]" /> },
+            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-brand" /> },
           ],
         },
         {
@@ -331,7 +308,7 @@ function DashboardContent({ children }) {
             { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
+            { label: "Test CS AI", href: "/dashboard/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
             { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-amber-600" /> },
           ],
@@ -404,7 +381,7 @@ function DashboardContent({ children }) {
           sectionLabel: language === "en" ? "Settings" : "Pengaturan",
           sectionIcon: <SettingsIcon className="w-4 h-4" />,
           items: [
-            { label: "Simulator Latihan AI", href: "/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" /> },
+            { label: "Simulator Latihan AI", href: "/dashboard/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" /> },
             { label: t("nav.doc", "Buku Panduan CS"), href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
           ],
         },
@@ -413,14 +390,45 @@ function DashboardContent({ children }) {
     },
   };
 
-  const currentRoleConfig = rolesConfig[role] || rolesConfig.owner;
+  // Modules that are not connected to the backend yet stay out of the menu (their pages say so if opened directly).
+  const UNAVAILABLE = [
+    "/dashboard/labels",
+    "/dashboard/internal-chat",
+    "/dashboard/escalation",
+    "/dashboard/bookings",
+    "/dashboard/blocked-contacts",
+    "/dashboard/blasting",
+    "/dashboard/warehouses",
+    "/dashboard/instagram",
+    "/dashboard/templates",
+    "/dashboard/credits",
+    "/dashboard/pic-roster",
+    "/dashboard/doa-knowledge",
+    "/dashboard/superadmin/transactions",
+    "/dashboard/superadmin/settings",
+    "/dashboard/superadmin/leads",
+    "/dashboard/superadmin/exports",
+    "/dashboard/superadmin/blasting",
+    "/dashboard/superadmin/ai-scenarios",
+  ];
+  const available = (item) => !UNAVAILABLE.includes(item.href.split("?")[0]);
+  const baseConfig = rolesConfig[role] || rolesConfig.owner;
+  const currentRoleConfig = {
+    ...baseConfig,
+    pinnedItems: baseConfig.pinnedItems?.filter(available),
+    navItems: baseConfig.navItems?.filter(available),
+    navSections: baseConfig.navSections
+      ?.map((section) => ({ ...section, items: section.items.filter(available) }))
+      .filter((section) => section.items.length > 0),
+  };
 
-  if (!mounted) {
+  // "booting" is also what the server renders, so this doubles as the hydration-safe first paint.
+  if (isBooting || status !== "ready") {
     return (
-      <div className="flex h-screen bg-[#f9f8f6] items-center justify-center">
-        <div className="flex items-center gap-2.5 text-[#64748b] font-bold text-[13px]">
-          <span className="w-4 h-4 rounded-full border-2 border-[#2545ff] border-t-transparent animate-spin" />
-          <span>Memuat Dashboard...</span>
+      <div className="flex h-screen bg-canvas items-center justify-center">
+        <div className="flex items-center gap-2.5 text-fg-muted font-bold text-body-sm">
+          <span className="w-4 h-4 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+          <span>{status === "anonymous" ? "Mengarahkan ke halaman login..." : "Memuat Dashboard..."}</span>
         </div>
       </div>
     );
@@ -431,21 +439,21 @@ function DashboardContent({ children }) {
       {/* Mobile backdrop overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static z-50 top-0 left-0 h-full w-[290px] bg-white border-r border-[#f0e9e1] flex flex-col transition-transform duration-300 ${
+        className={`fixed lg:static z-50 top-0 left-0 h-full w-[290px] bg-white border-r border-line flex flex-col transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Brand Header with Exact klozer • Logo & Brand Icon */}
-        <div className="flex items-center justify-between px-6 h-[72px] border-b border-[#f0e9e1] flex-shrink-0">
+        <div className="flex items-center justify-between px-6 h-[72px] border-b border-line flex-shrink-0">
           <Logo size="md" variant="dark" href="/" withIcon={true} />
-          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border flex items-center gap-1 ${currentRoleConfig.badgeColor}`}>
+          <span className={`text-micro font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${currentRoleConfig.badgeColor}`}>
             {currentRoleConfig.icon}
             <span>{role.toUpperCase()}</span>
           </span>
@@ -453,12 +461,12 @@ function DashboardContent({ children }) {
 
         {/* Store Indicator for Merchant Tenants (Owner, SPV, CS) */}
         {role !== "superadmin" && (
-          <div className="px-5 py-3 border-b border-[#f0e9e1] bg-[#fcfbf9] flex items-center justify-between">
+          <div className="px-5 py-3 border-b border-line bg-soft flex items-center justify-between">
             <div className="truncate">
-              <div className="text-[12.5px] font-black text-[#0c1754] truncate">
+              <div className="text-label font-bold text-ink truncate">
                 {currentUser?.institutionName || activeInstitution?.name || "Instansi Aktif"}
               </div>
-              <div className="text-[10px] text-[#64748b] truncate font-medium">
+              <div className="text-micro text-fg-muted truncate font-medium">
                 {currentUser?.sector || activeInstitution?.sector || "Bisnis Terverifikasi"}
               </div>
             </div>
@@ -468,7 +476,7 @@ function DashboardContent({ children }) {
 
         {/* Navigation items based on active Role */}
         <nav className="flex-1 px-4 py-5 flex flex-col gap-0.5 overflow-y-auto">
-          <div className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-[#969696] mb-1">
+          <div className="px-3 pb-2 pt-1 text-caption font-bold uppercase tracking-wider text-fg-subtle mb-1">
             Menu {currentRoleConfig.label}
           </div>
 
@@ -483,13 +491,13 @@ function DashboardContent({ children }) {
                     key={item.label}
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13.5px] font-bold transition-all no-underline ${
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-body-sm font-bold transition-all no-underline ${
                       isActive
-                        ? "bg-[#2545ff] text-white shadow-[0_4px_14px_rgba(37,69,255,0.3)]"
-                        : "text-[#5a6380] hover:text-[#0c1754] hover:bg-[#f5f4f2]"
+                        ? "bg-brand text-white shadow-[0_4px_14px_rgba(37,69,255,0.3)]"
+                        : "text-fg-muted hover:text-ink hover:bg-sunken"
                     }`}
                   >
-                    <span className={isActive ? "text-white" : "text-[#8f95a8]"}>
+                    <span className={isActive ? "text-white" : "text-fg-subtle"}>
                       {item.icon}
                     </span>
                     <span className="flex-1">{item.label}</span>
@@ -498,7 +506,7 @@ function DashboardContent({ children }) {
               })}
 
               {/* Separator line */}
-              <div className="mx-3 my-2 border-t border-[#ede8e2]" />
+              <div className="mx-3 my-2 border-t border-line" />
 
               {/* Collapsible Dropdown Sections */}
               {currentRoleConfig.navSections.map((section) => {
@@ -517,13 +525,13 @@ function DashboardContent({ children }) {
                           [sectionKey]: !prev[sectionKey],
                         }))
                       }
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[12.5px] font-bold uppercase tracking-wide transition-all cursor-pointer border-none ${
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-label font-bold uppercase tracking-wide transition-all cursor-pointer border-none ${
                         hasActiveChild
-                          ? "text-[#2545ff] bg-[#edeffe]"
-                          : "text-[#8f95a8] hover:text-[#5a6380] hover:bg-[#f5f4f2]"
+                          ? "text-brand bg-brand-soft"
+                          : "text-fg-subtle hover:text-fg-muted hover:bg-sunken"
                       }`}
                     >
-                      <span className={hasActiveChild ? "text-[#2545ff]" : "text-[#b0b5c5]"}>
+                      <span className={hasActiveChild ? "text-brand" : "text-fg-subtle"}>
                         {section.sectionIcon}
                       </span>
                       <span className="flex-1 text-left">{section.sectionLabel}</span>
@@ -550,19 +558,19 @@ function DashboardContent({ children }) {
                               key={item.label}
                               href={item.href}
                               onClick={() => setSidebarOpen(false)}
-                              className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all no-underline ${
+                              className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-body-sm font-semibold transition-all no-underline ${
                                 isActive
-                                  ? "bg-[#2545ff] text-white shadow-[0_4px_12px_rgba(37,69,255,0.25)]"
-                                  : "text-[#5a6380] hover:text-[#0c1754] hover:bg-[#f5f4f2]"
+                                  ? "bg-brand text-white shadow-[0_4px_12px_rgba(37,69,255,0.25)]"
+                                  : "text-fg-muted hover:text-ink hover:bg-sunken"
                               }`}
                             >
-                              <span className={isActive ? "text-white" : "text-[#8f95a8]"}>
+                              <span className={isActive ? "text-white" : "text-fg-subtle"}>
                                 {item.icon}
                               </span>
                               <span className="flex-1">{item.label}</span>
                               {item.badge && (
-                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                                  isActive ? "bg-white/20 text-white" : "bg-[#2545ff] text-white"
+                                <span className={`text-micro font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                                  isActive ? "bg-white/20 text-white" : "bg-brand text-white"
                                 }`}>
                                   {item.badge}
                                 </span>
@@ -585,19 +593,19 @@ function DashboardContent({ children }) {
                   key={item.label}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[13.5px] font-bold transition-all no-underline ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-body-sm font-bold transition-all no-underline ${
                     isActive
-                      ? "bg-[#2545ff] text-white shadow-[0_4px_14px_rgba(37,69,255,0.3)]"
-                      : "text-[#64748b] hover:text-[#0c1754] hover:bg-[#f5f4f2]"
+                      ? "bg-brand text-white shadow-[0_4px_14px_rgba(37,69,255,0.3)]"
+                      : "text-fg-muted hover:text-ink hover:bg-sunken"
                   }`}
                 >
-                  <span className={isActive ? "text-white" : "text-[#969696]"}>
+                  <span className={isActive ? "text-white" : "text-fg-subtle"}>
                     {item.icon}
                   </span>
                   <span className="flex-1">{item.label}</span>
                   {item.badge && (
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                      isActive ? "bg-white/20 text-white" : "bg-[#2545ff] text-white"
+                    <span className={`text-micro font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      isActive ? "bg-white/20 text-white" : "bg-brand text-white"
                     }`}>
                       {item.badge}
                     </span>
@@ -609,18 +617,18 @@ function DashboardContent({ children }) {
         </nav>
 
         {/* Bottom Profile Widget */}
-        <div className="p-4 border-t border-[#f0e9e1] flex-shrink-0 bg-[#f9f8f6]/60">
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-[#f0e9e1]">
-            <div className="w-9 h-9 rounded-full bg-[#2545ff] flex items-center justify-center text-white font-bold text-[13px]">
+        <div className="p-4 border-t border-line flex-shrink-0 bg-canvas/60">
+          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-line">
+            <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white font-bold text-body-sm">
               {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : currentRoleConfig.avatar}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-[#0c1754] truncate">
+              <div className="text-body-sm font-bold text-ink truncate">
                 {currentUser?.name || (role === "superadmin" ? "Platform Admin" : role === "owner" ? "Owner" : "Staf CS")}
               </div>
-              <div className="text-[11px] text-[#969696] truncate">{currentRoleConfig.label}</div>
+              <div className="text-caption text-fg-subtle truncate">{currentRoleConfig.label}</div>
             </div>
-            <Link href="/" title="Ke Landing Page" className="text-[#969696] hover:text-[#2545ff] p-1">
+            <Link href="/" title="Ke Landing Page" className="text-fg-subtle hover:text-brand p-1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </Link>
           </div>
@@ -630,11 +638,11 @@ function DashboardContent({ children }) {
       {/* Main viewport */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-[72px] bg-white border-b border-[#f0e9e1] flex items-center justify-between px-4 sm:px-6 flex-shrink-0">
+        <header className="h-[72px] bg-white border-b border-line flex items-center justify-between px-4 sm:px-6 flex-shrink-0">
           <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-[#f9f8f6] text-[#0c1754] border-none cursor-pointer"
+              className="lg:hidden p-2 rounded-lg hover:bg-canvas text-ink border-none cursor-pointer"
               aria-label="Buka menu navigasi"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -645,14 +653,14 @@ function DashboardContent({ children }) {
             </button>
 
             {/* Live Search bar */}
-            <div className="hidden md:flex items-center gap-2.5 bg-[#f9f8f6] border border-[#f0e9e1] rounded-full px-4 py-1.5 w-[280px] lg:w-[320px] focus-within:border-[#2545ff] focus-within:bg-white transition-all">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2">
+            <div className="hidden lg:flex items-center gap-2.5 bg-canvas border border-line rounded-full px-4 py-1.5 w-[260px] xl:w-[320px] focus-within:border-brand focus-within:bg-white transition-all">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646b84" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input
                 type="text"
                 placeholder="Cari order ID, nomor WA, lead..."
-                className="bg-transparent border-none outline-none text-[12.5px] text-[#0c1754] placeholder:text-[#969696] flex-1 font-medium"
+                className="bg-transparent border-none outline-none text-label text-ink placeholder:text-fg-subtle flex-1 font-medium"
               />
             </div>
           </div>
@@ -664,17 +672,17 @@ function DashboardContent({ children }) {
               <button
                 type="button"
                 onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] border border-[#f0e9e1] cursor-pointer transition-all text-[12.5px] font-bold text-[#0c1754]"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-canvas hover:bg-brand-soft border border-line cursor-pointer transition-all text-label font-bold text-ink"
                 title="Menu Profil Pengguna"
               >
-                <div className="w-6 h-6 rounded-full bg-[#2545ff] text-white flex items-center justify-center text-[10.5px] font-extrabold">
+                <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-micro font-bold">
                   {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : currentRoleConfig.avatar}
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="leading-tight text-[12px] text-[#1e2640] font-extrabold">
+                  <div className="leading-tight text-label text-fg font-bold">
                     {currentUser?.name || currentRoleConfig.name}
                   </div>
-                  <div className="text-[10px] text-[#64748b] font-medium leading-none">
+                  <div className="text-micro text-fg-muted font-medium leading-none">
                     {currentRoleConfig.label}
                   </div>
                 </div>
@@ -684,37 +692,37 @@ function DashboardContent({ children }) {
               </button>
 
               {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl p-2.5 shadow-2xl border border-[#ede8e2] z-50 animate-scale-pop">
-                  <div className="p-3 bg-[#fcfbf9] rounded-xl border border-[#ede8e2] mb-2">
-                    <div className="font-extrabold text-[13px] text-[#1e2640] truncate">
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl p-2.5 shadow-2xl border border-line z-50 animate-scale-pop">
+                  <div className="p-3 bg-soft rounded-xl border border-line mb-2">
+                    <div className="font-bold text-body-sm text-fg truncate">
                       {currentUser?.name || currentRoleConfig.name}
                     </div>
-                    <div className="text-[11.5px] text-[#64748b] font-mono truncate">
+                    <div className="text-caption text-fg-muted font-mono truncate">
                       {currentUser?.email || (role === "superadmin" ? "superadmin@klozer.id" : "spv@klozer.id")}
                     </div>
-                    <div className="mt-2 inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-[#edeffe] text-[#2545ff]">
+                    <div className="mt-2 inline-flex items-center gap-1 text-micro font-bold px-2 py-0.5 rounded-md bg-brand-soft text-brand">
                       {currentRoleConfig.icon}
                       <span>{currentRoleConfig.label}</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 text-[12.5px] font-semibold text-[#1e2640]">
+                  <div className="flex flex-col gap-1 text-label font-semibold text-fg">
                     <Link
                       href="/dashboard/institution"
                       onClick={() => setRoleDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-[#f5f4f2] transition-colors flex items-center justify-between"
+                      className="p-2 rounded-xl hover:bg-sunken transition-colors flex items-center justify-between"
                     >
                       <span>Profil Instansi</span>
-                      <span className="text-[11px] text-[#8f95a8]">→</span>
+                      <span className="text-caption text-fg-subtle">→</span>
                     </Link>
 
                     <Link
                       href="/dashboard/documentation"
                       onClick={() => setRoleDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-[#f5f4f2] transition-colors flex items-center justify-between"
+                      className="p-2 rounded-xl hover:bg-sunken transition-colors flex items-center justify-between"
                     >
                       <span>Buku Panduan</span>
-                      <span className="text-[11px] text-[#8f95a8]">→</span>
+                      <span className="text-caption text-fg-subtle">→</span>
                     </Link>
 
                     <button
@@ -723,7 +731,7 @@ function DashboardContent({ children }) {
                         setRoleDropdownOpen(false);
                         logoutUser();
                       }}
-                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition-colors font-bold text-left border-none cursor-pointer flex items-center justify-between mt-1 pt-2 border-t border-[#ede8e2]"
+                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition-colors font-bold text-left border-none cursor-pointer flex items-center justify-between mt-1 pt-2 border-t border-line"
                     >
                       <span>Keluar (Logout)</span>
                       <svg className="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -738,22 +746,30 @@ function DashboardContent({ children }) {
             </div>
 
             {/* WA Cloud API Status */}
-            <div className="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[11px] font-bold text-emerald-700">
-                {t("nav.connected", "WA Cloud API Terhubung")}
-              </span>
-            </div>
+            {role !== "superadmin" && (
+              <Link
+                href="/dashboard/settings?tab=profile"
+                className={`hidden xl:flex items-center gap-2 px-3 py-1 rounded-full border no-underline ${
+                  whatsappStatus?.configured ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"
+                }`}
+                title={whatsappStatus?.configured ? "WhatsApp Cloud API terhubung" : "Hubungkan nomor WhatsApp Anda"}
+              >
+                <span className={`w-2 h-2 rounded-full ${whatsappStatus?.configured ? "bg-emerald-500" : "bg-amber-500"}`} />
+                <span className={`text-caption font-bold ${whatsappStatus?.configured ? "text-emerald-700" : "text-amber-700"}`}>
+                  {whatsappStatus?.configured ? t("nav.connected", "WhatsApp Terhubung") : "WhatsApp belum terhubung"}
+                </span>
+              </Link>
+            )}
 
             {/* Language Switcher Pill (Bilingual) */}
-            <div className="flex items-center bg-[#f0f4ff] p-0.5 rounded-full border border-[#dbeafe]">
+            <div className="flex items-center bg-brand-soft p-0.5 rounded-full border border-brand-soft">
               <button
                 type="button"
                 onClick={() => setLanguage("id")}
-                className={`px-2 py-0.5 text-[11px] font-extrabold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+                className={`px-2 py-0.5 text-caption font-bold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
                   language === "id"
-                    ? "bg-[#2545ff] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0c1754] bg-transparent"
+                    ? "bg-brand text-white shadow-xs"
+                    : "text-fg-muted hover:text-ink bg-transparent"
                 }`}
                 title="Ganti ke Bahasa Indonesia"
               >
@@ -763,10 +779,10 @@ function DashboardContent({ children }) {
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`px-2 py-0.5 text-[11px] font-extrabold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+                className={`px-2 py-0.5 text-caption font-bold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
                   language === "en"
-                    ? "bg-[#2545ff] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0c1754] bg-transparent"
+                    ? "bg-brand text-white shadow-xs"
+                    : "text-fg-muted hover:text-ink bg-transparent"
                 }`}
                 title="Switch to English"
               >
@@ -785,8 +801,8 @@ function DashboardContent({ children }) {
                 }}
                 className={`relative p-2 rounded-full border cursor-pointer transition-all ${
                   notifOpen
-                    ? "bg-[#eaebf8] border-[#2545ff] text-[#2545ff]"
-                    : "hover:bg-[#f9f8f6] border-[#f0e9e1] bg-white text-[#0c1754]"
+                    ? "bg-brand-soft border-brand text-brand"
+                    : "hover:bg-canvas border-line bg-white text-ink"
                 }`}
                 title="Pusat Notifikasi"
                 aria-label="Pusat Notifikasi"
@@ -802,17 +818,17 @@ function DashboardContent({ children }) {
 
               {/* Notification Popover Modal */}
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-[#e8eaef] z-50 overflow-hidden animate-scale-pop">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-line z-50 overflow-hidden animate-scale-pop">
                   {/* Header */}
-                  <div className="p-3.5 px-4 bg-[#f8fafc] border-b border-[#e8eaef] flex items-center justify-between">
+                  <div className="p-3.5 px-4 bg-soft border-b border-line flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-[14px] font-extrabold text-[#0f172a]">Notifikasi</h4>
+                      <h4 className="text-body-sm font-bold text-fg">Notifikasi</h4>
                       {unreadNotifs > 0 ? (
-                        <span className="text-[11px] font-extrabold bg-[#2545ff] text-white px-2 py-0.2 rounded-full">
+                        <span className="text-caption font-bold bg-brand text-white px-2 py-0.2 rounded-full">
                           {unreadNotifs} Baru
                         </span>
                       ) : (
-                        <span className="text-[11px] font-semibold text-[#64748b] bg-slate-100 px-2 py-0.2 rounded-full">
+                        <span className="text-caption font-semibold text-fg-muted bg-slate-100 px-2 py-0.2 rounded-full">
                           Semua Terbaca
                         </span>
                       )}
@@ -821,7 +837,7 @@ function DashboardContent({ children }) {
                       <button
                         type="button"
                         onClick={markAllNotifsRead}
-                        className="text-[11.5px] font-bold text-[#2545ff] hover:underline bg-transparent border-none cursor-pointer"
+                        className="text-caption font-bold text-brand hover:underline bg-transparent border-none cursor-pointer"
                       >
                         Tandai Dibaca
                       </button>
@@ -829,9 +845,9 @@ function DashboardContent({ children }) {
                   </div>
 
                   {/* List of Notification Items */}
-                  <div className="max-h-[340px] overflow-y-auto divide-y divide-[#f1f3f7]">
+                  <div className="max-h-[340px] overflow-y-auto divide-y divide-line">
                     {notifications.length === 0 ? (
-                      <div className="p-8 text-center text-[#64748b] text-[13px]">
+                      <div className="p-8 text-center text-fg-muted text-body-sm">
                         Tidak ada notifikasi baru saat ini.
                       </div>
                     ) : (
@@ -841,12 +857,10 @@ function DashboardContent({ children }) {
                           href={item.link}
                           onClick={() => {
                             setNotifOpen(false);
-                            setNotifications((prev) =>
-                              prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
-                            );
+                            markNotificationRead(item.id);
                           }}
                           className={`p-3.5 px-4 flex items-start gap-3 transition-colors no-underline block ${
-                            item.read ? "bg-white hover:bg-[#f8fafc]" : "bg-[#f4f7ff] hover:bg-[#ebf0fe]"
+                            item.read ? "bg-white hover:bg-soft" : "bg-[#f4f7ff] hover:bg-[#ebf0fe]"
                           }`}
                         >
                           <div
@@ -854,7 +868,7 @@ function DashboardContent({ children }) {
                               item.type === "order"
                                 ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
                                 : item.type === "chat"
-                                ? "bg-blue-50 text-[#2545ff] border border-blue-200"
+                                ? "bg-blue-50 text-brand border border-blue-200"
                                 : item.type === "security"
                                 ? "bg-purple-50 text-purple-600 border border-purple-200"
                                 : "bg-slate-100 text-slate-600 border border-slate-200"
@@ -873,20 +887,20 @@ function DashboardContent({ children }) {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1 mb-0.5">
-                              <span className="font-extrabold text-[13px] text-[#0f172a] truncate">
+                              <span className="font-bold text-body-sm text-fg truncate">
                                 {item.title}
                               </span>
-                              <span className="text-[10.5px] text-[#94a3b8] font-medium flex-shrink-0">
+                              <span className="text-micro text-fg-subtle font-medium flex-shrink-0">
                                 {item.time}
                               </span>
                             </div>
-                            <p className="text-[12px] text-[#64748b] line-clamp-2 leading-relaxed">
+                            <p className="text-label text-fg-muted line-clamp-2 leading-relaxed">
                               {item.desc}
                             </p>
                           </div>
 
                           {!item.read && (
-                            <span className="w-2 h-2 rounded-full bg-[#2545ff] flex-shrink-0 mt-2" />
+                            <span className="w-2 h-2 rounded-full bg-brand flex-shrink-0 mt-2" />
                           )}
                         </Link>
                       ))
@@ -894,11 +908,11 @@ function DashboardContent({ children }) {
                   </div>
 
                   {/* Footer */}
-                  <div className="p-2.5 bg-[#f8fafc] border-t border-[#e8eaef] text-center">
+                  <div className="p-2.5 bg-soft border-t border-line text-center">
                     <Link
                       href="/dashboard/audit-log"
                       onClick={() => setNotifOpen(false)}
-                      className="text-[12px] font-bold text-[#2545ff] hover:underline"
+                      className="text-label font-bold text-brand hover:underline"
                     >
                       Buka Log Riwayat Aktivitas Lengkap →
                     </Link>
@@ -912,6 +926,19 @@ function DashboardContent({ children }) {
         {/* Scrollable Main Viewport */}
         <main className="flex-1 overflow-y-auto p-5 sm:p-7 md:p-10" style={{ backgroundColor: 'var(--dash-bg)' }}>
           <div className="max-w-[1240px] mx-auto">
+            {notice && (
+              <div
+                role="status"
+                className={`mb-5 p-3.5 rounded-xl border flex items-start gap-2.5 text-body-sm font-semibold ${
+                  notice.type === "error" ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                }`}
+              >
+                <span className="flex-1">{notice.message}</span>
+                <button type="button" onClick={dismissNotice} className="bg-transparent border-none cursor-pointer text-current font-bold" aria-label="Tutup">
+                  ×
+                </button>
+              </div>
+            )}
             {children}
           </div>
         </main>
@@ -923,7 +950,7 @@ function DashboardContent({ children }) {
 export default function DashboardLayout({ children }) {
   return (
     <DashboardProvider>
-      <Suspense fallback={<div className="p-8 text-center text-[#64748b]">Memuat Dashboard...</div>}>
+      <Suspense fallback={<div className="p-8 text-center text-fg-muted">Memuat Dashboard...</div>}>
         <DashboardContent>{children}</DashboardContent>
       </Suspense>
     </DashboardProvider>

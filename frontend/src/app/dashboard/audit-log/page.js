@@ -1,139 +1,136 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import {
-  ClipboardCheckIcon,
-  CrownIcon,
-  CheckCircleIcon,
-  AlertTriangleIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-} from "@/components/icons";
+import { api } from "@/utils/api";
 
-export default function SupervisorAuditLogPage() {
-  const { currentUser, activeInstitution } = useDashboard();
-  const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
-  const isDefaultDemo = cleanInstName.toLowerCase() === "batik mahakarya solo";
+const GROUPS = [
+  ["", "Semua aktivitas"],
+  ["auth", "Login dan keamanan"],
+  ["order", "Pesanan"],
+  ["payment", "Pembayaran"],
+  ["user", "Akun staf"],
+  ["product", "Produk"],
+  ["bank_account", "Rekening"],
+];
 
-  const [filterAction, setFilterAction] = useState("all");
+const LABELS = {
+  "auth.login": "Login berhasil",
+  "auth.login_failed": "Login gagal",
+  "auth.register": "Pendaftaran tenant",
+  "auth.change_password": "Mengubah password",
+  "order.create": "Membuat pesanan",
+  "order.status": "Mengubah status pesanan",
+  "payment.qris_created": "Menerbitkan QRIS",
+  "shipment.create": "Mencatat pengiriman",
+  "product.create": "Menambah produk",
+  "product.update": "Mengubah produk",
+  "product.delete": "Menghapus produk",
+  "product.bulk_import": "Impor produk massal",
+  "product.stock_import": "Impor stok",
+  "user.create": "Menambah akun staf",
+  "user.update": "Mengubah akun staf",
+  "user.deactivate": "Menonaktifkan staf",
+  "user.reset_password": "Reset password staf",
+  "bank_account.create": "Menambah rekening",
+  "bank_account.update": "Mengubah rekening",
+  "bank_account.delete": "Menghapus rekening",
+  "whatsapp.channel_upsert": "Mengatur nomor WhatsApp",
+  "whatsapp.channel_delete": "Melepas nomor WhatsApp",
+  "integration.meta_capi_upsert": "Mengatur Meta CAPI",
+  "institution.update": "Mengubah profil usaha",
+  "ai.persona_update": "Mengubah persona AI",
+};
 
-  const logs = isDefaultDemo
-    ? [
-        {
-          id: "LOG-901",
-          staff: "Rian Supervisor",
-          role: "Supervisor (SPV)",
-          action: "TAKEOVER_CHAT",
-          details: "Mengambil alih percakapan WhatsApp dari AI",
-          ip: "103.119.214.12",
-          timestamp: "29 Agu 2026, 17:45",
-        },
-      ]
-    : [
-        {
-          id: "LOG-001",
-          staff: currentUser?.name || "Supervisor",
-          role: "Supervisor (SPV)",
-          action: "TENANT_INITIALIZATION",
-          details: `Inisialisasi akun workspace bisnis ${cleanInstName} berhasil`,
-          ip: "127.0.0.1",
-          timestamp: "Hari ini",
-        },
-      ];
+const when = (iso) => new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 
-  const filtered = logs.filter((l) => {
-    if (filterAction === "all") return true;
-    return l.action === filterAction;
-  });
+export default function AuditLogPage() {
+  const { notify } = useDashboard();
+  const [group, setGroup] = useState("");
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      setData(await api.get("/audit-logs", { query: { action: group, page, limit: 25 } }));
+    } catch (err) {
+      notify("error", err.message);
+      setData({ items: [], pagination: { totalItems: 0, totalPages: 1 } });
+    }
+  }, [group, page, notify]);
+
+  useEffect(() => {
+    // Refetch whenever the filter or page changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
+  const pagination = data?.pagination;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
-              <ClipboardCheckIcon className="w-3.5 h-3.5" />
-              <span>Audit Trail & Keamanan Sistem</span>
-            </span>
-          </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
-            Log Audit Aktivitas Staf & CS
-          </h1>
-          <p className="text-[13.5px] text-[#64748b]">
-            Rekam jejak seluruh aktivitas staf (login, ubah harga/stok, approval diskon, ekspor data, takeover chat).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-1.5">
-            <ShieldCheckIcon className="w-4 h-4 text-emerald-600" />
-            <span>Immutable Audit Trail: AKTIF</span>
-          </span>
-        </div>
+      <div>
+        <h1 className="page-title">Log Aktivitas</h1>
+        <p className="text-body-sm text-fg-muted">Jejak tindakan penting di tenant Anda: siapa, apa, kapan, dan dari alamat IP mana.</p>
       </div>
 
-      {/* Filter */}
-      <div className="bg-white p-4 rounded-2xl border border-[#ede8e2] flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-bold text-[#8f95a8]">Filter Tipe Aksi:</span>
-          <select
-            value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
-            className="bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3 py-1.5 text-[12.5px] font-bold text-[#1e2640] outline-none cursor-pointer"
-          >
-            <option value="all">Semua Aktivitas Staf</option>
-            <option value="TAKEOVER_CHAT">Takeover Chat</option>
-            <option value="UPDATE_STATUS_ORDER">Update Status Order</option>
-            <option value="MANUAL_SETTLEMENT_APPROVAL">Approval Finansial</option>
-            <option value="EXPORT_LEADS">Ekspor Data Kontak</option>
-            <option value="UPDATE_STOCK">Penyesuaian Stok</option>
-          </select>
-        </div>
+      <select
+        value={group}
+        onChange={(e) => {
+          setGroup(e.target.value);
+          setPage(1);
+        }}
+        className="bg-white border border-line rounded-xl p-2.5 text-ink font-medium outline-none sm:max-w-xs"
+      >
+        {GROUPS.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
 
-        <span className="text-[12.5px] font-bold text-[#8f95a8]">
-          Total Log: <span className="text-[#2545ff]">{filtered.length}</span>
-        </span>
-      </div>
-
-      {/* Log Table */}
-      <div className="table-wrapper">
-        <table>
+      <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr>
-              <th>Staf & Jabatan</th>
-              <th>Tipe Aktivitas</th>
-              <th>Rincian Tindakan</th>
-              <th>IP Address</th>
-              <th>Waktu Kejadian</th>
+            <tr className="bg-canvas border-b border-line text-label font-bold uppercase text-fg-muted">
+              <th className="py-3 px-5">Waktu</th>
+              <th className="py-3 px-5">Pelaku</th>
+              <th className="py-3 px-5">Aktivitas</th>
+              <th className="py-3 px-5">Objek</th>
+              <th className="py-3 px-5">IP</th>
             </tr>
           </thead>
-          <tbody>
-            {filtered.map((log) => (
-              <tr key={log.id} className="hover:bg-[#fcfbf9] transition-colors">
-                <td>
-                  <div className="font-bold text-[#1e2640] text-[13.5px]">{log.staff}</div>
-                  <div className="text-[11px] text-purple-700 font-semibold">{log.role}</div>
+          <tbody className="divide-y divide-line text-body-sm">
+            {(data?.items || []).map((l) => (
+              <tr key={l.id} className="hover:bg-soft">
+                <td className="py-3 px-5 whitespace-nowrap text-fg-muted">{when(l.created_at)}</td>
+                <td className="py-3 px-5">
+                  <div className="font-bold text-ink">{l.user_name || "Sistem"}</div>
+                  <div className="text-caption text-fg-muted">{l.user_role || "-"}</div>
                 </td>
-                <td>
-                  <span className="font-mono text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[#f5f4f2] border border-[#ede8e2] text-[#1e2640]">
-                    {log.action}
-                  </span>
+                <td className="py-3 px-5">
+                  <div className="font-semibold text-ink">{LABELS[l.action] || l.action}</div>
+                  <div className="text-caption text-fg-subtle font-mono">{l.action}</div>
                 </td>
-                <td>
-                  <span className="text-[13px] text-[#5a6380] leading-relaxed">{log.details}</span>
-                </td>
-                <td>
-                  <span className="text-[12px] font-mono text-[#8f95a8]">{log.ip}</span>
-                </td>
-                <td>
-                  <span className="text-[12px] font-medium text-[#1e2640]">{log.timestamp}</span>
-                </td>
+                <td className="py-3 px-5 text-fg-muted">{l.entity_type ? `${l.entity_type} #${l.entity_id}` : "-"}</td>
+                <td className="py-3 px-5 font-mono text-caption text-fg-muted">{l.ip_address || "-"}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        {data && data.items.length === 0 && <div className="py-10 text-center text-fg-muted">Belum ada aktivitas tercatat.</div>}
+        {!data && <div className="py-10 text-center text-fg-muted">Memuat...</div>}
       </div>
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between text-body-sm text-fg-muted">
+          <span>{pagination.totalItems} catatan</span>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="btn-outline !py-1.5 !px-3 disabled:opacity-40">Sebelumnya</button>
+            <span className="py-1.5">{page} / {pagination.totalPages}</span>
+            <button disabled={page >= pagination.totalPages} onClick={() => setPage(page + 1)} className="btn-outline !py-1.5 !px-3 disabled:opacity-40">Berikutnya</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

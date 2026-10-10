@@ -14,9 +14,9 @@ export default function ConversionFunnelChart({
     if (data) return data;
 
     const totalLeads = (leads || []).length;
-    const totalOrders = (orders || []).length;
+    const totalOrders = (orders || []).filter((o) => o.status !== "cancelled").length;
     const paidOrders = (orders || []).filter(
-      (o) => o.status === "paid" || o.status === "shipped" || o.status === "processing"
+      (o) => ["paid", "processing", "shipped", "delivered", "completed"].includes(o.status)
     ).length;
 
     // Responded leads: leads that have interacted or progressed past 'new_lead'
@@ -42,8 +42,8 @@ export default function ConversionFunnelChart({
         stage: "Leads Masuk",
         count: step1Count,
         pct: step1Pct,
-        color: "bg-[#2545ff]",
-        textColor: "text-[#2545ff]",
+        color: "bg-brand",
+        textColor: "text-brand",
         note: "WhatsApp Inbound & Organik",
       },
       {
@@ -79,14 +79,14 @@ export default function ConversionFunnelChart({
   const invoiceToPaidPct = invoicedCount > 0 ? Math.round((paidCount / invoicedCount) * 100) : 0;
 
   return (
-    <div className={`bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] flex flex-col justify-between ${className}`}>
+    <div className={`bg-white rounded-2xl border border-line p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] flex flex-col justify-between ${className}`}>
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7]">
+        <div className="flex items-center justify-between pb-3 border-b border-line">
           <div>
-            <h3 className="text-[16px] font-bold text-[#0f172a]">{title}</h3>
-            <p className="text-[12.5px] text-[#64748b] mt-0.5">{subtitle}</p>
+            <h3 className="card-title">{title}</h3>
+            <p className="text-label text-fg-muted mt-0.5">{subtitle}</p>
           </div>
-          <span className={`text-[12px] font-bold px-2.5 py-1 rounded-full border ${
+          <span className={`text-label font-bold px-2.5 py-1 rounded-full border ${
             closingRate > 0
               ? "text-emerald-700 bg-emerald-50 border-emerald-200"
               : "text-slate-600 bg-slate-50 border-slate-200"
@@ -99,32 +99,32 @@ export default function ConversionFunnelChart({
         <div className="flex flex-col gap-3.5 my-4">
           {steps.map((step, idx) => (
             <div key={idx} className="group">
-              <div className="flex items-center justify-between text-[12.5px] mb-1.5 font-medium">
-                <span className="text-[#0f172a] font-bold flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-700 text-[10px] flex items-center justify-center font-bold">
+              <div className="flex items-center justify-between text-label mb-1.5 font-medium">
+                <span className="text-fg font-bold flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-700 text-micro flex items-center justify-center font-bold">
                     {idx + 1}
                   </span>
                   <span>{step.stage}</span>
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#64748b] font-mono text-[12px]">
+                  <span className="text-fg-muted font-mono text-label">
                     {step.count.toLocaleString("id-ID")} Kontak
                   </span>
-                  <span className={`font-extrabold text-[12.5px] ${step.textColor}`}>
+                  <span className={`font-bold text-label ${step.textColor}`}>
                     {step.pct}%
                   </span>
                 </div>
               </div>
 
               {/* Progress Bar with smooth transition */}
-              <div className="h-2.5 w-full bg-[#f1f3f7] rounded-full overflow-hidden">
+              <div className="h-2.5 w-full bg-sunken rounded-full overflow-hidden">
                 <div
                   style={{ width: `${step.pct}%` }}
                   className={`h-full ${step.color} rounded-full transition-all duration-700 ease-out group-hover:opacity-90`}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-[#94a3b8] mt-1">
+              <div className="flex items-center justify-between text-caption text-fg-subtle mt-1">
                 <span>{step.note}</span>
                 {idx > 0 && (
                   <span className="text-slate-400 font-mono">
@@ -138,14 +138,14 @@ export default function ConversionFunnelChart({
       </div>
 
       {/* Actionable Insight Footer */}
-      <div className="p-3 bg-[#f8fafc] rounded-xl border border-[#e2e8f0] text-[12px] text-[#475467] flex items-center gap-2.5 mt-2">
-        <div className="w-6 h-6 rounded-lg bg-[#2545ff]/10 text-[#2545ff] flex items-center justify-center flex-shrink-0">
+      <div className="p-3 bg-soft rounded-xl border border-line text-label text-fg-muted flex items-center gap-2.5 mt-2">
+        <div className="w-6 h-6 rounded-lg bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
           <SparklesIcon className="w-3.5 h-3.5" />
         </div>
         <div className="leading-snug">
           {invoicedCount > 0 ? (
             <>
-              Konversi tagihan ke lunas mencapai <strong className="text-[#0f172a]">{invoiceToPaidPct}%</strong>. Rekomendasi: optimalkan follow-up otomatis AI pada tahap invoice.
+              Konversi tagihan ke lunas mencapai <strong className="text-fg">{invoiceToPaidPct}%</strong>. Rekomendasi: optimalkan follow-up otomatis AI pada tahap invoice.
             </>
           ) : (
             <>

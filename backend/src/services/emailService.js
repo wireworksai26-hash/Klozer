@@ -1,25 +1,17 @@
 import nodemailer from "nodemailer";
 import { config } from "../config/env.js";
+import { logger } from "../config/logger.js";
+
+const esc = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 /**
  * Configure Nodemailer Transporter
  */
 function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const port = parseInt(process.env.SMTP_PORT, 10) || 587;
-
-  if (host && user && pass) {
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-  }
-
-  return null;
+  const { host, user, pass, port } = config.smtp;
+  if (!host || !user || !pass) return null;
+  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 
 /**
@@ -27,8 +19,8 @@ function createTransporter() {
  * Contains SPV/Owner + CS 1 + CS 2 Accounts
  */
 export async function sendTrialCredentialsEmail({ to, institutionName, sector, owner, cs1, cs2, loginUrl }) {
-  const fromAddress = process.env.SMTP_FROM || "Klozer Onboarding <no-reply@klozer.id>";
-  const webLoginUrl = loginUrl || process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : "http://localhost:3000/login";
+  const fromAddress = config.smtp.from;
+  const webLoginUrl = loginUrl || `${config.frontendUrl}/login`;
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -73,11 +65,11 @@ export async function sendTrialCredentialsEmail({ to, institutionName, sector, o
 
     <!-- Content -->
     <div class="content">
-      <div class="inst-badge">Instansi: ${institutionName} (${sector || "Bisnis"})</div>
+      <div class="inst-badge">Instansi: ${esc(institutionName)} (${esc(sector || "Bisnis")})</div>
       
       <p class="welcome-text">
-        Halo <strong>${owner?.name || "Rekan Bisnis"}</strong>,<br>
-        Selamat! Permintaan uji coba 14 hari gratis untuk <strong>${institutionName}</strong> telah disetujui. Sistem kami telah membuatkan <strong>Akun Supervisor (SPV/Owner)</strong> serta <strong>2 Akun Customer Service (CS)</strong> agar tim Anda dapat langsung mencoba seluruh fitur otomatisasi WhatsApp.
+        Halo <strong>${esc(owner?.name || "Rekan Bisnis")}</strong>,<br>
+        Selamat! Permintaan uji coba 14 hari gratis untuk <strong>${esc(institutionName)}</strong> telah disetujui. Sistem kami telah membuatkan <strong>Akun Supervisor (SPV/Owner)</strong> serta <strong>2 Akun Customer Service (CS)</strong> agar tim Anda dapat langsung mencoba seluruh fitur otomatisasi WhatsApp.
       </p>
 
       <!-- 1. Owner / SPV Account -->
@@ -88,15 +80,15 @@ export async function sendTrialCredentialsEmail({ to, institutionName, sector, o
         </div>
         <div class="cred-row">
           <span class="cred-label">Nama Pengguna:</span>
-          <span class="cred-value">${owner?.name || "Owner"}</span>
+          <span class="cred-value">${esc(owner?.name || "Owner")}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Email Login:</span>
-          <span class="cred-value">${owner?.email || to}</span>
+          <span class="cred-value">${esc(owner?.email || to)}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Password:</span>
-          <span class="cred-pass">${owner?.temporaryPassword || "Klozer123!"}</span>
+          <span class="cred-pass">${esc(owner?.password)}</span>
         </div>
       </div>
 
@@ -108,15 +100,15 @@ export async function sendTrialCredentialsEmail({ to, institutionName, sector, o
         </div>
         <div class="cred-row">
           <span class="cred-label">Nama Pengguna:</span>
-          <span class="cred-value">${cs1?.name || "CS 1"}</span>
+          <span class="cred-value">${esc(cs1?.name || "CS 1")}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Email Login:</span>
-          <span class="cred-value">${cs1?.email || "cs1@" + institutionName.toLowerCase().replace(/\s+/g, "") + ".klozer.id"}</span>
+          <span class="cred-value">${esc(cs1?.email)}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Password:</span>
-          <span class="cred-pass">${cs1?.temporaryPassword || "KlozerCS1!"}</span>
+          <span class="cred-pass">${esc(cs1?.password)}</span>
         </div>
       </div>
 
@@ -128,21 +120,21 @@ export async function sendTrialCredentialsEmail({ to, institutionName, sector, o
         </div>
         <div class="cred-row">
           <span class="cred-label">Nama Pengguna:</span>
-          <span class="cred-value">${cs2?.name || "CS 2"}</span>
+          <span class="cred-value">${esc(cs2?.name || "CS 2")}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Email Login:</span>
-          <span class="cred-value">${cs2?.email || "cs2@" + institutionName.toLowerCase().replace(/\s+/g, "") + ".klozer.id"}</span>
+          <span class="cred-value">${esc(cs2?.email)}</span>
         </div>
         <div class="cred-row">
           <span class="cred-label">Password:</span>
-          <span class="cred-pass">${cs2?.temporaryPassword || "KlozerCS2!"}</span>
+          <span class="cred-pass">${esc(cs2?.password)}</span>
         </div>
       </div>
 
       <!-- Action Button -->
       <div class="btn-container">
-        <a href="${webLoginUrl}" class="btn" target="_blank">
+        <a href="${esc(webLoginUrl)}" class="btn" target="_blank">
           Masuk ke Dashboard Klozer →
         </a>
       </div>
@@ -165,36 +157,22 @@ export async function sendTrialCredentialsEmail({ to, institutionName, sector, o
   `.trim();
 
   const transporter = createTransporter();
-
-  if (transporter) {
-    try {
-      const info = await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject: `🎉 Kredensial Akun Uji Coba Klozer: ${institutionName} (SPV & CS)`,
-        html: emailHtml,
-      });
-      console.log(`[Email Service] Live email sent to ${to} (MessageId: ${info.messageId})`);
-      return { success: true, mode: "smtp", messageId: info.messageId };
-    } catch (sendErr) {
-      console.warn(`[Email Service] SMTP send failed (${sendErr.message}), falling back to delivery log.`);
-    }
+  if (!transporter) {
+    // Never print credentials to logs. Without SMTP the owner still sees them once in the signup response.
+    logger.warn({ to }, "SMTP belum dikonfigurasi; email kredensial tidak dikirim");
+    return { success: false, mode: "not_configured" };
   }
 
-  // Fallback Simulation Log (Always works seamlessly without requiring live credentials)
-  console.log("================================================================================");
-  console.log(`[EMAIL DISPATCHED TO]: ${to}`);
-  console.log(`[SUBJECT]: Kredensial Akun Uji Coba Klozer: ${institutionName} (SPV & CS)`);
-  console.log(`[SPV / OWNER]: ${owner?.email} | Pass: ${owner?.temporaryPassword}`);
-  console.log(`[CS 1]: ${cs1?.email} | Pass: ${cs1?.temporaryPassword}`);
-  console.log(`[CS 2]: ${cs2?.email} | Pass: ${cs2?.temporaryPassword}`);
-  console.log(`[LOGIN URL]: ${webLoginUrl}`);
-  console.log("================================================================================");
-
-  return {
-    success: true,
-    mode: "simulated",
-    to,
-    institutionName,
-  };
+  try {
+    const info = await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject: `Kredensial Akun Uji Coba Klozer: ${institutionName.replace(/[\r\n]/g, " ")}`,
+      html: emailHtml,
+    });
+    return { success: true, mode: "smtp", messageId: info.messageId };
+  } catch (err) {
+    logger.error({ err: err.message, to }, "Pengiriman email kredensial gagal");
+    return { success: false, mode: "smtp_error" };
+  }
 }

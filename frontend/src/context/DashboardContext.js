@@ -1,1123 +1,779 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { API_BASE_URL } from "@/utils/apiConfig";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 import { getTranslation } from "@/utils/i18n";
+import { SERVER_BASE_URL } from "@/utils/apiConfig";
+import { templateForSector } from "@/utils/sampleCatalogs";
+import { api, cacheUser, clearSession, getActingTenant, readCachedUser, setActingTenant, setUnauthorizedHandler } from "@/utils/api";
+import {
+  DEFAULT_MODULES,
+  institutionFromApi,
+  institutionToApi,
+  leadFromApi,
+  leadToApi,
+  orderFromApi,
+  orderToApi,
+  productFromApi,
+  productToApi,
+  roleToApi,
+  teamMemberFromApi,
+  toDbId,
+  uiRoleFor,
+} from "@/utils/mappers.mjs";
 
 const DashboardContext = createContext();
 
-// Initial Clean Datasets (Production Ready)
-const initialInstitutions = [
-  {
-    id: "INST-001",
-    name: "Toko Bisnis Utama",
-    sector: "Retail & Commerce",
-    owner: "Owner Toko",
-    email: "owner@klozer.id",
-    phone: "+62 812-0000-0000",
-    tier: "Pro Growth",
-    quotaUsed: 0,
-    quotaMax: 50000,
-    status: "active",
-    modules: {
-      qris: true,
-      voiceAi: true,
-      antiFraud: true,
-      metaCapi: true,
-      multiCs: true,
-    },
-    joinedDate: "Hari ini",
-  },
-];
+const MANAGER_ROLES = ["owner", "supervisor", "superadmin"];
+const REPORT_ROLES = ["owner", "supervisor", "finance", "superadmin"];
+const MAX_PAGES = 10;
 
-const SAMPLE_PRODUCTS_BY_SECTOR = {
-  culinary: [
-    { id: "PRD-01", name: "Paket Juara 1 (Nasi + Ayam Geprek + Es Teh)", sku: "GPK-JUR-01", category: "Paket Hemat", price: 22000, hpp: 12000, stock: 150, lowStock: 20, variants: ["Pedas Sedang", "Pedas Ekstra"], active: true },
-    { id: "PRD-02", name: "Ayam Geprek Mozzarella Leleh", sku: "GPK-MOZ-02", category: "Menu Spesial", price: 26000, hpp: 15000, stock: 80, lowStock: 10, variants: ["Level 1", "Level 2", "Level 3"], active: true },
-    { id: "PRD-03", name: "Ayam Geprek Sambal Matah Bali", sku: "GPK-MTH-03", category: "Menu Utama", price: 21000, hpp: 11000, stock: 100, lowStock: 15, variants: ["Original", "Pedas"], active: true },
-    { id: "PRD-04", name: "Kulit Ayam Crispy Juara", sku: "GPK-KLT-04", category: "Side Dish", price: 14000, hpp: 6000, stock: 120, lowStock: 20, variants: ["Original", "Pedas Gurih"], active: true },
-    { id: "PRD-05", name: "Es Teh Manis Jumbo Melati", sku: "GPK-DMN-05", category: "Minuman", price: 5000, hpp: 1500, stock: 300, lowStock: 30, variants: ["Manis Sedang", "Less Sugar"], active: true },
-  ],
-  fashion: [
-    { id: "PRD-01", name: "Kemeja Batik Tulis Sutra Solo Premium", sku: "BTK-SLK-01", category: "Pria", price: 650000, hpp: 380000, stock: 42, lowStock: 5, variants: ["M", "L", "XL"], active: true },
-    { id: "PRD-02", name: "Dress Tunik Katun Primisima Parang", sku: "BTK-DMS-02", category: "Wanita", price: 320000, hpp: 160000, stock: 85, lowStock: 10, variants: ["S", "M", "L", "XL"], active: true },
-    { id: "PRD-03", name: "Sarung Batik Tulis Motif Mega Mendung", sku: "BTK-SAR-03", category: "Unisex", price: 250000, hpp: 125000, stock: 18, lowStock: 5, variants: ["Standard"], active: true },
-  ],
-  skincare: [
-    { id: "PRD-01", name: "Lumiere Brightening Glow Serum 30ml", sku: "SKN-GLW-01", category: "Serum", price: 185000, hpp: 75000, stock: 120, lowStock: 15, variants: ["30ml"], active: true },
-    { id: "PRD-02", name: "Gentle Facial Cleanser Hyaluronic Acid 100ml", sku: "SKN-CLN-02", category: "Cleanser", price: 95000, hpp: 38000, stock: 90, lowStock: 10, variants: ["100ml"], active: true },
-  ],
-  retail: [
-    { id: "PRD-01", name: "Produk Unggulan Toko Premium", sku: "KLZ-PRD-01", category: "Kategori Utama", price: 150000, hpp: 85000, stock: 50, lowStock: 10, variants: ["Standard", "Deluxe"], active: true },
-    { id: "PRD-02", name: "Paket Starter Bundling Hemat", sku: "KLZ-PRD-02", category: "Paket Promo", price: 275000, hpp: 150000, stock: 35, lowStock: 5, variants: ["Set A", "Set B"], active: true },
-  ],
+// Persona text the owner can edit. Provider keys / models are NOT here: those live on the server.
+export const DEFAULT_PERSONA = {
+  botName: "",
+  tone: "Ramah, santun, dan solutif",
+  greetingMessage: "",
+  abandonedMessage: "",
+  customFaqKeywords: "",
+  voiceAccent: "Bahasa Indonesia Standar (Aksen Ramah)",
+  voiceGender: "Female (Putri)",
 };
 
-function getStarterProductsForUser(user) {
-  if (!user) return SAMPLE_PRODUCTS_BY_SECTOR.retail;
-  const name = (user.institutionName || user.name || "").toLowerCase();
-  const sector = (user.sector || "").toLowerCase();
-  if (name.includes("geprek") || name.includes("kuliner") || sector.includes("kuliner") || sector.includes("f&b")) {
-    return SAMPLE_PRODUCTS_BY_SECTOR.culinary;
+/** Walk a paginated list endpoint, newest first, up to MAX_PAGES pages. */
+async function fetchAll(path, query = {}) {
+  const items = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const res = await api.get(path, { query: { ...query, page, limit: 100 } });
+    items.push(...(res.items || []));
+    if (!res.pagination?.hasNextPage) break;
   }
-  if (name.includes("batik") || name.includes("fashion") || sector.includes("fashion") || sector.includes("pakaian")) {
-    return SAMPLE_PRODUCTS_BY_SECTOR.fashion;
-  }
-  if (name.includes("skin") || name.includes("lumiere") || sector.includes("kecantikan") || sector.includes("skincare")) {
-    return SAMPLE_PRODUCTS_BY_SECTOR.skincare;
-  }
-  return SAMPLE_PRODUCTS_BY_SECTOR.retail;
+  return items;
 }
 
-const initialProducts = [];
-const initialOrders = [];
-const initialLeads = [];
-const initialTeam = [];
-
-const initialSubscriptions = [
-  {
-    id: "SUB-101",
-    institutionId: "INST-001",
-    institutionName: "Toko Bisnis Utama",
-    plan: "Pro Growth",
-    pricePerMonth: 499000,
-    csSeats: 5,
-    csSeatsUsed: 1,
-    tokenQuota: "200,000 / bln",
-    aiEngine: "NVIDIA NIM (Llama 3.3 70B)",
-    startDate: "17 Sep 2026",
-    expiryDate: "17 Sep 2027",
-    daysLeft: 365,
-    status: "active",
-    billingCycle: "Tahunan",
-  },
-];
-
-// Full Enterprise AI Configuration Schema
-const initialAiConfig = {
-  // Primary AI Engine & Credentials (Prioritas Utama: NVIDIA NIM)
-  primaryProvider: "nvidia", // nvidia | openai | anthropic | gemini | openrouter | custom
-  primaryApiKey: "nvapi-klozer-enterprise-prod-9821849102",
-  primaryBaseUrl: "https://integrate.api.nvidia.com/v1",
-  primaryModelName: "meta/llama-3.3-70b-instruct",
-  
-  // Fallback Engine & Resilience
-  fallbackProvider: "openrouter",
-  fallbackApiKey: "sk-or-v1-84910294819204819204",
-  fallbackBaseUrl: "https://openrouter.ai/api/v1",
-  fallbackModelName: "gpt-4o-mini",
-  enableFallback: true,
-
-  // Speech Engines (STT & TTS)
-  sttEngine: "whisper-large-v3",
-  sttEndpoint: "https://api.openai.com/v1/audio/transcriptions",
-  sttApiKey: "sk-proj-98218491029481902481029481",
-  ttsEngine: "tts-1-hd",
-  ttsVoice: "nova",
-
-  // Security, Thresholds & Automations
-  ocrFraudThreshold: 85, // 0 - 100% confidence threshold
-  humanDelayMin: 2, // seconds
-  humanDelayMax: 4,
-  autoBankMutationCheck: true,
-  autoAbandonedFollowup: true,
-  webhookEndpoint: "https://api.klozer.id/v1/webhook/whatsapp",
-  webhookSecret: "whsec_klozer_981249810294",
-  
-  // SPV Persona & Operational Prompts
-  spvPersona: {
-    botName: "Klozer Assistant",
-    tone: "Ramah, Santun & Solutif (Bahasa Gaul/Sopan Online Shop)",
-    greetingMessage: "Halo kak! Terima kasih sudah menghubungi kami. Mau cari produk apa hari ini?",
-    voiceAccent: "Bahasa Indonesia Standar (Aksen Ramah)",
-    voiceGender: "Female (Putri)",
-    abandonedMessage: "Halo kak, apakah pesanan kemeja kemarin masih mau diproses? Stok tersisa sedikit lagi nih kak",
-    customFaqKeywords: "ongkir, transfer, cod, ready, ukuran, resi",
-  },
-};
-
 export function DashboardProvider({ children }) {
-  // Active Role: 'superadmin' | 'owner' | 'cs'
+  // booting: checking the stored session | anonymous: no valid session | ready: signed in
+  const [status, setStatus] = useState("booting");
   const [role, setRole] = useState("owner");
-  const [language, setLanguageState] = useState("id");
+  const [serverRole, setServerRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [institutions, setInstitutions] = useState(initialInstitutions);
-  const [products, setProducts] = useState(initialProducts);
-  const [orders, setOrders] = useState(initialOrders);
-  const [leads, setLeads] = useState(initialLeads);
-  const [teamMembers, setTeamMembers] = useState(initialTeam);
-  const [aiConfig, setAiConfig] = useState(initialAiConfig);
-  const [activeInstitutionId, setActiveInstitutionId] = useState("INST-001");
-  const [subscriptions, setSubscriptions] = useState(initialSubscriptions);
+  const [language, setLanguageState] = useState("id");
 
+  const [institutions, setInstitutions] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [aiConfig, setAiConfig] = useState({ spvPersona: DEFAULT_PERSONA });
+  const [whatsappStatus, setWhatsappStatus] = useState(null);
+  const [reportSummary, setReportSummary] = useState(null);
+  const [myPerformance, setMyPerformance] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
+  const [activeInstitutionId, setActiveInstitutionIdState] = useState(null);
+
+  const [dataLoading, setDataLoading] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  // Bumps whenever a chat message arrives, so the inbox can refetch the open conversation.
+  const [chatEvent, setChatEvent] = useState(null);
+
+  // Latest team list for handlers that run after await (kept in a ref so they never read a stale closure).
+  const teamRef = useRef([]);
+  useEffect(() => {
+    teamRef.current = teamMembers;
+  }, [teamMembers]);
+
+  const notify = useCallback((type, message) => setNotice({ type, message, at: Date.now() }), []);
+  const dismissNotice = useCallback(() => setNotice(null), []);
+
+  /** Run an API action; on failure show the server's message and resolve to null instead of throwing. */
+  const attempt = useCallback(
+    async (fn, { success, silent = false } = {}) => {
+      try {
+        const result = await fn();
+        if (success) notify("success", success);
+        return result;
+      } catch (err) {
+        if (!silent && err?.status !== 401) notify("error", err?.message || "Terjadi kesalahan.");
+        return null;
+      }
+    },
+    [notify]
+  );
+
+  // ---------------------------------------------------------------- language
   const setLanguage = (lang) => {
-    const validLang = lang === "en" ? "en" : "id";
-    setLanguageState(validLang);
+    const valid = lang === "en" ? "en" : "id";
+    setLanguageState(valid);
     try {
-      localStorage.setItem("klozer_language", validLang);
-    } catch (e) {}
+      window.localStorage.setItem("klozer_language", valid);
+    } catch {
+      // ignore
+    }
   };
-
   const t = (path, fallback) => getTranslation(language, path, fallback);
 
-  // Load from localStorage & backend on client mount
-  useEffect(() => {
-    try {
-      const savedLang = localStorage.getItem("klozer_language");
-      if (savedLang) setLanguageState(savedLang);
-      const savedToken = localStorage.getItem("klozer_token");
-      if (savedToken) setToken(savedToken);
-      const savedUser = localStorage.getItem("klozer_user");
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        setCurrentUser(parsed);
-        if (parsed.role) setRole(parsed.role);
-
-        if (parsed.institutionName) {
-          setInstitutions((prev) => {
-            const exists = prev.some((i) => i.name?.toLowerCase() === parsed.institutionName?.toLowerCase() || i.id === parsed.institutionId);
-            if (!exists) {
-              const newEntry = {
-                id: parsed.institutionId || `INST-${parsed.institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-                name: parsed.institutionName,
-                sector: parsed.sector || "Bisnis & Jasa",
-                owner: parsed.name,
-                email: parsed.email,
-                tier: "Pro Plan",
-                quotaUsed: 0,
-                quotaMax: 50000,
-                status: "active",
-                modules: { qris: true, voiceAi: true, antiFraud: true, metaCapi: true, multiCs: true },
-                joinedDate: "Hari ini",
-              };
-              return [newEntry, ...prev];
-            }
-            return prev;
-          });
-          setActiveInstitutionId(parsed.institutionId || `INST-${parsed.institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
-        }
-
-        // Clean Production Data Loading:
-        const tenantKey = `klozer_inst_${parsed.institutionId || parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "default"}`;
-        const savedPrd = localStorage.getItem(`${tenantKey}_products`) || localStorage.getItem("klozer_products");
-        if (savedPrd) {
-          try {
-            const parsedPrd = JSON.parse(savedPrd);
-            if (Array.isArray(parsedPrd) && parsedPrd.length > 0) {
-              setProducts(parsedPrd);
-            } else {
-              setProducts(getStarterProductsForUser(parsed));
-            }
-          } catch {
-            setProducts(getStarterProductsForUser(parsed));
-          }
-        } else {
-          setProducts(getStarterProductsForUser(parsed));
-        }
-        
-        const savedOrd = localStorage.getItem(`${tenantKey}_orders`) || localStorage.getItem("klozer_orders");
-        setOrders(savedOrd ? JSON.parse(savedOrd) : []);
-        
-        const savedLeads = localStorage.getItem(`${tenantKey}_leads`) || localStorage.getItem("klozer_leads");
-        setLeads(savedLeads ? JSON.parse(savedLeads) : []);
-        
-        const cleanSlug = parsed.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "") || "bisnis";
-        const defaultTeam = [
-          {
-            id: "USR-01",
-            name: parsed.name || "Owner Toko",
-            email: parsed.email || `owner@${cleanSlug}.id`,
-            role: parsed.role === "spv" ? "Owner / Supervisor" : parsed.role === "cs" ? "Customer Service Senior" : "Owner Toko",
-            status: "active",
-            csClosingRate: "0%",
-            revenueGen: "Rp 0",
-            phone: parsed.phone_number || "+62 812-xxxx-xxxx",
-            permissions: { qrisGenerate: true, voiceAiManage: true, mutationApproval: true, exportReports: true, productEdit: true },
-          },
-        ];
-        const savedTeam = localStorage.getItem(`${tenantKey}_team`) || localStorage.getItem("klozer_team");
-        setTeamMembers(savedTeam ? JSON.parse(savedTeam) : defaultTeam);
-
-        // Fetch Live Products from Backend API (Multi-Tenant Sync)
-        (async () => {
-          try {
-            const token = localStorage.getItem("klozer_token");
-            const instId = parsed.institutionId || (parsed.institutionName?.toLowerCase().includes("geprek") ? 4 : 1);
-            const res = await fetch(`${API_BASE_URL}/products?institutionId=${instId}`, {
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
-            });
-            if (res.ok) {
-              const resData = await res.json();
-              const items = resData.data || resData.products || resData.items;
-              if (Array.isArray(items) && items.length > 0) {
-                const formatted = items.map((p, idx) => ({
-                  id: p.id ? `PRD-0${p.id}` : `PRD-${idx + 1}`,
-                  name: p.name,
-                  sku: p.sku || `KLZ-PRD-0${idx + 1}`,
-                  category: p.category || "Umum",
-                  price: Number(p.selling_price || p.price || 0),
-                  hpp: Number(p.cost_price_hpp || p.hpp || 0),
-                  stock: Number(p.stock_quantity ?? p.stock ?? 0),
-                  lowStock: Number(p.low_stock_threshold || p.lowStock || 5),
-                  weight: Number(p.weight_in_grams || p.weight || 200),
-                  variants: Array.isArray(p.variants) ? p.variants : ["Standard"],
-                  active: Boolean(p.is_active ?? p.active ?? true),
-                }));
-                setProducts(formatted);
-                localStorage.setItem(`${tenantKey}_products`, JSON.stringify(formatted));
-                localStorage.setItem("klozer_products", JSON.stringify(formatted));
-              }
-            }
-          } catch (e) {}
-        })();
-      } else {
-        const savedRole = localStorage.getItem("klozer_role");
-        if (savedRole) setRole(savedRole);
-        const savedPrd = localStorage.getItem("klozer_products");
-        if (savedPrd) {
-          try {
-            setProducts(JSON.parse(savedPrd));
-          } catch {
-            setProducts(SAMPLE_PRODUCTS_BY_SECTOR.retail);
-          }
-        } else {
-          setProducts(SAMPLE_PRODUCTS_BY_SECTOR.retail);
-        }
-        const savedOrd = localStorage.getItem("klozer_orders");
-        if (savedOrd) setOrders(JSON.parse(savedOrd));
-        const savedLeads = localStorage.getItem("klozer_leads");
-        if (savedLeads) setLeads(JSON.parse(savedLeads));
-        const savedTeam = localStorage.getItem("klozer_team");
-        if (savedTeam) setTeamMembers(JSON.parse(savedTeam));
-      }
-      const savedInst = localStorage.getItem("klozer_institutions");
-      let currentInst = savedInst ? JSON.parse(savedInst) : initialInstitutions;
-
-      // If user has a registered institution name, ensure it is included
-      const savedUserStr = localStorage.getItem("klozer_user");
-      const loggedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-      if (loggedUser && loggedUser.institutionName) {
-        const exists = currentInst.some(
-          (i) => i.name?.toLowerCase() === loggedUser.institutionName.toLowerCase()
-        );
-        if (!exists) {
-          currentInst.push({
-            id: loggedUser.institutionId || `INST-00${currentInst.length + 1}`,
-            name: loggedUser.institutionName,
-            sector: loggedUser.sector || "Bisnis Terverifikasi",
-            owner: loggedUser.name,
-            email: loggedUser.email,
-            phone: "+62 812-xxxx-xxxx",
-            tier: "Pro Plan",
-            quotaUsed: 0,
-            quotaMax: 50000,
-            status: "active",
-            modules: {
-              personaAi: true,
-              autoLabel: true,
-              printReceipt: true,
-              baileys: true,
-              instagram: true,
-              csBlast: true,
-              publicBooking: true,
-              stockManagement: true,
-              picFeature: true,
-              qris: true,
-              voiceAi: true,
-              antiFraud: true,
-              metaCapi: true,
-              multiCs: true,
-            },
-            joinedDate: "Hari ini",
-          });
-        }
-      }
-
-      setInstitutions(currentInst);
-      try {
-        localStorage.setItem("klozer_institutions", JSON.stringify(currentInst));
-      } catch {}
-
-      // Realtime fetch from backend API
-      (async () => {
-        try {
-          const token = localStorage.getItem("klozer_token");
-          if (token) {
-            const res = await fetch(`${API_BASE_URL}/institutions`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-              const resData = await res.json();
-              if (resData.success && Array.isArray(resData.items) && resData.items.length > 0) {
-                setInstitutions((prev) => {
-                  const merged = [...prev];
-                  resData.items.forEach((backendInst) => {
-                    const idx = merged.findIndex(
-                      (m) => m.name.toLowerCase() === backendInst.name.toLowerCase() || m.id === `INST-00${backendInst.id}`
-                    );
-                    const formatted = {
-                      id: `INST-00${backendInst.id}`,
-                      name: backendInst.name,
-                      sector: backendInst.sector || "Bisnis & Jasa",
-                      owner: backendInst.name === "Geprek Juara" ? "SPV - Geprek Juara" : (backendInst.owner || backendInst.email?.split("@")[0] || "Owner"),
-                      email: backendInst.email,
-                      phone: backendInst.phone_number || "+62 812-xxxx-xxxx",
-                      tier: (backendInst.subscription_tier || "pro").toUpperCase() === "ENTERPRISE" ? "Enterprise" : "Pro Plan",
-                      quotaUsed: backendInst.blast_credit_quota || 3200,
-                      quotaMax: 50000,
-                      status: backendInst.is_active ? "active" : "inactive",
-                      modules: backendInst.features_json || {
-                        personaAi: true,
-                        autoLabel: true,
-                        printReceipt: true,
-                        baileys: true,
-                        instagram: true,
-                        csBlast: true,
-                        publicBooking: true,
-                        stockManagement: true,
-                        picFeature: true,
-                        qris: true,
-                        voiceAi: true,
-                        antiFraud: true,
-                        metaCapi: true,
-                        multiCs: true,
-                      },
-                      joinedDate: backendInst.created_at ? new Date(backendInst.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "Hari ini",
-                    };
-                    if (idx >= 0) {
-                      merged[idx] = { ...merged[idx], ...formatted };
-                    } else {
-                      merged.push(formatted);
-                    }
-                  });
-                  try {
-                    localStorage.setItem("klozer_institutions", JSON.stringify(merged));
-                  } catch {}
-                  return merged;
-                });
-              }
-            }
-          }
-        } catch (e) {}
-      })();
-      const savedAi = localStorage.getItem("klozer_ai_config");
-      if (savedAi) {
-        try {
-          const parsedAi = JSON.parse(savedAi);
-          setAiConfig((prev) => ({
-            ...prev,
-            ...parsedAi,
-            spvPersona: {
-              ...(prev.spvPersona || {}),
-              ...(parsedAi.spvPersona || {}),
-            },
-          }));
-        } catch (err) {}
-      }
-      const savedSubs = localStorage.getItem("klozer_subscriptions");
-      if (savedSubs) {
-        try {
-          setSubscriptions(JSON.parse(savedSubs));
-        } catch (err) {}
-      }
-    } catch (e) {
-      console.warn("Storage sync failed:", e);
-    }
+  // ---------------------------------------------------------------- session
+  const resetData = useCallback(() => {
+    setInstitutions([]);
+    setProducts([]);
+    setOrders([]);
+    setLeads([]);
+    setTeamMembers([]);
+    setAiConfig({ spvPersona: DEFAULT_PERSONA });
+    setWhatsappStatus(null);
+    setReportSummary(null);
+    setMyPerformance(null);
+    setTokenBalance(null);
+    setActiveInstitutionIdState(null);
+    setNotifications([]);
   }, []);
 
-  const getTenantStorageKey = () => {
-    try {
-      const stored = typeof window !== "undefined" ? localStorage.getItem("klozer_user") : null;
-      const user = currentUser || (stored ? JSON.parse(stored) : null);
-      if (!user) return null;
-      const isDefault = (user.institutionName || "").toLowerCase() === "batik mahakarya solo";
-      if (isDefault || user.role === "superadmin") return null;
-      return `klozer_inst_${user.institutionId || user.institutionName?.toLowerCase().replace(/[^a-z0-9]+/g, "")}`;
-    } catch {
-      return null;
-    }
-  };
-
-  const saveToStorage = (key, data) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-      const tKey = getTenantStorageKey();
-      if (tKey && key.startsWith("klozer_")) {
-        const subKey = key.replace("klozer_", "");
-        localStorage.setItem(`${tKey}_${subKey}`, JSON.stringify(data));
+  const endSession = useCallback(
+    ({ redirect = true, expired = false } = {}) => {
+      clearSession();
+      setCurrentUser(null);
+      setServerRole(null);
+      resetData();
+      setStatus("anonymous");
+      if (redirect && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.assign(expired ? "/login?expired=1" : "/login");
       }
-    } catch (e) {
-      console.warn("Storage save failed:", e);
-    }
-  };
+    },
+    [resetData]
+  );
 
-  const handleSetRole = (newRole) => {
-    setRole(newRole);
-    try {
-      localStorage.setItem("klozer_role", newRole);
-    } catch (e) {}
-  };
+  useEffect(() => {
+    setUnauthorizedHandler(() => endSession({ expired: true }));
+    return () => setUnauthorizedHandler(null);
+  }, [endSession]);
 
-  const loginUser = async (email, password) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Login gagal.");
+  // ---------------------------------------------------------------- realtime (Socket.io)
+  const pushNotification = useCallback((item) => {
+    setNotifications((prev) => [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, read: false, at: Date.now(), ...item }, ...prev].slice(0, 30));
+  }, []);
+
+  useEffect(() => {
+    if (status !== "ready") return undefined;
+
+    // The server puts this socket in the caller's own tenant room; there is nothing to choose client-side.
+    const socket = io(SERVER_BASE_URL || undefined, { path: "/socket.io", withCredentials: true, transports: ["polling", "websocket"], reconnectionDelayMax: 15000 });
+
+    socket.on("chat:message", (evt) => {
+      setChatEvent({ leadId: evt.leadId, at: Date.now() });
+      if (evt.direction === "inbound") {
+        pushNotification({
+          type: "chat",
+          title: "Pesan baru dari pelanggan",
+          desc: evt.messageType && evt.messageType !== "text" ? "Pelanggan mengirim lampiran." : String(evt.text || "").slice(0, 140),
+          link: "/dashboard/chat",
+        });
       }
-      setToken(data.token);
-      setCurrentUser(data.user);
-      setRole(data.user.role);
-      localStorage.setItem("klozer_token", data.token);
-      localStorage.setItem("klozer_user", JSON.stringify(data.user));
-      localStorage.setItem("klozer_role", data.user.role);
-      return data;
-    } catch (err) {
-      // Fallback local mock login
-      const mockRole = email.includes("superadmin") ? "superadmin" : email.includes("cs") ? "cs" : "owner";
-      const namePart = email.split("@")[0] || "User";
-      const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-      const mockUser = {
-        id: mockRole === "superadmin" ? 1 : mockRole === "owner" ? 2 : 3,
-        name: mockRole === "superadmin" ? "Platform Superadmin" : `${cleanName} (Owner)`,
-        email,
-        role: mockRole,
-        institutionName: mockRole === "superadmin" ? "Platform Klozer" : `Toko ${cleanName}`,
+    });
+    socket.on("chat:needs_human", (evt) => {
+      const reasons = {
+        non_text_message: "Pelanggan mengirim gambar/suara. AI tidak membalas lampiran.",
+        token_quota_exhausted: "Kuota token AI habis, percakapan perlu dibalas manual.",
+        llm_unavailable: "AI sedang tidak tersedia, percakapan perlu dibalas manual.",
+        human_escalation: "AI mendeteksi percakapan yang perlu ditangani manusia.",
       };
-      setCurrentUser(mockUser);
-      setRole(mockRole);
-      localStorage.setItem("klozer_user", JSON.stringify(mockUser));
-      localStorage.setItem("klozer_role", mockRole);
-      return { success: true, user: mockUser };
-    }
-  };
+      pushNotification({ type: "security", title: "Butuh penanganan CS", desc: reasons[evt.reason] || "Percakapan ini perlu dibalas manual.", link: "/dashboard/chat" });
+    });
 
-  const registerUser = async (regData) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(regData),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Pendaftaran gagal.");
-      }
-      return data;
-    } catch (err) {
-      return {
-        success: true,
-        credentialsBundle: {
-          institutionName: regData.institutionName,
-          loginUrl: "/login",
-          email: regData.email,
-          temporaryPassword: "Pass" + Math.floor(1000 + Math.random() * 9000) + "!",
-          role: "Owner / Supervisor",
-        },
-      };
-    }
-  };
-
-  const logoutUser = () => {
-    setToken(null);
-    setCurrentUser(null);
-    try {
-      localStorage.removeItem("klozer_token");
-      localStorage.removeItem("klozer_user");
-      localStorage.removeItem("klozer_role");
-    } catch (e) {}
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-  };
-
-  // ==================== CRUD: INSTITUTIONS ====================
-  const addInstitution = (newInst) => {
-    const id = `INST-00${institutions.length + 1}`;
-    const entry = {
-      ...newInst,
-      id,
-      quotaUsed: 0,
-      joinedDate: "Hari ini",
-      status: "active",
-      modules: {
-        qris: true,
-        voiceAi: true,
-        antiFraud: true,
-        metaCapi: true,
-        multiCs: true,
-        ...newInst.modules,
-      },
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
     };
-    const updated = [entry, ...institutions];
-    setInstitutions(updated);
-    saveToStorage("klozer_institutions", updated);
+  }, [status, pushNotification]);
 
-    // Sync to backend if token exists
-    (async () => {
-      try {
-        const token = localStorage.getItem("klozer_token");
-        if (token) {
-          await fetch(`${API_BASE_URL}/institutions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              name: newInst.name,
-              sector: newInst.sector,
-              email: newInst.email,
-              phone_number: newInst.phone,
-              features: newInst.modules,
-            }),
-          });
-        }
-      } catch (err) {}
-    })();
+  const markNotificationRead = (id) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const markAllNotificationsRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
-    return entry;
+  // ---------------------------------------------------------------- data loading
+  const loadInstitutions = useCallback(async (user) => {
+    const list = user.role === "superadmin" ? await fetchAll("/institutions") : (await api.get("/institutions")).items;
+    setInstitutions((list || []).map(institutionFromApi));
+  }, []);
+
+  const loadTeam = useCallback(async (user) => {
+    if (!["owner", "supervisor", "finance", "superadmin"].includes(user.role)) {
+      setTeamMembers([]);
+      return;
+    }
+    const [users, report] = await Promise.all([
+      api.get("/users"),
+      REPORT_ROLES.includes(user.role) ? api.get("/reports/summary").catch(() => null) : Promise.resolve(null),
+    ]);
+    const perf = new Map((report?.data?.csPerformance || []).map((p) => [p.id, p]));
+    setTeamMembers((users.items || []).map((u) => teamMemberFromApi(u, perf.get(u.id))));
+  }, []);
+
+  const loadPersona = useCallback(async () => {
+    const res = await api.get("/ai/persona");
+    setAiConfig((prev) => ({ ...prev, spvPersona: { ...DEFAULT_PERSONA, ...(res.persona || {}) } }));
+  }, []);
+
+  /** Everything tenant-scoped. Each source fails independently so one bad endpoint does not blank the dashboard. */
+  const loadTenantData = useCallback(
+    async (user) => {
+      setDataLoading(true);
+      const results = await Promise.allSettled([
+        fetchAll("/products").then((rows) => setProducts(rows.map(productFromApi))),
+        user.role === "pic_warehouse" ? Promise.resolve() : fetchAll("/leads").then((rows) => setLeads(rows.map(leadFromApi))),
+        fetchAll("/orders").then((rows) => setOrders(rows.map(orderFromApi))),
+        loadTeam(user),
+        loadPersona(),
+        REPORT_ROLES.includes(user.role) ? api.get("/reports/summary").then((r) => setReportSummary(r.data)) : Promise.resolve(),
+        user.role === "cs" ? api.get("/reports/my-performance").then((r) => setMyPerformance(r.data)) : Promise.resolve(),
+        api.get("/whatsapp/status").then((s) => setWhatsappStatus(s)),
+        api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)),
+      ]);
+      const failed = results.filter((r) => r.status === "rejected" && r.reason?.status !== 403 && r.reason?.status !== 401);
+      if (failed.length) notify("error", `Sebagian data gagal dimuat: ${failed[0].reason?.message || "kesalahan jaringan"}`);
+      setDataLoading(false);
+    },
+    [loadTeam, loadPersona, notify]
+  );
+
+  const applyUser = useCallback((user, institution) => {
+    const mapped = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone_number: user.phone_number,
+      institutionId: user.institutionId,
+      institutionName: user.institutionName ?? institution?.name,
+      institutionMode: user.institutionMode ?? institution?.mode,
+      sector: user.sector ?? institution?.sector,
+    };
+    cacheUser(mapped);
+    setCurrentUser(mapped);
+    setServerRole(mapped.role);
+    setRole(uiRoleFor(mapped.role));
+    return mapped;
+  }, []);
+
+  const bootstrap = useCallback(async () => {
+    const cached = readCachedUser();
+    if (cached) {
+      setCurrentUser(cached);
+      setRole(uiRoleFor(cached.role));
+      setServerRole(cached.role);
+    }
+    try {
+      // auth:false: a visitor who was never signed in should see the login page, not "session expired".
+      const me = await api.get("/auth/me", { auth: false });
+      const user = applyUser(me.user, me.institution);
+      const acting = getActingTenant();
+      if (acting && user.role === "superadmin") setActiveInstitutionIdState(`INST-${String(acting).padStart(3, "0")}`);
+      setStatus("ready");
+      await Promise.all([loadInstitutions(user), loadTenantData(user)]);
+    } catch (err) {
+      if (err?.status === 401) {
+        endSession({ redirect: true, expired: Boolean(cached) });
+        return;
+      }
+      setStatus(cached ? "ready" : "anonymous");
+      notify("error", err?.message || "Gagal memuat sesi.");
+    }
+  }, [applyUser, endSession, loadInstitutions, loadTenantData, notify]);
+
+  // Hydrate from browser storage and the API once on mount. This is synchronising with external
+  // systems (localStorage, network), which is what effects are for.
+  useEffect(() => {
+    try {
+      const savedLang = window.localStorage.getItem("klozer_language");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (savedLang === "en" || savedLang === "id") setLanguageState(savedLang);
+    } catch {
+      // ignore
+    }
+    bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    if (!currentUser) return;
+    await Promise.all([loadInstitutions(currentUser), loadTenantData(currentUser)]);
+  }, [currentUser, loadInstitutions, loadTenantData]);
+
+  const refreshLeads = useCallback(async () => {
+    const rows = await fetchAll("/leads");
+    setLeads(rows.map(leadFromApi));
+  }, []);
+
+  const refreshOrders = useCallback(async () => {
+    const rows = await fetchAll("/orders");
+    setOrders(rows.map(orderFromApi));
+  }, []);
+
+  // ---------------------------------------------------------------- auth actions
+  const loginUser = async (email, password) => {
+    const data = await api.post("/auth/login", { email, password }, { auth: false });
+    const user = applyUser(data.user, data.institution);
+    setStatus("ready");
+    loadInstitutions(user).catch(() => {});
+    loadTenantData(user);
+    return data;
   };
+
+  const registerUser = (regData) => api.post("/auth/register", regData, { auth: false });
+
+  const logoutUser = async () => {
+    // Ask the server to clear the httpOnly cookie; sign out locally even if that request fails.
+    await api.post("/auth/logout", undefined, { auth: false }).catch(() => {});
+    endSession({ redirect: true });
+  };
+
+  const changePassword = (currentPassword, newPassword) =>
+    attempt(
+      async () => {
+        // the server replaces the session cookie; other devices are signed out
+        return api.post("/auth/change-password", { currentPassword, newPassword });
+      },
+      { success: "Password berhasil diubah." }
+    );
+
+  // ---------------------------------------------------------------- acting tenant (superadmin)
+  const setActiveInstitutionId = (id) => {
+    if (serverRole !== "superadmin") return; // everyone else is pinned to their own tenant by the server
+    const dbId = toDbId(id);
+    setActingTenant(dbId && dbId !== currentUser?.institutionId ? dbId : null);
+    setActiveInstitutionIdState(id);
+    if (currentUser) loadTenantData(currentUser);
+  };
+
+  // ---------------------------------------------------------------- institutions
+  const addInstitution = (newInst) =>
+    attempt(
+      async () => {
+        const res = await api.post("/institutions", {
+          name: newInst.name,
+          mode: newInst.mode === "ngo" ? "ngo" : "business",
+          sector: newInst.sector,
+          email: newInst.email,
+          phone_number: newInst.phone,
+          address: newInst.address,
+          features: newInst.modules,
+        });
+        const entry = institutionFromApi({ ...res.data, owner_name: newInst.owner || null });
+        setInstitutions((prev) => [entry, ...prev]);
+        return { ...entry, credentialsBundle: res.credentialsBundle };
+      },
+      { success: "Instansi berhasil dibuat." }
+    );
 
   const updateInstitution = (id, fields) => {
-    const updated = institutions.map((item) =>
-      item.id === id ? { ...item, ...fields } : item
+    const dbId = toDbId(id);
+    if (!dbId) return Promise.resolve(null);
+    return attempt(
+      async () => {
+        const res = await api.put(`/institutions/${dbId}`, institutionToApi(fields, { superadmin: serverRole === "superadmin" }));
+        const entry = institutionFromApi({ ...res.data, owner_name: fields.owner });
+        setInstitutions((prev) => prev.map((i) => (i.dbId === dbId ? { ...i, ...entry, owner: i.owner } : i)));
+        if (fields.language && dbId === currentUser?.institutionId) setLanguage(fields.language);
+        return entry;
+      },
+      { success: "Instansi berhasil diperbarui." }
     );
-    setInstitutions(updated);
-    saveToStorage("klozer_institutions", updated);
-
-    // If language is updated on the active institution, immediately synchronize dashboard language
-    if (fields.language) {
-      setLanguage(fields.language);
-    }
-
-    // Sync to backend if token exists
-    (async () => {
-      try {
-        const token = localStorage.getItem("klozer_token");
-        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10) || 1;
-        if (token) {
-          await fetch(`${API_BASE_URL}/institutions/${numericId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(fields),
-          });
-        }
-      } catch (err) {}
-    })();
-  };
-
-  // Reset Institution Owner Password Action
-  const resetInstitutionPassword = async (instId, newPassword) => {
-    const targetInst = institutions.find((i) => i.id === instId);
-    try {
-      const token = localStorage.getItem("klozer_token");
-      const numericId = parseInt(String(instId).replace(/[^0-9]/g, ""), 10) || 1;
-      const res = await fetch(`${API_BASE_URL}/institutions/${numericId}/reset-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ newPassword }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        return data;
-      }
-      throw new Error(data.message || "Gagal mereset password di server.");
-    } catch (err) {
-      // Local fallback mock
-      const generatedPass = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : `Klozer${Math.floor(1000 + Math.random() * 9000)}!`;
-      return {
-        success: true,
-        message: `Kata sandi akun owner ${targetInst?.name || "instansi"} berhasil di-reset!`,
-        credentials: {
-          institutionName: targetInst?.name || "Instansi",
-          email: targetInst?.email || "owner@klozer.id",
-          newPassword: generatedPass,
-          role: "Owner / Supervisor",
-        },
-      };
-    }
   };
 
   const toggleInstitutionModule = (instId, moduleKey) => {
-    const updated = institutions.map((item) => {
-      if (item.id === instId) {
-        return {
-          ...item,
-          modules: {
-            ...item.modules,
-            [moduleKey]: !item.modules[moduleKey],
-          },
-        };
-      }
-      return item;
+    const target = institutions.find((i) => i.id === instId);
+    if (!target) return Promise.resolve(null);
+    const next = !target.modules[moduleKey];
+    return attempt(async () => {
+      const res = await api.put(`/institutions/${target.dbId}`, { features: { [moduleKey]: next } });
+      setInstitutions((prev) => prev.map((i) => (i.id === instId ? { ...i, modules: { ...DEFAULT_MODULES, ...res.data.features_json } } : i)));
+      return res;
     });
-    setInstitutions(updated);
-    saveToStorage("klozer_institutions", updated);
   };
 
   const deleteInstitution = (id) => {
-    const updated = institutions.filter((item) => item.id !== id);
-    setInstitutions(updated);
-    saveToStorage("klozer_institutions", updated);
+    const dbId = toDbId(id);
+    return attempt(
+      async () => {
+        await api.delete(`/institutions/${dbId}`);
+        setInstitutions((prev) => prev.map((i) => (i.dbId === dbId ? { ...i, status: "inactive" } : i)));
+        return true;
+      },
+      { success: "Instansi dinonaktifkan. Data tetap tersimpan." }
+    );
   };
 
-  // ==================== CRUD: PRODUCTS ====================
-  const addProduct = (prd) => {
-    const id = `PRD-0${products.length + 1}`;
-    const entry = {
-      ...prd,
-      id,
-      sku: prd.sku || `KLZ-PRD-0${products.length + 1}`,
-      active: true,
-      variants: prd.variants && prd.variants.length ? prd.variants : ["Standard"],
-    };
-    const updated = [entry, ...products];
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
-
-    // Sync to backend if token exists
-    (async () => {
-      try {
-        const token = localStorage.getItem("klozer_token");
-        if (token) {
-          await fetch(`${API_BASE_URL}/products`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              sku: entry.sku,
-              name: entry.name,
-              category: entry.category,
-              selling_price: entry.price,
-              cost_price_hpp: entry.hpp,
-              stock_quantity: entry.stock,
-              weight_in_grams: entry.weight || 200,
-              description: entry.description || "",
-            }),
-          });
-        }
-      } catch (err) {}
-    })();
-
-    return entry;
+  const resetInstitutionPassword = async (instId, newPassword) => {
+    const dbId = toDbId(instId);
+    const res = await api.post(`/institutions/${dbId}/reset-password`, newPassword ? { newPassword } : {});
+    return res;
   };
+
+  // ---------------------------------------------------------------- products
+  const addProduct = (prd) =>
+    attempt(
+      async () => {
+        const body = productToApi({ ...prd, sku: prd.sku || `SKU-${Date.now().toString(36).toUpperCase()}` });
+        const res = await api.post("/products", body);
+        const entry = productFromApi(res.data);
+        setProducts((prev) => [entry, ...prev]);
+        return entry;
+      },
+      { success: "Produk ditambahkan." }
+    );
 
   const updateProduct = (id, fields) => {
-    const updated = products.map((p) => (p.id === id ? { ...p, ...fields } : p));
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
-
-    // Sync to backend if token exists
-    (async () => {
-      try {
-        const token = localStorage.getItem("klozer_token");
-        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10);
-        if (token && numericId) {
-          await fetch(`${API_BASE_URL}/products/${numericId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              name: fields.name,
-              sku: fields.sku,
-              category: fields.category,
-              selling_price: fields.price,
-              cost_price_hpp: fields.hpp,
-              stock_quantity: fields.stock,
-              is_active: fields.active !== undefined ? (fields.active ? 1 : 0) : undefined,
-            }),
-          });
-        }
-      } catch (err) {}
-    })();
+    const dbId = toDbId(id);
+    return attempt(async () => {
+      const res = await api.put(`/products/${dbId}`, productToApi(fields));
+      const entry = productFromApi(res.data);
+      setProducts((prev) => prev.map((p) => (p.dbId === dbId ? { ...p, ...entry } : p)));
+      return entry;
+    });
   };
 
+  const updateProductStock = (id, stock) => updateProduct(id, { stock });
+
   const toggleProductStatus = (id) => {
-    const updated = products.map((p) => (p.id === id ? { ...p, active: !p.active } : p));
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
+    const current = products.find((p) => p.id === id || p.dbId === toDbId(id));
+    return current ? updateProduct(id, { active: !current.active }) : Promise.resolve(null);
   };
 
   const deleteProduct = (id) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
-
-    // Sync to backend if token exists
-    (async () => {
-      try {
-        const token = localStorage.getItem("klozer_token");
-        const numericId = parseInt(String(id).replace(/[^0-9]/g, ""), 10);
-        if (token && numericId) {
-          await fetch(`${API_BASE_URL}/products/${numericId}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        }
-      } catch (err) {}
-    })();
+    const dbId = toDbId(id);
+    return attempt(
+      async () => {
+        await api.delete(`/products/${dbId}`);
+        setProducts((prev) => prev.filter((p) => p.dbId !== dbId));
+        return true;
+      },
+      { success: "Produk dihapus." }
+    );
   };
 
-  const loadTemplateProducts = (sector = "auto") => {
-    let templateList = SAMPLE_PRODUCTS_BY_SECTOR.retail;
-    const cleanSec = (sector || "").toLowerCase();
-    if (cleanSec.includes("culinary") || cleanSec.includes("kuliner") || cleanSec.includes("f&b")) {
-      templateList = SAMPLE_PRODUCTS_BY_SECTOR.culinary;
-    } else if (cleanSec.includes("fashion") || cleanSec.includes("pakaian")) {
-      templateList = SAMPLE_PRODUCTS_BY_SECTOR.fashion;
-    } else if (cleanSec.includes("skincare") || cleanSec.includes("kecantikan")) {
-      templateList = SAMPLE_PRODUCTS_BY_SECTOR.skincare;
-    } else {
-      templateList = getStarterProductsForUser(currentUser || activeInstitution);
+  /** Bulk import (Excel/CSV). SKU is the key: existing SKUs are updated. "replace" deactivates SKUs missing from the file. */
+  const importProducts = (newItems, mode = "append") =>
+    attempt(
+      async () => {
+        const items = newItems.map((p, idx) => ({
+          sku: String(p.sku || `IMP-${Date.now().toString(36)}-${idx}`).trim(),
+          name: p.name,
+          category: p.category || undefined,
+          description: p.description || undefined,
+          selling_price: Number(p.price) || 0,
+          cost_price_hpp: Number(p.hpp) || 0,
+          stock_quantity: Math.max(0, Math.trunc(Number(p.stock) || 0)),
+          low_stock_threshold: Math.max(0, Math.trunc(Number(p.lowStock) || 5)),
+          weight_in_grams: Math.max(0, Math.trunc(Number(p.weight) || 200)),
+        }));
+        const res = await api.post("/products/bulk", { items, mode: mode === "replace" ? "replace" : "upsert" });
+        const rows = await fetchAll("/products");
+        const mapped = rows.map(productFromApi);
+        setProducts(mapped);
+        notify("success", `Impor selesai: ${res.created} baru, ${res.updated} diperbarui${res.deactivated ? `, ${res.deactivated} dinonaktifkan` : ""}.`);
+        return mapped;
+      },
+      { silent: false }
+    );
+
+  /** Absolute stock levels from a spreadsheet; rows are matched by SKU, then by name. */
+  const importStock = (stockList) =>
+    attempt(async () => {
+      const byName = new Map(products.map((p) => [String(p.name).trim().toLowerCase(), p.sku]));
+      const items = stockList
+        .map((s) => ({
+          sku: s.sku ? String(s.sku).trim() : byName.get(String(s.name || "").trim().toLowerCase()),
+          stock_quantity: Math.max(0, Math.trunc(Number(s.newStock) || 0)),
+        }))
+        .filter((s) => s.sku);
+      if (!items.length) {
+        notify("error", "Tidak ada baris yang cocok dengan SKU atau nama produk.");
+        return products;
+      }
+      const res = await api.post("/products/stock", { items });
+      const rows = await fetchAll("/products");
+      const mapped = rows.map(productFromApi);
+      setProducts(mapped);
+      notify("success", `${res.updated} stok diperbarui${res.unknownSkus.length ? `, ${res.unknownSkus.length} SKU tidak dikenal` : ""}.`);
+      return mapped;
+    });
+
+  /** Creates the sector's sample catalogue as real products (explicit user action, never automatic). */
+  const loadTemplateProducts = (sector = "auto") =>
+    importProducts(templateForSector(sector === "auto" ? activeInstitution?.sector || currentUser?.sector : sector), "append");
+
+  // ---------------------------------------------------------------- orders
+  const PAYMENT_CHAIN = ["paid", "processing", "shipped", "delivered", "completed"];
+
+  /** Move an order forward step by step to `target`, stopping (with a message) at the first step the server refuses. */
+  const advanceOrder = async (dbId, from, target) => {
+    const start = from === "waiting_payment" ? -1 : PAYMENT_CHAIN.indexOf(from);
+    const end = PAYMENT_CHAIN.indexOf(target);
+    for (let i = start + 1; i <= end; i++) {
+      await api.patch(`/orders/${dbId}/status`, { status: PAYMENT_CHAIN[i] });
     }
-    setProducts(templateList);
-    saveToStorage("klozer_products", templateList);
-    return templateList;
   };
 
-  const importProducts = (newItems, mode = "append") => {
-    const formatted = newItems.map((prd, idx) => ({
-      id: `PRD-${Date.now()}-${idx}`,
-      name: prd.name,
-      sku: prd.sku || `KLZ-PRD-${Math.floor(100 + Math.random() * 900)}`,
-      category: prd.category || "Umum",
-      price: Number(prd.price) || 0,
-      hpp: Number(prd.hpp) || 0,
-      stock: Number(prd.stock) || 0,
-      lowStock: Number(prd.lowStock) || 5,
-      variants: Array.isArray(prd.variants) ? prd.variants : (typeof prd.variants === "string" ? prd.variants.split(",").map((v) => v.trim()) : ["Standard"]),
-      active: true,
-    }));
-    const updated = mode === "replace" ? formatted : [...formatted, ...products];
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
-    return updated;
+  const reloadOrder = async (dbId) => {
+    const res = await api.get(`/orders/${dbId}`);
+    return res.data ? orderFromApi(res.data) : null;
   };
 
-  const importStock = (stockList) => {
-    const skuMap = new Map();
-    const nameMap = new Map();
-    stockList.forEach((s) => {
-      const qty = Number(s.newStock) || 0;
-      if (s.sku) skuMap.set(String(s.sku).trim().toUpperCase(), qty);
-      if (s.name) nameMap.set(String(s.name).trim().toLowerCase(), qty);
-    });
-    const updated = products.map((p) => {
-      const pSku = String(p.sku || "").trim().toUpperCase();
-      const pName = String(p.name || "").trim().toLowerCase();
-      if (skuMap.has(pSku)) {
-        return { ...p, stock: skuMap.get(pSku) };
+  const addOrder = (newOrder) =>
+    attempt(async () => {
+      const body = orderToApi(newOrder);
+      if (!body.items.length) throw new Error("Pilih produk yang valid untuk pesanan ini.");
+      // The same key for the same submission: a retry or double-click returns the first order instead of a second one.
+      const res = await api.post("/orders", body, newOrder.idempotencyKey ? { headers: { "Idempotency-Key": newOrder.idempotencyKey } } : undefined);
+      const created = res.data;
+      let warning = null;
+
+      const wanted = newOrder.status;
+      if (wanted && PAYMENT_CHAIN.includes(wanted) && created.status === "waiting_payment") {
+        try {
+          await advanceOrder(created.id, "waiting_payment", wanted);
+        } catch (err) {
+          warning = `Pesanan dibuat dengan status "Menunggu Bayar": ${err.message}`;
+        }
       }
-      if (nameMap.has(pName)) {
-        return { ...p, stock: nameMap.get(pName) };
-      }
-      return p;
+      const entry = (await reloadOrder(created.id)) || orderFromApi(created);
+      setOrders((prev) => [entry, ...prev.filter((o) => o.dbId !== entry.dbId)]);
+      // Stock comes from the server, not local arithmetic (a replayed order did not reserve stock again).
+      fetchAll("/products").then((rows) => setProducts(rows.map(productFromApi))).catch(() => {});
+      notify(warning ? "error" : "success", warning || (res.replayed ? "Pesanan ini sudah dibuat sebelumnya." : "Pesanan berhasil dibuat."));
+      return entry;
     });
-    setProducts(updated);
-    saveToStorage("klozer_products", updated);
-    return updated;
-  };
-
-  // ==================== CRUD: ORDERS ====================
-  const addOrder = (newOrder) => {
-    const id = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const now = new Date();
-    const dateStr = `${now.getDate()} Agu 2026, ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} WIB`;
-    const entry = {
-      id,
-      ...newOrder,
-      date: dateStr,
-      status: newOrder.status || "paid",
-      awb: newOrder.awb || (newOrder.status === "paid" ? `JX${Math.floor(100000000 + Math.random() * 900000000)}` : ""),
-    };
-    const updated = [entry, ...orders];
-    setOrders(updated);
-    saveToStorage("klozer_orders", updated);
-    return entry;
-  };
 
   const updateOrderStatus = (id, newStatus, extra = {}) => {
-    const updated = orders.map((o) => {
-      if (o.id === id) {
-        return {
-          ...o,
-          status: newStatus,
-          ...extra,
-        };
+    const target = orders.find((o) => o.id === id || o.dbId === toDbId(id));
+    if (!target) return Promise.resolve(null);
+    return attempt(async () => {
+      if (PAYMENT_CHAIN.includes(newStatus)) {
+        await advanceOrder(target.dbId, target.status, newStatus);
+      } else {
+        await api.patch(`/orders/${target.dbId}/status`, { status: newStatus });
       }
-      return o;
+      if (extra.awb || extra.courier) {
+        await api.post("/shipping/book", { order_id: target.dbId, courier_code: extra.courier || "manual", awb_number: extra.awb || undefined });
+      }
+      const refreshed = await reloadOrder(target.dbId);
+      if (refreshed) setOrders((prev) => prev.map((o) => (o.dbId === refreshed.dbId ? refreshed : o)));
+      fetchAll("/products").then((rows) => setProducts(rows.map(productFromApi))).catch(() => {});
+      return refreshed;
     });
-    setOrders(updated);
-    saveToStorage("klozer_orders", updated);
   };
 
-  const deleteOrder = (id) => {
-    const updated = orders.filter((o) => o.id !== id);
-    setOrders(updated);
-    saveToStorage("klozer_orders", updated);
-  };
+  /** Orders are financial records and are never deleted: "delete" cancels (stock is returned). */
+  const deleteOrder = (id) => updateOrderStatus(id, "cancelled");
 
-  // ==================== CRUD: LEADS ====================
-  const addLead = (lead) => {
-    const id = `LEAD-${Math.floor(100 + Math.random() * 900)}`;
-    const entry = {
-      id,
-      ...lead,
-      codScore: lead.codScore || 85,
-      codRisk: lead.codRisk || (lead.codScore > 80 ? "low" : lead.codScore > 60 ? "medium" : "high"),
-      lastInteraction: "Baru saja",
-    };
-    const updated = [entry, ...leads];
-    setLeads(updated);
-    saveToStorage("klozer_leads", updated);
-    return entry;
-  };
+  // ---------------------------------------------------------------- leads
+  const addLead = (lead) =>
+    attempt(
+      async () => {
+        const body = leadToApi({ ...lead, status: lead.status || "new" }, teamRef.current);
+        const res = await api.post("/leads", body);
+        const entry = leadFromApi({ ...res.data, cs_name: lead.cs });
+        setLeads((prev) => [entry, ...prev.filter((l) => l.dbId !== entry.dbId)]);
+        return entry;
+      },
+      { success: "Kontak ditambahkan." }
+    );
 
   const updateLead = (id, fields) => {
-    const updated = leads.map((l) => (l.id === id ? { ...l, ...fields } : l));
-    setLeads(updated);
-    saveToStorage("klozer_leads", updated);
+    const dbId = toDbId(id);
+    return attempt(async () => {
+      const res = await api.put(`/leads/${dbId}`, leadToApi(fields, teamRef.current));
+      const entry = leadFromApi({ ...res.data, cs_name: fields.cs });
+      setLeads((prev) => prev.map((l) => (l.dbId === dbId ? { ...l, ...entry, cs: fields.cs ?? l.cs } : l)));
+      return entry;
+    });
   };
 
   const deleteLead = (id) => {
-    const updated = leads.filter((l) => l.id !== id);
-    setLeads(updated);
-    saveToStorage("klozer_leads", updated);
-  };
-
-  const importContacts = (contactList, mode = "append") => {
-    const formatted = contactList.map((c, idx) => ({
-      id: `LEAD-${Date.now()}-${idx}`,
-      name: c.name,
-      phone: c.phone,
-      email: c.email || "-",
-      city: c.city || "Indonesia",
-      category: c.category || "Lead Baru",
-      totalSpent: Number(c.totalSpent) || 0,
-      codScore: 85,
-      codRisk: "low",
-      lastInteraction: "Diimpor CSV",
-    }));
-    const updated = mode === "replace" ? formatted : [...formatted, ...leads];
-    setLeads(updated);
-    saveToStorage("klozer_leads", updated);
-    return updated;
-  };
-
-  // ==================== CRUD: TEAM ====================
-  const addTeamMember = (member) => {
-    const id = `USR-0${teamMembers.length + 1}`;
-    const entry = {
-      id,
-      ...member,
-      status: "active",
-      csClosingRate: member.role.includes("CS") ? "75%" : "-",
-      revenueGen: member.role.includes("CS") ? "Rp 10.000.000" : "-",
-      permissions: member.permissions || {
-        qrisGenerate: true,
-        voiceAiManage: false,
-        mutationApproval: false,
-        exportReports: false,
-        productEdit: false,
+    const dbId = toDbId(id);
+    return attempt(
+      async () => {
+        await api.delete(`/leads/${dbId}`);
+        setLeads((prev) => prev.filter((l) => l.dbId !== dbId));
+        return true;
       },
-    };
-    const updated = [...teamMembers, entry];
-    setTeamMembers(updated);
-    saveToStorage("klozer_team", updated);
-    return entry;
+      { success: "Kontak dihapus." }
+    );
   };
+
+  // ---------------------------------------------------------------- team
+  /** Resolves to the new member plus `credentials` ({ email, password }) which are shown once and never stored. */
+  const addTeamMember = (member) =>
+    attempt(async () => {
+      const res = await api.post("/users", {
+        name: member.name,
+        email: member.email,
+        role: roleToApi(member.role),
+        phone_number: member.phone || undefined,
+        permissions: member.permissions,
+      });
+      const entry = teamMemberFromApi(res.data);
+      setTeamMembers((prev) => [...prev, entry]);
+      return { ...entry, credentials: res.credentials };
+    });
 
   const updateTeamMemberPermissions = (id, permissionKey) => {
-    const updated = teamMembers.map((m) => {
-      if (m.id === id) {
-        return {
-          ...m,
-          permissions: {
-            ...m.permissions,
-            [permissionKey]: !m.permissions[permissionKey],
-          },
-        };
-      }
-      return m;
+    const member = teamMembers.find((m) => m.id === id);
+    if (!member) return Promise.resolve(null);
+    const permissions = { ...member.permissions, [permissionKey]: !member.permissions[permissionKey] };
+    setTeamMembers((prev) => prev.map((m) => (m.id === id ? { ...m, permissions } : m)));
+    return attempt(async () => {
+      await api.put(`/users/${member.dbId}`, { permissions });
+      return true;
+    }).then((ok) => {
+      if (!ok) setTeamMembers((prev) => prev.map((m) => (m.id === id ? member : m)));
+      return ok;
     });
-    setTeamMembers(updated);
-    saveToStorage("klozer_team", updated);
   };
 
   const deleteTeamMember = (id) => {
-    const updated = teamMembers.filter((m) => m.id !== id);
-    setTeamMembers(updated);
-    saveToStorage("klozer_team", updated);
+    const member = teamMembers.find((m) => m.id === id);
+    if (!member) return Promise.resolve(null);
+    return attempt(
+      async () => {
+        await api.delete(`/users/${member.dbId}`);
+        setTeamMembers((prev) => prev.map((m) => (m.id === id ? { ...m, status: "inactive" } : m)));
+        return true;
+      },
+      { success: "Akun staf dinonaktifkan." }
+    );
   };
 
-  // ==================== AI CONFIGURATION ====================
-  const updateAiGlobalConfig = (fields) => {
-    setAiConfig((prev) => {
-      const updated = { ...prev, ...fields };
-      saveToStorage("klozer_ai_config", updated);
-      return updated;
-    });
+  const resetTeamMemberPassword = (id) => {
+    const member = teamMembers.find((m) => m.id === id);
+    if (!member) return Promise.resolve(null);
+    return attempt(() => api.post(`/users/${member.dbId}/reset-password`, {}));
   };
 
+  // ---------------------------------------------------------------- AI persona (server-side)
   const updateSpvAiPersona = (personaFields) => {
-    setAiConfig((prev) => {
-      const updated = {
-        ...prev,
-        spvPersona: {
-          ...(prev.spvPersona || {}),
-          ...personaFields,
-        },
-      };
-      saveToStorage("klozer_ai_config", updated);
-      return updated;
-    });
+    const next = { ...(aiConfig.spvPersona || {}), ...personaFields };
+    return attempt(
+      async () => {
+        const body = Object.fromEntries(Object.entries(next).filter(([, v]) => typeof v === "string" && v.trim() !== ""));
+        await api.put("/ai/persona", body);
+        setAiConfig((prev) => ({ ...prev, spvPersona: next }));
+        return next;
+      },
+      { success: "Persona AI tersimpan." }
+    );
   };
 
-  // ==================== SUBSCRIPTION EXTENSION & TOP-UP ====================
+  // ---------------------------------------------------------------- subscription (derived from the institution record)
+  const subscriptions = institutions.map((i) => ({
+        id: `SUB-${String(i.dbId).padStart(3, "0")}`,
+        institutionId: i.id,
+        institutionName: i.name,
+        plan: i.tier,
+        status: i.status === "active" ? "active" : "suspended",
+        tokenQuotaTotal: i.quotaMax,
+        tokenUsed: i.quotaUsed,
+        tokenRemaining: Math.max(0, i.quotaMax - i.quotaUsed),
+        csSeatsUsed: teamMembers.filter((m) => m.roleKey === "cs" && m.status === "active").length,
+        blastCredits: i.blastCredits,
+      }));
+
+  /** Superadmin only: raise the AI token quota and/or change the plan. There is no payment processing here. */
   const extendSubscription = (idOrInstId, extendData = {}) => {
-    let targetSub = null;
-    setSubscriptions((prev) => {
-      const updated = prev.map((s) => {
-        if (
-          s.id === idOrInstId ||
-          s.institutionId === idOrInstId ||
-          s.institutionName?.toLowerCase() === idOrInstId?.toString()?.toLowerCase()
-        ) {
-          const daysToAdd = parseInt(extendData.daysToAdd) || 30;
-          const currentDays = Math.max(0, s.daysLeft || 0);
-          const newDaysLeft = currentDays + daysToAdd;
-
-          const expDate = new Date();
-          expDate.setDate(expDate.getDate() + newDaysLeft);
-          const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-          const formattedExp = `${expDate.getDate()} ${monthNames[expDate.getMonth()]} ${expDate.getFullYear()}`;
-
-          const updatedSub = {
-            ...s,
-            status: "active",
-            daysLeft: newDaysLeft,
-            expiryDate: formattedExp,
-            plan: extendData.plan || s.plan,
-            csSeats: (s.csSeats || 5) + (parseInt(extendData.additionalSeats) || 0),
-            billingCycle: extendData.billingCycle || s.billingCycle,
-            tokenQuota: extendData.newTokenQuota || s.tokenQuota,
-            pricePerMonth: extendData.pricePerMonth || s.pricePerMonth,
-            lastExtendedAt: new Date().toISOString(),
-            lastPaymentMethod: extendData.paymentMethod || "Transfer Manual / QRIS",
-          };
-          targetSub = updatedSub;
-          return updatedSub;
-        }
-        return s;
-      });
-      saveToStorage("klozer_subscriptions", updated);
-      return updated;
-    });
-    return targetSub;
+    const sub = subscriptions.find((s) => s.id === idOrInstId || s.institutionId === idOrInstId);
+    const inst = institutions.find((i) => i.id === sub?.institutionId);
+    if (!inst) return Promise.resolve(null);
+    const fields = {};
+    if (extendData.plan) fields.tier = extendData.plan;
+    if (extendData.additionalTokens) fields.quotaMax = inst.quotaMax + Number(extendData.additionalTokens);
+    if (extendData.newTokenQuota) fields.quotaMax = Number(extendData.newTokenQuota);
+    return updateInstitution(inst.id, fields);
   };
 
+  // ---------------------------------------------------------------- derived
+  const actingDbId = serverRole === "superadmin" && activeInstitutionId ? toDbId(activeInstitutionId) : currentUser?.institutionId;
   const activeInstitution =
-    institutions.find(
-      (i) =>
-        i.id === activeInstitutionId ||
-        i.name?.toLowerCase() === currentUser?.institutionName?.toLowerCase()
-    ) ||
+    institutions.find((i) => i.dbId === actingDbId) ||
     (currentUser?.institutionName
-      ? {
-          id: currentUser.institutionId || "INST-ACTIVE",
-          name: currentUser.institutionName,
-          sector: currentUser.sector || "Bisnis & Retail",
-          owner: currentUser.name,
-          email: currentUser.email,
-          tier: "Pro Plan",
-          status: "active",
-          modules: { qris: true, voiceAi: true, antiFraud: true, metaCapi: true, multiCs: true },
-        }
-      : institutions[0]);
+      ? { id: `INST-${String(currentUser.institutionId).padStart(3, "0")}`, dbId: currentUser.institutionId, name: currentUser.institutionName, sector: currentUser.sector || "", modules: { ...DEFAULT_MODULES }, status: "active" }
+      : null);
 
-  const activeSubscription =
-    subscriptions.find(
-      (s) =>
-        s.institutionId === activeInstitutionId ||
-        s.institutionId === activeInstitution?.id ||
-        s.institutionName?.toLowerCase() === activeInstitution?.name?.toLowerCase() ||
-        s.institutionName?.toLowerCase() === currentUser?.institutionName?.toLowerCase()
-    ) ||
-    subscriptions.find((s) => s.id === "SUB-104") ||
-    subscriptions[0];
+  const activeSubscription = subscriptions.find((s) => s.institutionId === activeInstitution?.id) || null;
 
-  return (
-    <DashboardContext.Provider
-      value={{
-        role,
-        setRole: handleSetRole,
-        currentUser,
-        token,
-        loginUser,
-        registerUser,
-        logoutUser,
-        institutions,
-        activeInstitution,
-        activeInstitutionId,
-        setActiveInstitutionId,
-        addInstitution,
-        updateInstitution,
-        toggleInstitutionModule,
-        deleteInstitution,
-        products,
-        addProduct,
-        updateProduct,
-        toggleProductStatus,
-        deleteProduct,
-        importProducts,
-        importStock,
-        orders,
-        addOrder,
-        updateOrderStatus,
-        deleteOrder,
-        leads,
-        addLead,
-        updateLead,
-        deleteLead,
-        importContacts,
-        teamMembers,
-        addTeamMember,
-        updateTeamMemberPermissions,
-        deleteTeamMember,
-        aiConfig,
-        updateAiGlobalConfig,
-        updateSpvAiPersona,
-        subscriptions,
-        setSubscriptions,
-        extendSubscription,
-        activeSubscription,
-        language,
-        setLanguage,
-        t,
-        resetInstitutionPassword,
-        loadTemplateProducts,
-      }}
-    >
-      {children}
-    </DashboardContext.Provider>
-  );
+  const value = {
+    // session
+    status,
+    isAuthenticated: status === "ready",
+    isBooting: status === "booting",
+    role,
+    serverRole,
+    isManager: MANAGER_ROLES.includes(serverRole),
+    currentUser,
+    loginUser,
+    registerUser,
+    logoutUser,
+    changePassword,
+    // shared state / feedback
+    dataLoading,
+    refreshData,
+    refreshOrders,
+    refreshLeads,
+    notice,
+    notify,
+    dismissNotice,
+    whatsappStatus,
+    reportSummary,
+    myPerformance,
+    tokenBalance,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    chatEvent,
+    // tenants
+    institutions,
+    activeInstitution,
+    activeInstitutionId,
+    setActiveInstitutionId,
+    addInstitution,
+    updateInstitution,
+    toggleInstitutionModule,
+    deleteInstitution,
+    resetInstitutionPassword,
+    // catalogue
+    products,
+    addProduct,
+    updateProduct,
+    updateProductStock,
+    toggleProductStatus,
+    deleteProduct,
+    importProducts,
+    importStock,
+    loadTemplateProducts,
+    // sales
+    orders,
+    addOrder,
+    updateOrderStatus,
+    deleteOrder,
+    leads,
+    addLead,
+    updateLead,
+    deleteLead,
+    // team
+    teamMembers,
+    addTeamMember,
+    updateTeamMemberPermissions,
+    deleteTeamMember,
+    resetTeamMemberPassword,
+    // AI + plan
+    aiConfig,
+    updateSpvAiPersona,
+    subscriptions,
+    extendSubscription,
+    activeSubscription,
+    // i18n
+    language,
+    setLanguage,
+    t,
+  };
+
+  return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }
 
 export function useDashboard() {

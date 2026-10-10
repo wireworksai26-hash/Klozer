@@ -1,261 +1,184 @@
-import { query } from "../config/db.js";
+import crypto from "crypto";
+import { query, transaction } from "../config/db.js";
 import { config } from "../config/env.js";
-import { checkIdempotency, recordIdempotentStart, markIdempotentSuccess, markIdempotentFailed } from "./idempotencyService.js";
+import { logger } from "../config/logger.js";
+import { AppError, serviceUnavailable, unauthorized } from "../utils/errors.js";
+import { verifyMidtransSignature } from "../utils/hmacValidator.js";
+import { claimIdempotencyKey, markIdempotentFailed, markIdempotentSuccess } from "./idempotencyService.js";
+import { afterPaid, markOrderPaid } from "./orderService.js";
+
+const SANDBOX_URL = "https://api.sandbox.midtrans.com/v2";
+const PRODUCTION_URL = "https://api.midtrans.com/v2";
+const QRIS_MDR = 0.007;
+const QRIS_TTL_MINUTES = 15;
+
+export const isGatewayConfigured = () => Boolean(config.midtrans.serverKey);
 
 /**
- * Midtrans Payment Gateway & Dynamic QRIS Service
- * Supports official Midtrans Sandbox and Production API,
- * with built-in instant sandbox simulator for development.
+ * Create a dynamic QRIS charge for an existing order.
+ * `order.total_amount` is the only amount ever charged. In production a missing
+ * server key is an error; the sandbox simulator is for development only and a
+ * real gateway failure is surfaced instead of silently falling back to it.
  */
+export async function createQrisCharge({ institutionId, order, customerName, customerPhone }) {
+  const amount = Math.round(Number(order.total_amount));
+  const paymentRef = `KLZ-${institutionId}-${order.id}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+  const feeAmount = Math.round(amount * QRIS_MDR);
+  const expiresAt = new Date(Date.now() + QRIS_TTL_MINUTES * 60 * 1000);
 
-const MIDTRANS_SANDBOX_BASE_URL = "https://api.sandbox.midtrans.com/v2";
-const MIDTRANS_PRODUCTION_BASE_URL = "https://api.midtrans.com/v2";
+  let qrString;
+  let qrImageUrl;
+  let transactionId = null;
+  let mode;
 
-/**
- * Generate Dynamic QRIS Charge via Midtrans
- */
-export async function createMidtransQrisCharge({
-  orderId,
-  amount,
-  customerName = "Pelanggan",
-  customerPhone = "",
-  institutionId = 1,
-}) {
-  const isProduction = process.env.NODE_ENV === "production" && process.env.MIDTRANS_IS_PRODUCTION === "true";
-  const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
-  const baseUrl = isProduction ? MIDTRANS_PRODUCTION_BASE_URL : MIDTRANS_SANDBOX_BASE_URL;
-
-  const paymentRef = `KLZ-${institutionId}-${orderId}-${Date.now().toString().slice(-6)}`;
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "); // 15 Menit (MySQL DATETIME)
-  const feeAmount = Math.round(Number(amount) * 0.007); // Standar BI MDR QRIS 0.7%
-
-  // 1. If Live Midtrans Server Key is configured, call Midtrans Core API
-  if (serverKey && !serverKey.includes("placeholder")) {
+  if (isGatewayConfigured()) {
+    mode = config.midtrans.isProduction ? "midtrans_production" : "midtrans_sandbox";
+    const baseUrl = config.midtrans.isProduction ? PRODUCTION_URL : SANDBOX_URL;
+    let data;
     try {
-      const authHeader = "Basic " + Buffer.from(`${serverKey}:`).toString("base64");
       const response = await fetch(`${baseUrl}/charge`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          Authorization: authHeader,
+          Authorization: "Basic " + Buffer.from(`${config.midtrans.serverKey}:`).toString("base64"),
         },
         body: JSON.stringify({
           payment_type: "qris",
-          transaction_details: {
-            order_id: paymentRef,
-            gross_amount: Math.round(Number(amount)),
-          },
-          customer_details: {
-            first_name: customerName,
-            phone: customerPhone,
-          },
-          qris: {
-            acquirer: "gopay",
-          },
+          transaction_details: { order_id: paymentRef, gross_amount: amount },
+          customer_details: { first_name: customerName || "Pelanggan", phone: customerPhone || undefined },
+          qris: { acquirer: "gopay" },
+          custom_expiry: { expiry_duration: QRIS_TTL_MINUTES, unit: "minute" },
         }),
+        signal: AbortSignal.timeout(15000),
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.status_code === "201") {
-        const qrAction = (data.actions || []).find((a) => a.name === "generate-qr-code");
-        const qrImageUrl = qrAction ? qrAction.url : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.qr_string || paymentRef)}`;
-        const qrString = data.qr_string || paymentRef;
-
-        await savePaymentRecord({
-          institutionId,
-          orderId,
-          paymentReference: paymentRef,
-          provider: "midtrans",
-          paymentType: "qris",
-          amount,
-          feeAmount,
-          qrString,
-          qrImageUrl,
-          expiresAt,
-        });
-
-        return {
-          success: true,
-          mode: isProduction ? "midtrans_production" : "midtrans_sandbox",
-          paymentReference: paymentRef,
-          transactionId: data.transaction_id,
-          qrString,
-          qrImageUrl,
-          amount: Number(amount),
-          feeAmount,
-          expiresAt,
-        };
-      }
+      data = await response.json();
     } catch (err) {
-      console.warn("[Midtrans API Warning] Failed to reach Midtrans directly, using high-fidelity Sandbox Simulator:", err.message);
+      logger.error({ err: err.message, paymentRef }, "Midtrans charge request failed");
+      throw new AppError(502, "Gateway pembayaran tidak dapat dihubungi. Coba lagi sebentar.", { code: "GATEWAY_UNREACHABLE" });
     }
+
+    if (String(data.status_code) !== "201") {
+      logger.error({ status: data.status_code, message: data.status_message, paymentRef }, "Midtrans rejected charge");
+      throw new AppError(502, `Gateway menolak pembuatan QRIS: ${data.status_message || "kesalahan tidak diketahui"}`, { code: "GATEWAY_REJECTED" });
+    }
+
+    const qrAction = (data.actions || []).find((a) => a.name === "generate-qr-code");
+    qrString = data.qr_string || null;
+    qrImageUrl = qrAction?.url || null;
+    transactionId = data.transaction_id || null;
+  } else if (!config.isProduction) {
+    mode = "sandbox_simulator";
+    qrString = `SIMULATED-QRIS|${paymentRef}|${amount}`;
+    qrImageUrl = null;
+  } else {
+    throw serviceUnavailable("Payment gateway belum dikonfigurasi di server.", { code: "GATEWAY_NOT_CONFIGURED" });
   }
 
-  // 2. High-Fidelity Midtrans Sandbox Simulator (Always Ready for Testing & Demos)
-  // Generates genuine standard EMVCo QRIS Payload Format
-  const emvcoPayload = `00020101021226590014ID.MIDTRANS.WWW01189360091100223344555204581253033605802ID5914KLOZER_MIDTRANS6007JAKARTA61051234062070703A0154${String(amount).padStart(2, "0")}6304C92B`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(emvcoPayload)}`;
-
-  await savePaymentRecord({
-    institutionId,
-    orderId,
-    paymentReference: paymentRef,
-    provider: "midtrans",
-    paymentType: "qris",
-    amount,
-    feeAmount,
-    qrString: emvcoPayload,
-    qrImageUrl,
-    expiresAt,
+  await transaction(async (tx) => {
+    // Only the newest QR for an order stays payable.
+    await tx.query("UPDATE payments SET status = 'expired' WHERE order_id = ? AND status = 'pending'", [order.id]);
+    await tx.query(
+      `INSERT INTO payments
+         (institution_id, order_id, payment_reference, provider_transaction_id, provider, payment_type, amount, fee_amount,
+          qr_string, qr_image_url, status, expires_at)
+       VALUES (?, ?, ?, ?, 'midtrans', 'qris', ?, ?, ?, ?, 'pending', ?)`,
+      [institutionId, order.id, paymentRef, transactionId, amount, feeAmount, qrString, qrImageUrl, expiresAt]
+    );
   });
 
   return {
     success: true,
-    mode: "midtrans_sandbox_simulator",
+    mode,
     paymentReference: paymentRef,
-    qrString: emvcoPayload,
+    transactionId,
+    qrString,
     qrImageUrl,
-    amount: Number(amount),
+    amount,
     feeAmount,
-    expiresAt,
-    simulatorNotice: "Midtrans Sandbox Mode Aktif. Gunakan Webhook Simulator untuk verifikasi lunas.",
+    expiresAt: expiresAt.toISOString(),
+    ...(mode === "sandbox_simulator" ? { simulatorNotice: "Mode simulator (non-production). Gunakan endpoint simulate-settlement untuk melunasi." } : {}),
   };
 }
 
 /**
- * Handle Midtrans Webhook Notification with Idempotency Guard
+ * Mark a payment (and its order) as paid. Safe to call repeatedly and
+ * concurrently: the payment row is locked and an already-paid payment is a no-op.
  */
-export async function handleMidtransWebhook(payload) {
-  const {
-    order_id,
-    transaction_id,
-    transaction_status,
-    status_code,
-    gross_amount,
-    signature_key,
-  } = payload;
+export async function settlePayment(paymentReference, { providerTransactionId = null } = {}) {
+  const outcome = await transaction(async (tx) => {
+    const payment = await tx.queryOne("SELECT * FROM payments WHERE payment_reference = ? FOR UPDATE", [paymentReference]);
+    if (!payment) return { found: false };
+    if (payment.status === "paid") return { found: true, changed: false, payment };
 
-  const paymentRef = order_id || payload.payment_reference;
-  if (!paymentRef) {
-    return { success: false, message: "order_id / payment_reference tidak ditemukan." };
-  }
-
-  // 1. Idempotency Check: Prevent duplicate payment processing & double inventory deduction
-  const idempotencyKey = `MIDTRANS:${paymentRef}:${transaction_status || "settlement"}`;
-  const idempCheck = await checkIdempotency(idempotencyKey);
-
-  if (idempCheck.isDuplicate) {
-    console.log(`[Midtrans Webhook] Idempotency Key ${idempotencyKey} already processed. Returning HTTP 200 without duplicate execution.`);
-    return {
-      success: true,
-      duplicateIgnored: true,
-      message: "Webhook telah diproses sebelumnya (Idempotent Guard).",
-      previousResult: idempCheck.existingResult,
-    };
-  }
-
-  // Record operation start
-  await recordIdempotentStart({
-    idempotencyKey,
-    provider: "midtrans",
-    eventType: `payment.${transaction_status || "settlement"}`,
-    payload,
+    await tx.query(
+      "UPDATE payments SET status = 'paid', paid_at = UTC_TIMESTAMP(), provider_transaction_id = COALESCE(?, provider_transaction_id) WHERE id = ?",
+      [providerTransactionId, payment.id]
+    );
+    const paid = await markOrderPaid(tx, payment.order_id, payment.institution_id);
+    if (!paid.changed) {
+      logger.warn(
+        { paymentReference, orderId: payment.order_id, orderStatus: paid.order.status },
+        "Payment received for an order that was not waiting for payment; needs manual review/refund"
+      );
+    }
+    return { found: true, changed: true, payment, paid };
   });
 
-  try {
-    const isPaid =
-      transaction_status === "settlement" ||
-      transaction_status === "capture" ||
-      payload.status === "paid" ||
-      payload.status === "settlement";
-
-    if (isPaid) {
-      // 2. Update payment record in database
-      await query(
-        `UPDATE payments 
-         SET status = 'paid', paid_at = NOW() 
-         WHERE payment_reference = ?`,
-        [paymentRef]
-      );
-
-      // 3. Update order status to paid
-      await query(
-        `UPDATE orders 
-         SET status = 'paid', updated_at = NOW() 
-         WHERE order_number = ?`,
-        [paymentRef]
-      );
-
-      const result = {
-        success: true,
-        paymentReference: paymentRef,
-        status: "paid",
-        paidAt: new Date().toISOString(),
-      };
-
-      await markIdempotentSuccess(idempotencyKey, result);
-      return result;
-    } else if (transaction_status === "expire" || transaction_status === "cancel") {
-      await query(
-        `UPDATE payments 
-         SET status = 'expired' 
-         WHERE payment_reference = ?`,
-        [paymentRef]
-      );
-
-      const result = {
-        success: true,
-        paymentReference: paymentRef,
-        status: "expired",
-      };
-
-      await markIdempotentSuccess(idempotencyKey, result);
-      return result;
-    }
-
-    await markIdempotentSuccess(idempotencyKey, { status: transaction_status });
-    return { success: true, status: transaction_status };
-  } catch (err) {
-    await markIdempotentFailed(idempotencyKey, err.message);
-    throw err;
-  }
+  if (outcome.paid?.changed) afterPaid(outcome.paid);
+  return outcome;
 }
 
-async function savePaymentRecord({
-  institutionId,
-  orderId,
-  paymentReference,
-  provider,
-  paymentType,
-  amount,
-  feeAmount,
-  qrString,
-  qrImageUrl,
-  expiresAt,
-}) {
+/**
+ * Process a Midtrans HTTP notification.
+ * Order of checks matters: authenticate the sender first, then de-duplicate,
+ * then validate the amount, and only then change any state.
+ */
+export async function handleMidtransNotification(payload) {
+  if (!isGatewayConfigured()) throw serviceUnavailable("Payment gateway belum dikonfigurasi.");
+  if (!verifyMidtransSignature(payload, config.midtrans.serverKey)) {
+    throw unauthorized("Signature notifikasi tidak valid.");
+  }
+
+  const { order_id: paymentRef, transaction_status: txStatus, transaction_id: transactionId, status_code: statusCode, fraud_status: fraudStatus } = payload;
+  const key = `MIDTRANS:${paymentRef}:${txStatus}:${statusCode}`;
+
+  const claim = await claimIdempotencyKey({ key, provider: "midtrans", eventType: `payment.${txStatus}`, payload });
+  if (!claim.claimed) return { success: true, duplicateIgnored: true };
+
   try {
-    // Try finding numerical order_id if alphanumeric order_number is given
-    let resolvedOrderId = parseInt(orderId, 10);
-    if (isNaN(resolvedOrderId)) {
-      const orderRows = await query(`SELECT id FROM orders WHERE order_number = ? LIMIT 1`, [orderId]);
-      if (orderRows && orderRows.length > 0) {
-        resolvedOrderId = orderRows[0].id;
-      } else {
-        resolvedOrderId = 1; // Fallback demo order id
-      }
+    const [payment] = await query("SELECT * FROM payments WHERE payment_reference = ?", [paymentRef]);
+    if (!payment) {
+      logger.warn({ paymentRef }, "Midtrans notification for unknown payment reference");
+      await markIdempotentSuccess(key, { ignored: "unknown_reference" });
+      return { success: true, ignored: true };
     }
 
-    await query(
-      `INSERT INTO payments 
-       (institution_id, order_id, payment_reference, provider, payment_type, amount, fee_amount, qr_string, qr_image_url, status, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-       ON DUPLICATE KEY UPDATE 
-       qr_string = VALUES(qr_string), qr_image_url = VALUES(qr_image_url), expires_at = VALUES(expires_at)`,
-      [institutionId, resolvedOrderId, paymentReference, provider, paymentType, amount, feeAmount, qrString, qrImageUrl, expiresAt]
-    );
+    if (Math.abs(Number(payload.gross_amount) - Number(payment.amount)) > 0.5) {
+      logger.error({ paymentRef, expected: payment.amount, received: payload.gross_amount }, "Midtrans amount mismatch");
+      await markIdempotentFailed(key, "amount_mismatch");
+      return { success: true, ignored: true, reason: "amount_mismatch" };
+    }
+
+    let result;
+    const isPaid = txStatus === "settlement" || (txStatus === "capture" && (!fraudStatus || fraudStatus === "accept"));
+    if (isPaid) {
+      const outcome = await settlePayment(paymentRef, { providerTransactionId: transactionId });
+      result = { status: "paid", changed: Boolean(outcome.changed) };
+    } else if (txStatus === "expire" || txStatus === "cancel") {
+      await query("UPDATE payments SET status = 'expired' WHERE id = ? AND status = 'pending'", [payment.id]);
+      result = { status: "expired" };
+    } else if (txStatus === "deny" || txStatus === "failure") {
+      await query("UPDATE payments SET status = 'failed' WHERE id = ? AND status = 'pending'", [payment.id]);
+      result = { status: "failed" };
+    } else {
+      result = { status: txStatus || "pending" };
+    }
+
+    await markIdempotentSuccess(key, result);
+    return { success: true, paymentReference: paymentRef, ...result };
   } catch (err) {
-    console.warn("[Midtrans Service] DB Payment Record insertion notice:", err.message);
+    await markIdempotentFailed(key, err.message);
+    throw err;
   }
 }

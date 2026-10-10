@@ -1,154 +1,138 @@
 import mysql from "mysql2/promise";
 import { config } from "./env.js";
+import { logger } from "./logger.js";
 
 let pool = null;
-let isMysqlConnected = false;
 
-// In-Memory Storage Table store for seamless local execution if MySQL service is offline
-const memoryStore = {
-  institutions: [],
-  users: [],
-  products: [],
-  product_variants: [],
-  programs: [],
-  bank_accounts: [],
-  payment_gateway_configs: [],
-  shipping_warehouses: [],
-  promos_vouchers: [],
-  leads: [],
-  lead_labels: [],
-  leads_labels_map: [],
-  chat_messages: [],
-  proactive_followup_jobs: [],
-  orders: [],
-  order_items: [],
-  payments: [],
-  bank_mutations: [],
-  payment_proofs: [],
-  shipping_shipments: [],
-  shipping_tracking_logs: [],
-  meta_ad_referrals: [],
-  meta_capi_event_logs: [],
-  cs_commission_ledgers: [],
-};
+const POOL_OPTIONS = () => ({
+  host: config.db.host,
+  port: config.db.port,
+  user: config.db.user,
+  password: config.db.password,
+  database: config.db.database,
+  waitForConnections: true,
+  connectionLimit: config.db.poolSize,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+  charset: "utf8mb4",
+  timezone: "Z",
+  decimalNumbers: true,
+  connectTimeout: 10000,
+});
 
-let autoIncrementIds = {};
+async function ensureDatabaseExists() {
+  const conn = await mysql.createConnection({
+    host: config.db.host,
+    port: config.db.port,
+    user: config.db.user,
+    password: config.db.password,
+  });
+  try {
+    await conn.query(
+      `CREATE DATABASE IF NOT EXISTS \`${config.db.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    );
+  } finally {
+    await conn.end();
+  }
+}
 
-export async function getDbPool() {
+/**
+ * Connect to MySQL. There is deliberately no in-memory fallback: if the
+ * database is unreachable the process must fail instead of silently serving
+ * data that disappears on restart.
+ */
+export async function initDb({ retries = 10, delayMs = 3000 } = {}) {
   if (pool) return pool;
 
-  try {
-    const connection = await mysql.createConnection({
-      host: config.db.host,
-      port: config.db.port,
-      user: config.db.user,
-      password: config.db.password,
-    });
-
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${config.db.database}\`;`);
-    await connection.end();
-
-    pool = mysql.createPool({
-      host: config.db.host,
-      port: config.db.port,
-      user: config.db.user,
-      password: config.db.password,
-      database: config.db.database,
-      waitForConnections: true,
-      connectionLimit: 15,
-      queueLimit: 0,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
-    });
-
-    // Test connection
-    const testConn = await pool.getConnection();
-    testConn.release();
-    isMysqlConnected = true;
-    console.log(`[Database] Connected successfully to MySQL 8.0 (\`${config.db.database}\`)`);
-    return pool;
-  } catch (err) {
-    console.warn(`[Database] MySQL service offline (${err.message}). Using High-Performance Resilient Memory Engine.`);
-    isMysqlConnected = false;
-    return null;
-  }
-}
-
-export async function query(sql, params = []) {
-  const activePool = await getDbPool();
-  if (isMysqlConnected && activePool) {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const [rows] = await activePool.query(sql, params);
-      return rows;
+      if (config.db.createDatabaseIfMissing) await ensureDatabaseExists();
+      const candidate = mysql.createPool(POOL_OPTIONS());
+      // Keep NOW()/CURRENT_TIMESTAMP in UTC so they agree with the driver's timezone: 'Z'.
+      candidate.on("connection", (c) => c.query("SET time_zone = '+00:00'"));
+      const conn = await candidate.getConnection();
+      await conn.query("SELECT 1");
+      conn.release();
+      pool = candidate;
+      logger.info({ host: config.db.host, database: config.db.database }, "Database connected");
+      return pool;
     } catch (err) {
-      console.error("[Database Query Error]", err.message, "SQL:", sql);
-      throw err;
+      lastError = err;
+      logger.warn({ attempt, retries, err: err.message }, "Database not reachable, retrying");
+      if (attempt < retries) await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-
-  // Resilient memory executor for instant execution without local database dependency
-  return executeMemoryQuery(sql, params);
+  throw new Error(`Tidak dapat terhubung ke MySQL setelah ${retries} percobaan: ${lastError?.message}`);
 }
 
-// Resilient memory query parser for CRUD operations
-function executeMemoryQuery(sql, params = []) {
-  const cleanSql = sql.trim().replace(/\s+/g, " ");
-  
-  // 1. INSERT INTO table
-  const insertMatch = cleanSql.match(/INSERT\s+INTO\s+`?([a-zA-Z0-9_]+)`?\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i);
-  if (insertMatch) {
-    const table = insertMatch[1].toLowerCase();
-    const columns = insertMatch[2].split(",").map(c => c.trim().replace(/`/g, ""));
-    if (!memoryStore[table]) memoryStore[table] = [];
-    
-    autoIncrementIds[table] = (autoIncrementIds[table] || 0) + 1;
-    const row = { id: autoIncrementIds[table], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    
-    columns.forEach((col, idx) => {
-      row[col] = params[idx] !== undefined ? params[idx] : null;
-    });
+export function getPool() {
+  if (!pool) throw new Error("Database belum diinisialisasi. Panggil initDb() lebih dulu.");
+  return pool;
+}
 
-    memoryStore[table].push(row);
-    return { insertId: row.id, affectedRows: 1 };
-  }
+/** Run a statement and return rows (SELECT) or the result header (INSERT/UPDATE/DELETE). */
+export async function query(sql, params = []) {
+  const [rows] = await getPool().query(sql, params);
+  return rows;
+}
 
-  // 2. SELECT * FROM table
-  const selectMatch = cleanSql.match(/SELECT\s+(.+)\s+FROM\s+`?([a-zA-Z0-9_]+)`?(.*)/i);
-  if (selectMatch) {
-    const table = selectMatch[2].toLowerCase();
-    const condition = selectMatch[3] || "";
-    let data = memoryStore[table] || [];
+export async function queryOne(sql, params = []) {
+  const rows = await query(sql, params);
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
 
-    // Basic condition matching
-    if (condition.toLowerCase().includes("where")) {
-      // Return all or filtered
-      if (params.length > 0) {
-        // Simple search in memory
-        data = data.filter(item => {
-          return true; // resilient return
-        });
+const DEADLOCK = 1213;
+const LOCK_WAIT_TIMEOUT = 1205;
+
+/**
+ * Run `fn` inside a transaction. `tx.query` / `tx.queryOne` mirror the helpers
+ * above but share one connection. Commits on success, rolls back on any throw,
+ * and retries once on deadlock.
+ */
+export async function transaction(fn, { attempts = 2 } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    const conn = await getPool().getConnection();
+    try {
+      await conn.beginTransaction();
+      const tx = {
+        query: async (sql, params = []) => (await conn.query(sql, params))[0],
+        queryOne: async (sql, params = []) => {
+          const [rows] = await conn.query(sql, params);
+          return rows.length ? rows[0] : null;
+        },
+      };
+      const result = await fn(tx);
+      await conn.commit();
+      return result;
+    } catch (err) {
+      try {
+        await conn.rollback();
+      } catch {
+        // connection already broken; release below discards it
       }
+      if ((err.errno === DEADLOCK || err.errno === LOCK_WAIT_TIMEOUT) && attempt < attempts) {
+        continue;
+      }
+      throw err;
+    } finally {
+      conn.release();
     }
-
-    return JSON.parse(JSON.stringify(data));
   }
-
-  // 3. UPDATE table
-  const updateMatch = cleanSql.match(/UPDATE\s+`?([a-zA-Z0-9_]+)`?\s+SET\s+(.+)/i);
-  if (updateMatch) {
-    const table = updateMatch[1].toLowerCase();
-    return { affectedRows: 1, changedRows: 1 };
-  }
-
-  // 4. DELETE FROM table
-  const deleteMatch = cleanSql.match(/DELETE\s+FROM\s+`?([a-zA-Z0-9_]+)`?/i);
-  if (deleteMatch) {
-    const table = deleteMatch[1].toLowerCase();
-    return { affectedRows: 1 };
-  }
-
-  return [];
 }
 
-export { memoryStore };
-export default { query, getDbPool, memoryStore };
+export async function pingDb() {
+  const started = process.hrtime.bigint();
+  await query("SELECT 1");
+  return Number(process.hrtime.bigint() - started) / 1e6;
+}
+
+export async function closeDb() {
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+}
+
+export default { query, queryOne, transaction, initDb, getPool, pingDb, closeDb };

@@ -1,210 +1,188 @@
-import { memoryStore } from "../config/db.js";
-import { paginate } from "../utils/helpers.js";
-import { hashPassword, generateRandomPassword } from "../utils/crypto.js";
+import { query, queryOne, transaction } from "../config/db.js";
+import { config } from "../config/env.js";
+import { generateRandomPassword, hashPassword } from "../utils/crypto.js";
+import { buildPagination, escapeLike, parsePagination, slugify } from "../utils/helpers.js";
+import { DEFAULT_FEATURES } from "../utils/constants.js";
+import { conflict, forbidden, notFound } from "../utils/errors.js";
+import { audit } from "../services/auditService.js";
+import { disconnectTenant, disconnectUser } from "../realtime.js";
+import { institutionPublic } from "./authController.js";
+
+const OWNER_NAME = "(SELECT u.name FROM users u WHERE u.institution_id = i.id AND u.role = 'owner' ORDER BY u.id LIMIT 1) AS owner_name";
 
 /**
- * Get Paginated Institutions List
- * GET /api/v1/institutions
+ * GET /institutions
+ * Superadmin: every tenant, paginated. Everyone else: only their own tenant.
  */
-export async function getAllInstitutions(req, res, next) {
-  try {
-    const { page = 1, limit = 10, search = "", mode = "" } = req.query;
-    let list = memoryStore.institutions || [];
-
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter((i) => i.name.toLowerCase().includes(s) || (i.sector && i.sector.toLowerCase().includes(s)));
-    }
-
-    if (mode) {
-      list = list.filter((i) => i.mode === mode);
-    }
-
-    const result = paginate(list, page, limit);
-    res.json({ success: true, ...result });
-  } catch (err) {
-    next(err);
+export async function getAllInstitutions(req, res) {
+  if (req.user.role !== "superadmin") {
+    const own = await queryOne(`SELECT i.*, ${OWNER_NAME} FROM institutions i WHERE i.id = ?`, [req.user.institution_id]);
+    const items = own ? [institutionPublic(own)] : [];
+    return res.json({
+      success: true,
+      items,
+      pagination: buildPagination({ page: 1, limit: 1 }, items.length),
+    });
   }
+
+  const paging = parsePagination(req.query);
+  const where = [];
+  const params = [];
+  if (req.query.search) {
+    where.push("(i.name LIKE ? OR i.sector LIKE ?)");
+    const like = `%${escapeLike(req.query.search)}%`;
+    params.push(like, like);
+  }
+  if (req.query.mode) {
+    where.push("i.mode = ?");
+    params.push(req.query.mode);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+  const [{ total }] = await query(`SELECT COUNT(*) AS total FROM institutions i ${clause}`, params);
+  const rows = await query(`SELECT i.*, ${OWNER_NAME} FROM institutions i ${clause} ORDER BY i.id ASC LIMIT ? OFFSET ?`, [...params, paging.limit, paging.offset]);
+
+  res.json({ success: true, items: rows.map(institutionPublic), pagination: buildPagination(paging, Number(total)) });
 }
 
-/**
- * Create Institution & Auto-Generate Owner Account Credentials Bundle
- * POST /api/v1/institutions
- */
-export async function createInstitution(req, res, next) {
-  try {
-    const { name, mode = "business", sector, email, phone_number, address, features = {} } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ success: false, message: "Nama instansi dan email pemilik wajib diisi." });
+/** POST /institutions (superadmin) — creates a tenant plus its owner account. */
+export async function createInstitution(req, res) {
+  const { name, mode, sector, email, phone_number, address, features } = req.body;
+
+  const emailTaken = await queryOne("SELECT id FROM users WHERE email = ?", [email]);
+  if (emailTaken) throw conflict("Email pemilik sudah terdaftar.");
+
+  const baseSlug = slugify(name) || "instansi";
+  const password = generateRandomPassword(12);
+
+  const created = await transaction(async (tx) => {
+    let slug = baseSlug;
+    for (let i = 1; await tx.queryOne("SELECT id FROM institutions WHERE slug = ?", [slug]); i++) {
+      slug = `${baseSlug}-${i + 1}`;
     }
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const newInst = {
-      id: (memoryStore.institutions?.length || 0) + 1,
-      name,
-      slug,
-      mode,
-      sector: sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
-      phone_number: phone_number || "+62 812-3344-5566",
+    const result = await tx.query(
+      `INSERT INTO institutions
+         (name, slug, mode, sector, phone_number, email, address, subscription_tier, blast_credit_quota, ai_token_quota, features_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pro', ?, ?, ?)`,
+      [
+        name,
+        slug,
+        mode,
+        sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
+        phone_number ?? null,
+        email,
+        address ?? null,
+        config.trial.blastCredits * 2,
+        config.trial.aiTokens * 2,
+        JSON.stringify({ ...DEFAULT_FEATURES, ...(features || {}) }),
+      ]
+    );
+    await tx.query(
+      `INSERT INTO users (institution_id, name, email, password_hash, role, phone_number, commission_rate_percent)
+       VALUES (?, ?, ?, ?, 'owner', ?, 0)`,
+      [result.insertId, `Owner ${name}`, email, await hashPassword(password), phone_number ?? null]
+    );
+    return tx.queryOne("SELECT * FROM institutions WHERE id = ?", [result.insertId]);
+  });
+
+  await audit(req, "institution.create", { entityType: "institution", entityId: created.id, institutionId: created.id });
+
+  res.status(201).json({
+    success: true,
+    message: "Instansi berhasil dibuat dan akun Owner telah di-generate.",
+    data: institutionPublic(created),
+    credentialsBundle: {
+      institutionName: created.name,
+      loginUrl: `${config.frontendUrl}/login`,
       email,
-      address: address || "Surakarta, Jawa Tengah",
-      subscription_tier: "pro",
-      blast_credit_quota: 10000,
-      ai_token_quota: 2000000,
-      features_json: {
-        aiPersona: true,
-        aiAutoLabel: true,
-        printInvoice: true,
-        baileys: true,
-        instagram: true,
-        csBlast: true,
-        publicBooking: true,
-        stockManagement: true,
-        picFeature: true,
-        qrisPayment: true,
-        voiceNoteAi: true,
-        fraudOcr: true,
-        metaCapi: true,
-        ...features,
-      },
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-
-    if (!memoryStore.institutions) memoryStore.institutions = [];
-    memoryStore.institutions.push(newInst);
-
-    // Auto-generate Owner Account Credentials
-    const generatedPassword = generateRandomPassword(10);
-    const passwordHash = await hashPassword(generatedPassword);
-
-    const ownerUser = {
-      id: (memoryStore.users?.length || 0) + 1,
-      institution_id: newInst.id,
-      name: `Owner ${name}`,
-      email: email,
-      password_hash: passwordHash,
-      role: "owner",
-      phone_number: phone_number,
-      commission_rate_percent: 0,
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-    if (!memoryStore.users) memoryStore.users = [];
-    memoryStore.users.push(ownerUser);
-
-    res.status(201).json({
-      success: true,
-      message: "Instansi berhasil dibuat dan akun Owner telah di-generate otomatis!",
-      data: newInst,
-      credentialsBundle: {
-        institutionName: newInst.name,
-        loginUrl: "http://localhost:3000/login",
-        email: ownerUser.email,
-        temporaryPassword: generatedPassword,
-        role: "Owner / Supervisor",
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
+      temporaryPassword: password,
+      role: "Owner / Supervisor",
+    },
+  });
 }
 
 /**
- * Update Institution Profile & 14 Feature Toggles
- * PUT /api/v1/institutions/:id
+ * PUT /institutions/:id
+ * Owners/supervisors may edit profile fields of their own tenant only.
+ * Features, activation, tier and quotas are platform-controlled (superadmin).
  */
-export async function updateInstitution(req, res, next) {
-  try {
-    const instId = parseInt(req.params.id, 10);
-    const inst = (memoryStore.institutions || []).find((i) => i.id === instId);
-    if (!inst) {
-      return res.status(404).json({ success: false, message: "Instansi tidak ditemukan." });
-    }
+export async function updateInstitution(req, res) {
+  const id = req.params.id;
+  const isSuper = req.user.role === "superadmin";
+  if (!isSuper && id !== req.user.institution_id) throw forbidden("Anda hanya dapat mengubah instansi Anda sendiri.");
 
-    const { name, mode, sector, phone_number, email, address, is_active, features, language } = req.body;
-    if (name) inst.name = name;
-    if (mode) inst.mode = mode;
-    if (sector) inst.sector = sector;
-    if (phone_number) inst.phone_number = phone_number;
-    if (email) inst.email = email;
-    if (address) inst.address = address;
-    if (language) inst.language = language;
-    if (is_active !== undefined) inst.is_active = is_active;
-    if (features) inst.features_json = { ...inst.features_json, ...features };
-    inst.updated_at = new Date().toISOString();
+  const inst = await queryOne("SELECT * FROM institutions WHERE id = ?", [id]);
+  if (!inst) throw notFound("Instansi tidak ditemukan.");
 
-    res.json({ success: true, message: "Instansi berhasil diperbarui.", data: inst });
-  } catch (err) {
-    next(err);
+  const platformFields = ["is_active", "subscription_tier", "blast_credit_quota", "ai_token_quota"];
+  if (!isSuper) {
+    const attempted = [...platformFields, "features"].filter((f) => req.body[f] !== undefined);
+    if (attempted.length) throw forbidden(`Hanya superadmin yang dapat mengubah: ${attempted.join(", ")}.`);
   }
+  if (isSuper && id === req.user.institution_id && req.body.is_active === false) {
+    throw forbidden("Instansi platform tidak dapat dinonaktifkan.");
+  }
+
+  const sets = [];
+  const values = [];
+  for (const key of ["name", "mode", "sector", "phone_number", "email", "address", "language", ...platformFields]) {
+    if (req.body[key] !== undefined) {
+      sets.push(`${key} = ?`);
+      values.push(key === "is_active" ? (req.body[key] ? 1 : 0) : req.body[key]);
+    }
+  }
+  if (req.body.features) {
+    sets.push("features_json = JSON_MERGE_PATCH(COALESCE(features_json, JSON_OBJECT()), ?)");
+    values.push(JSON.stringify(req.body.features));
+  }
+  if (sets.length) await query(`UPDATE institutions SET ${sets.join(", ")} WHERE id = ?`, [...values, id]);
+
+  if (req.body.is_active === false) {
+    await query("UPDATE users SET token_version = token_version + 1 WHERE institution_id = ?", [id]);
+    disconnectTenant(id);
+  }
+
+  const updated = await queryOne("SELECT * FROM institutions WHERE id = ?", [id]);
+  await audit(req, "institution.update", { entityType: "institution", entityId: id, institutionId: id, metadata: Object.keys(req.body) });
+  res.json({ success: true, message: "Instansi berhasil diperbarui.", data: institutionPublic(updated) });
 }
 
-/**
- * Reset Institution Owner Password
- * POST /api/v1/institutions/:id/reset-password
- */
-export async function resetInstitutionPassword(req, res, next) {
-  try {
-    const instId = parseInt(req.params.id, 10);
-    const inst = (memoryStore.institutions || []).find((i) => i.id === instId);
-    if (!inst) {
-      return res.status(404).json({ success: false, message: "Instansi tidak ditemukan." });
-    }
+/** POST /institutions/:id/reset-password (superadmin) — resets the tenant owner's password. */
+export async function resetInstitutionPassword(req, res) {
+  const id = req.params.id;
+  const inst = await queryOne("SELECT * FROM institutions WHERE id = ?", [id]);
+  if (!inst) throw notFound("Instansi tidak ditemukan.");
 
-    const { newPassword } = req.body;
-    const passwordToSet = newPassword && newPassword.trim().length >= 6 ? newPassword.trim() : generateRandomPassword(10);
-    const passwordHash = await hashPassword(passwordToSet);
+  const owner = await queryOne("SELECT * FROM users WHERE institution_id = ? AND role = 'owner' ORDER BY id ASC LIMIT 1", [id]);
+  if (!owner) throw notFound("Akun owner untuk instansi ini tidak ditemukan.");
 
-    // Find owner user for this institution
-    let ownerUser = (memoryStore.users || []).find((u) => u.institution_id === instId && (u.role === "owner" || u.role === "admin"));
-    if (ownerUser) {
-      ownerUser.password_hash = passwordHash;
-      ownerUser.updated_at = new Date().toISOString();
-    } else {
-      // Create owner user if none exists
-      ownerUser = {
-        id: (memoryStore.users?.length || 0) + 1,
-        institution_id: instId,
-        name: `Owner ${inst.name}`,
-        email: inst.email || `owner-${instId}@klozer.id`,
-        password_hash: passwordHash,
-        role: "owner",
-        phone_number: inst.phone_number,
-        commission_rate_percent: 0,
-        is_active: 1,
-        created_at: new Date().toISOString(),
-      };
-      if (!memoryStore.users) memoryStore.users = [];
-      memoryStore.users.push(ownerUser);
-    }
+  const password = req.body.newPassword || generateRandomPassword(12);
+  await query(
+    "UPDATE users SET password_hash = ?, token_version = token_version + 1, failed_login_count = 0, locked_until = NULL WHERE id = ?",
+    [await hashPassword(password), owner.id]
+  );
+  disconnectUser(owner.id);
+  await audit(req, "institution.reset_password", { entityType: "user", entityId: owner.id, institutionId: Number(id) });
 
-    res.json({
-      success: true,
-      message: `Kata sandi akun owner instansi ${inst.name} berhasil di-reset!`,
-      credentials: {
-        institutionName: inst.name,
-        email: ownerUser.email,
-        newPassword: passwordToSet,
-        role: "Owner / Supervisor",
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
+  res.json({
+    success: true,
+    message: `Password akun owner ${inst.name} berhasil direset.`,
+    credentials: { institutionName: inst.name, email: owner.email, newPassword: password, role: "Owner / Supervisor" },
+  });
 }
 
-/**
- * Delete Institution
- * DELETE /api/v1/institutions/:id
- */
-export async function deleteInstitution(req, res, next) {
-  try {
-    const instId = parseInt(req.params.id, 10);
-    memoryStore.institutions = (memoryStore.institutions || []).filter((i) => i.id !== instId);
-    res.json({ success: true, message: "Instansi berhasil dihapus." });
-  } catch (err) {
-    next(err);
-  }
-}
+/** DELETE /institutions/:id (superadmin) — deactivates the tenant; data is retained. */
+export async function deleteInstitution(req, res) {
+  const id = req.params.id;
+  if (id === req.user.institution_id) throw forbidden("Instansi platform tidak dapat dihapus.");
 
+  const inst = await queryOne("SELECT id FROM institutions WHERE id = ?", [id]);
+  if (!inst) throw notFound("Instansi tidak ditemukan.");
+
+  await query("UPDATE institutions SET is_active = 0 WHERE id = ?", [id]);
+  await query("UPDATE users SET token_version = token_version + 1 WHERE institution_id = ?", [id]);
+  disconnectTenant(id);
+  await audit(req, "institution.deactivate", { entityType: "institution", entityId: id, institutionId: id });
+  res.json({ success: true, message: "Instansi dinonaktifkan. Data tetap tersimpan." });
+}

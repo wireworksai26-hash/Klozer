@@ -22,14 +22,12 @@ export default function Hero() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    // Reading browser storage after mount (it does not exist during server rendering).
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("klozer_token");
-      const user = localStorage.getItem("user") || localStorage.getItem("klozer_user");
-      if (token || user) {
-        setIsLoggedIn(true);
-      }
-    } catch (e) {
-      //
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem("klozer_user")) setIsLoggedIn(true);
+    } catch {
+      // storage unavailable
     }
   }, []);
 
@@ -110,17 +108,17 @@ export default function Hero() {
   }, []);
 
   return (
-    <section ref={containerRef} className="pt-32 pb-16 md:pt-40 md:pb-24 bg-[#f9f8f6] relative overflow-hidden">
-      <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+    <section ref={containerRef} className="pt-32 pb-16 md:pt-40 md:pb-24 bg-canvas relative overflow-hidden">
+      <div className="container-page">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* Left Column: Editorial Headline & Actions */}
           <div ref={textColRef} className="lg:col-span-7 flex flex-col gap-6 sm:gap-7 text-left will-change-transform">
             
             {/* Eyebrow Label */}
             <div className="flex items-center gap-2">
-              <span className="eyebrow-label text-[#171417] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#2545ff] animate-pulse-glow" />
+              <span className="eyebrow-label text-charcoal flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand animate-pulse-glow" />
                 OTOMATISASI WHATSAPP & SMART CRM
               </span>
             </div>
@@ -128,7 +126,7 @@ export default function Hero() {
             {/* Headline with Signature Serif Italic */}
             <h1
               ref={headlineRef}
-              className="text-display-headline text-[42px] sm:text-[54px] md:text-[62px] lg:text-[68px] xl:text-[76px] leading-[1.06] text-[#171417] tracking-tight"
+              className="hero-title"
             >
               Omzet tidak akan naik jika Anda{" "}
               <span className="italic-signature">
@@ -139,7 +137,7 @@ export default function Hero() {
             {/* Body Copy */}
             <p
               ref={subRef}
-              className="text-[18px] sm:text-[20px] leading-[1.6] text-[#171417] max-w-[620px] font-normal"
+              className="text-title sm:text-subheading leading-[1.6] text-charcoal max-w-[620px] font-normal"
             >
               Asisten AI WhatsApp yang melayani pesanan pelanggan, memproses <strong>Dynamic QRIS</strong> langsung di chat, dan menutup transaksi 24 jam nonstop.
             </p>
@@ -147,17 +145,17 @@ export default function Hero() {
             {/* Action Buttons: Coba Gratis & Masuk / Dashboard */}
             <div ref={ctaRef} className="flex flex-wrap items-center gap-3.5 pt-2">
               {isLoggedIn ? (
-                <Link href="/dashboard" className="btn-primary text-[16px] !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all flex items-center gap-2">
+                <Link href="/dashboard" className="btn-primary text-body !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all flex items-center gap-2">
                   <span>Buka Dashboard</span>
                   <span className="transition-transform group-hover:translate-x-1.5">→</span>
                 </Link>
               ) : (
                 <>
-                  <Link href="/register" className="btn-primary text-[16px] !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all">
+                  <Link href="/register" className="btn-primary text-body !py-3.5 !px-8 font-bold group shadow-lg hover:shadow-2xl hover:scale-102 transition-all">
                     <span>Coba Gratis 14 Hari</span>
                     <span className="transition-transform group-hover:translate-x-1.5">→</span>
                   </Link>
-                  <Link href="/login" className="px-6 py-3.5 rounded-full border border-[#ede8e2] bg-white hover:bg-[#f5f4f2] text-[15px] font-bold text-[#171417] hover:text-[#2545ff] transition-all no-underline shadow-xs">
+                  <Link href="/login" className="px-6 py-3.5 rounded-full border border-line bg-white hover:bg-sunken text-body font-bold text-charcoal hover:text-brand transition-all no-underline shadow-xs">
                     <span>Masuk ke Akun</span>
                   </Link>
                 </>
@@ -171,36 +169,36 @@ export default function Hero() {
             <div className="relative w-full max-w-[560px]">
               
               {/* Tilted Decorative Layer Behind with gentle float (Solid Ink Navy) */}
-              <div className="absolute -top-3.5 -right-3.5 w-full h-full bg-[#0c1754] rounded-[28px] rotate-2 opacity-95 -z-10 animate-float-subtle" />
+              <div className="absolute -top-3.5 -right-1.5 sm:-right-3.5 w-full h-full bg-ink rounded-[28px] rotate-2 opacity-95 -z-10 animate-float-subtle" />
 
               {/* Main Report Card (Officevibe style) */}
-              <div className="bg-white rounded-[24px] p-7 sm:p-8 shadow-[0_16px_40px_rgba(12,23,84,0.12)] border border-[#ede8e2] transition-all hover:shadow-[0_24px_60px_rgba(12,23,84,0.18)]">
+              <div className="bg-white rounded-[24px] p-7 sm:p-8 shadow-[0_16px_40px_rgba(12,23,84,0.12)] border border-line transition-all hover:shadow-[0_24px_60px_rgba(12,23,84,0.18)]">
                 
                 {/* Header row */}
                 <div className="flex items-center justify-between mb-6">
-                  <span className="text-[16.5px] font-extrabold text-[#171417]">Laporan Penjualan WhatsApp</span>
-                  <div className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#2545ff] bg-[#eaebf8] px-3.5 py-1.5 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-[#2545ff] animate-ping" />
+                  <span className="text-body font-bold text-charcoal">Laporan Penjualan WhatsApp</span>
+                  <div className="flex items-center gap-1.5 text-label font-bold text-brand bg-brand-soft px-3.5 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-brand animate-ping" />
                     <span>88% Tingkat Lunas</span>
                   </div>
                 </div>
 
                 {/* Gauge & Chart Area */}
-                <div className="grid grid-cols-12 gap-5 items-center pb-6 border-b border-[#ede8e2]">
+                <div className="grid grid-cols-12 gap-5 items-center pb-6 border-b border-line">
                   
                   {/* Animated Circular Gauge Score Box */}
-                  <div className="col-span-5 flex flex-col items-center justify-center text-center p-3.5 rounded-2xl bg-[#fcfbf9] border border-[#ede8e2] hover:border-[#2545ff]/40 transition-colors">
+                  <div className="col-span-5 flex flex-col items-center justify-center text-center p-3.5 rounded-2xl bg-soft border border-line hover:border-brand/40 transition-colors">
                     <div className="relative w-22 h-22 flex items-center justify-center">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                         <path
-                          className="text-[#eaebf8]"
+                          className="text-brand-soft"
                           strokeWidth="3.5"
                           stroke="currentColor"
                           fill="none"
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
                         <path
-                          className="text-[#2545ff] transition-all duration-1000 ease-out"
+                          className="text-brand transition-all duration-1000 ease-out"
                           strokeDasharray={`${(score / 10) * 100}, 100`}
                           strokeWidth="3.5"
                           strokeLinecap="round"
@@ -210,21 +208,21 @@ export default function Hero() {
                         />
                       </svg>
                       <div className="absolute flex flex-col items-center">
-                        <span className="text-[22px] font-black text-[#171417] leading-none">
+                        <span className="text-subheading font-bold text-charcoal leading-none">
                           {score.toFixed(1)}
                         </span>
-                        <span className="text-[10.5px] font-bold text-[#969696]">dari 10</span>
+                        <span className="text-micro font-bold text-fg-subtle">dari 10</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-extrabold text-[#171417] mt-1.5">Sangat Efisien!</span>
-                    <span className="text-[11px] font-bold text-emerald-600">↑ 2.4x omzet bulan ini</span>
+                    <span className="text-body-sm font-bold text-charcoal mt-1.5">Sangat Efisien!</span>
+                    <span className="text-caption font-bold text-emerald-600">↑ 2.4x omzet bulan ini</span>
                   </div>
 
                   {/* Clean Blue Wave Chart (Solid Flat Fill) */}
                   <div className="col-span-7 flex flex-col justify-between h-full pl-2">
-                    <div className="flex justify-between text-[12px] text-[#969696] mb-1 font-semibold">
+                    <div className="flex justify-between text-label text-fg-subtle mb-1 font-semibold">
                       <span>Tren Omzet Mingguan</span>
-                      <span className="font-extrabold text-[#2545ff]">Rp 18.5 Jt / hr</span>
+                      <span className="font-bold text-brand">Rp 18.5 Jt / hr</span>
                     </div>
                     {/* SVG Area Chart */}
                     <div className="h-22 w-full relative overflow-hidden rounded-xl">
@@ -242,7 +240,7 @@ export default function Hero() {
                         />
                       </svg>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold text-[#969696] mt-1.5">
+                    <div className="flex justify-between text-caption font-bold text-fg-subtle mt-1.5">
                       <span>Sen</span>
                       <span>Rab</span>
                       <span>Jum</span>
@@ -255,10 +253,10 @@ export default function Hero() {
                 {/* Focus metrics row with interactive hover highlight */}
                 <div className="pt-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#969696]">
+                    <span className="text-caption font-bold uppercase tracking-wider text-fg-subtle">
                       Metrik Keunggulan Toko
                     </span>
-                    <span className="text-[11.5px] text-[#2545ff] font-bold">Klik untuk filter</span>
+                    <span className="text-caption text-brand font-bold">Klik untuk filter</span>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2.5">
@@ -266,45 +264,45 @@ export default function Hero() {
                       onClick={() => setActiveMetric("qris")}
                       className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                         activeMetric === "qris"
-                          ? "bg-[#eaebf8] border-[#2545ff] shadow-sm"
-                          : "bg-[#fcfbf9] border-[#ede8e2] hover:border-[#2545ff]/40"
+                          ? "bg-brand-soft border-brand shadow-sm"
+                          : "bg-soft border-line hover:border-brand/40"
                       }`}
                     >
-                      <span className="text-[13.5px] font-extrabold text-[#171417] flex items-center gap-1.5">
-                        <QrIcon className="w-4 h-4 text-[#2545ff]" />
+                      <span className="text-body-sm font-bold text-charcoal flex items-center gap-1.5">
+                        <QrIcon className="w-4 h-4 text-brand" />
                         <span>9.8 QRIS</span>
                       </span>
-                      <span className="text-[11px] text-emerald-600 font-bold block mt-1">↑ 1.2s bayar</span>
+                      <span className="text-caption text-emerald-600 font-bold block mt-1">↑ 1.2s bayar</span>
                     </button>
                     
                     <button
                       onClick={() => setActiveMetric("voice")}
                       className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                         activeMetric === "voice"
-                          ? "bg-[#eaebf8] border-[#2545ff] shadow-sm"
-                          : "bg-[#fcfbf9] border-[#ede8e2] hover:border-[#2545ff]/40"
+                          ? "bg-brand-soft border-brand shadow-sm"
+                          : "bg-soft border-line hover:border-brand/40"
                       }`}
                     >
-                      <span className="text-[13.5px] font-extrabold text-[#171417] flex items-center gap-1.5">
-                        <MicIcon className="w-4 h-4 text-[#2545ff]" />
+                      <span className="text-body-sm font-bold text-charcoal flex items-center gap-1.5">
+                        <MicIcon className="w-4 h-4 text-brand" />
                         <span>8.9 Voice</span>
                       </span>
-                      <span className="text-[11px] text-[#969696] font-semibold block mt-1">AI Bahasa Indo</span>
+                      <span className="text-caption text-fg-subtle font-semibold block mt-1">AI Bahasa Indo</span>
                     </button>
 
                     <button
                       onClick={() => setActiveMetric("fraud")}
                       className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                         activeMetric === "fraud"
-                          ? "bg-[#eaebf8] border-[#2545ff] shadow-sm"
-                          : "bg-[#fcfbf9] border-[#ede8e2] hover:border-[#2545ff]/40"
+                          ? "bg-brand-soft border-brand shadow-sm"
+                          : "bg-soft border-line hover:border-brand/40"
                       }`}
                     >
-                      <span className="text-[13.5px] font-extrabold text-[#171417] flex items-center gap-1.5">
-                        <ShieldCheckIcon className="w-4 h-4 text-[#2545ff]" />
+                      <span className="text-body-sm font-bold text-charcoal flex items-center gap-1.5">
+                        <ShieldCheckIcon className="w-4 h-4 text-brand" />
                         <span>100% Aman</span>
                       </span>
-                      <span className="text-[11px] text-emerald-600 font-bold block mt-1">Mutasi cocok</span>
+                      <span className="text-caption text-emerald-600 font-bold block mt-1">Mutasi cocok</span>
                     </button>
                   </div>
                 </div>
@@ -313,10 +311,10 @@ export default function Hero() {
 
               {/* Hand-drawn arrow pointing to pill action button with floating animation */}
               <div className="mt-5 flex items-center gap-3 animate-float-subtle max-w-full">
-                <svg className="w-7 h-7 sm:w-9 sm:h-9 text-[#0c1754] -rotate-12 transition-transform hover:rotate-0 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-7 h-7 sm:w-9 sm:h-9 text-ink -rotate-12 transition-transform hover:rotate-0 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 19c6-2 10-7 12-14M17 5l-5 2M17 5l-2 5" />
                 </svg>
-                <div className="bg-[#0c1754] hover:bg-[#15236b] transition-colors text-white px-4 sm:px-5 py-2.5 rounded-full text-[12px] sm:text-[13px] font-bold flex items-center gap-2 shadow-md cursor-pointer max-w-full truncate">
+                <div className="bg-ink hover:bg-[#15236b] transition-colors text-white px-4 sm:px-5 py-2.5 rounded-full text-label sm:text-body-sm font-bold flex items-center gap-2 shadow-md cursor-pointer max-w-full truncate">
                   <SparklesIcon className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                   <span className="truncate">Analisis performa closing WhatsApp otomatis</span>
                 </div>

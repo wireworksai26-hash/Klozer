@@ -3,18 +3,18 @@ import Logo from "@/components/common/Logo";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0c1754] text-white pt-20 pb-12 border-t border-white/10 relative z-30">
-      <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16">
+    <footer className="bg-ink text-white pt-20 pb-12 border-t border-white/10 relative z-30">
+      <div className="container-page">
         
         {/* Main Footer Grid */}
-        <div className="grid lg:grid-cols-12 gap-12 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
           
           {/* Left Column: Brand Logo & Newsletter */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <Logo size="lg" variant="light" withIcon={true} />
 
             <div>
-              <h4 className="text-[17px] font-bold text-white mb-2">
+              <h4 className="text-title font-bold text-white mb-2">
                 Dapatkan tips otomatisasi WhatsApp di inbox Anda
               </h4>
               
@@ -23,22 +23,22 @@ export default function Footer() {
                 <input
                   type="email"
                   placeholder="Masukkan email bisnis Anda"
-                  className="bg-transparent border-none outline-none text-[14px] text-white placeholder:text-white/60 px-4 flex-1"
+                  className="bg-transparent border-none outline-none text-body-sm text-white placeholder:text-white/60 px-4 flex-1 min-w-0"
                 />
-                <button className="btn-primary !py-2.5 !px-6 text-[14px] font-medium">
+                <button className="btn-primary shrink-0 !py-2.5 !px-5 sm:!px-6 text-body-sm font-medium">
                   Langganan
                 </button>
               </div>
 
-              <label className="flex items-start gap-2 text-[12px] text-white/70 cursor-pointer">
-                <input type="checkbox" defaultChecked className="mt-0.5 accent-[#2545ff]" />
+              <label className="flex items-start gap-2 text-label text-white/70 cursor-pointer">
+                <input type="checkbox" defaultChecked className="mt-0.5 accent-brand" />
                 <span>Saya setuju menerima newsletter tips penjualan & pembaruan fitur Klozer.</span>
               </label>
             </div>
           </div>
 
           {/* Right Columns: Multi-Column Links */}
-          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-8 text-[14px]">
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-8 text-body-sm">
             
             {/* Col 1 */}
             <div>
@@ -87,12 +87,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar: Social Icons & Legal */}
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-white/70">
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-body-sm text-white/70">
           <div className="flex items-center gap-4">
-            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-[12px]">in</span>
-            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-[12px]">fb</span>
-            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-[12px]">x</span>
-            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-[12px]">ig</span>
+            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-label">in</span>
+            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-label">fb</span>
+            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-label">x</span>
+            <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold text-label">ig</span>
           </div>
 
           <div className="flex items-center gap-6">

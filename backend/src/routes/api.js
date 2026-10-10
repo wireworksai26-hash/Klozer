@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { authenticate, requireRole, optionalAuth } from "../middlewares/authMiddleware.js";
+import { authenticate, requireRole, requireSuperadmin } from "../middlewares/authMiddleware.js";
 import { tenantContext } from "../middlewares/tenantContext.js";
+import { validate } from "../middlewares/validate.js";
+import { aiLimiter, loginLimiter, publicAiLimiter, registerLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
+import { asyncHandler } from "../utils/errors.js";
+import * as v from "../validation/schemas.js";
 
-// Controllers
 import * as authCtrl from "../controllers/authController.js";
+import * as userCtrl from "../controllers/userController.js";
 import * as instCtrl from "../controllers/institutionController.js";
 import * as prodCtrl from "../controllers/productController.js";
 import * as leadCtrl from "../controllers/leadController.js";
@@ -15,85 +19,115 @@ import * as fraudCtrl from "../controllers/fraudController.js";
 import * as reportCtrl from "../controllers/reportController.js";
 import * as webhookCtrl from "../controllers/webhookController.js";
 import * as systemCtrl from "../controllers/systemController.js";
-import * as tokenUsageCtrl from "../controllers/tokenUsageController.js";
-import { getSessionStatus, updateSessionHeartbeat } from "../services/whatsappWatchdog.js";
+import * as tokenCtrl from "../controllers/tokenUsageController.js";
+import * as integrationCtrl from "../controllers/integrationController.js";
+import * as personaCtrl from "../controllers/personaController.js";
+import * as bankCtrl from "../controllers/bankAccountController.js";
+import * as auditCtrl from "../controllers/auditController.js";
 
 const router = Router();
+const h = asyncHandler;
 
-// ==================== 1. PUBLIC & AUTH ROUTES ====================
-router.post("/auth/login", authCtrl.login);
-router.post("/auth/register", authCtrl.register);
-router.get("/auth/me", authenticate, authCtrl.getMe);
+// Role groups
+const MANAGERS = ["owner", "supervisor"];
+const SALES = ["owner", "supervisor", "cs"];
+const MONEY = ["owner", "supervisor", "finance", "cs"];
+const STOCK = ["owner", "supervisor", "pic_warehouse"];
+const REPORTING = ["owner", "supervisor", "finance"];
 
-// ==================== 2. WEBHOOKS & WHATSAPP WATCHDOG ====================
-router.get("/webhooks/whatsapp", webhookCtrl.verifyWhatsAppWebhook);
-router.post("/webhooks/whatsapp", webhookCtrl.handleWhatsAppInbound);
-router.post("/webhooks/whatsapp/simulate", webhookCtrl.simulateWhatsAppInbound);
-router.post("/payments/webhook", paymentCtrl.paymentWebhookHandler);
-router.get("/whatsapp/status", authenticate, async (req, res) => {
-  const instId = req.tenantId || req.user?.institution_id || 1;
-  const status = await getSessionStatus(instId);
-  res.json(status);
-});
-router.post("/whatsapp/heartbeat", async (req, res) => {
-  const { institution_id = 1, session_status, phone_number, battery_level } = req.body;
-  const result = await updateSessionHeartbeat({
-    institutionId: institution_id,
-    sessionStatus: session_status,
-    phoneNumber: phone_number,
-    batteryLevel: battery_level,
-  });
-  res.json({ success: true, result });
-});
+// Authenticated + tenant-scoped (the standard guard for business data)
+const tenant = [authenticate, tenantContext];
 
-// ==================== 3. INSTITUTIONS (Tenants) ====================
-router.get("/institutions", authenticate, instCtrl.getAllInstitutions);
-router.post("/institutions", authenticate, requireRole("superadmin"), instCtrl.createInstitution);
-router.put("/institutions/:id", authenticate, requireRole("superadmin", "owner", "supervisor"), instCtrl.updateInstitution);
-router.post("/institutions/:id/reset-password", authenticate, requireRole("superadmin"), instCtrl.resetInstitutionPassword);
-router.delete("/institutions/:id", authenticate, requireRole("superadmin"), instCtrl.deleteInstitution);
+// ==================== 1. AUTH ====================
+router.post("/auth/login", loginLimiter, validate({ body: v.loginBody }), h(authCtrl.login));
+router.post("/auth/register", registerLimiter, validate({ body: v.registerBody }), h(authCtrl.register));
+router.get("/auth/me", authenticate, h(authCtrl.getMe));
+router.post("/auth/change-password", authenticate, validate({ body: v.changePasswordBody }), h(authCtrl.changePassword));
+// No authentication needed: clearing a cookie is harmless, and an expired session must still be able to log out.
+router.post("/auth/logout", h(authCtrl.logout));
 
-// ==================== 4. MASTER DATA (PRODUCTS) ====================
-router.get("/products", authenticate, tenantContext, prodCtrl.getProducts);
-router.post("/products", authenticate, tenantContext, prodCtrl.createProduct);
-router.put("/products/:id", authenticate, tenantContext, prodCtrl.updateProduct);
-router.delete("/products/:id", authenticate, tenantContext, prodCtrl.deleteProduct);
+// ==================== 2. PUBLIC WEBHOOKS (authenticated by signature, not by user) ====================
+router.get("/webhooks/whatsapp", webhookLimiter, h(webhookCtrl.verifyWhatsAppWebhook));
+router.post("/webhooks/whatsapp", webhookLimiter, h(webhookCtrl.handleWhatsAppInbound));
+router.post("/payments/webhook", webhookLimiter, h(paymentCtrl.paymentWebhookHandler));
 
-// ==================== 5. CRM & LEADS ====================
-router.get("/leads", authenticate, tenantContext, leadCtrl.getLeads);
-router.post("/leads", authenticate, tenantContext, leadCtrl.createLead);
-router.put("/leads/:id", authenticate, tenantContext, leadCtrl.updateLead);
+// ==================== 3. INSTITUTIONS ====================
+router.get("/institutions", authenticate, validate({ query: v.listInstitutionsQuery }), h(instCtrl.getAllInstitutions));
+router.post("/institutions", authenticate, requireSuperadmin, validate({ body: v.createInstitutionBody }), h(instCtrl.createInstitution));
+router.put("/institutions/:id", authenticate, requireRole(...MANAGERS), validate({ params: v.idParams, body: v.updateInstitutionBody }), h(instCtrl.updateInstitution));
+router.post("/institutions/:id/reset-password", authenticate, requireSuperadmin, validate({ params: v.idParams, body: v.resetPasswordBody }), h(instCtrl.resetInstitutionPassword));
+router.delete("/institutions/:id", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(instCtrl.deleteInstitution));
 
-// ==================== 6. CHAT & AI COPILOT ====================
-router.post("/ai/ask", chatCtrl.publicAskAi);
-router.get("/chats/:leadId", authenticate, tenantContext, chatCtrl.getChatMessages);
-router.post("/chats/send", authenticate, tenantContext, chatCtrl.sendMessage);
-router.post("/ai/chat", optionalAuth, chatCtrl.aiChatSimulation);
+// ==================== 4. STAFF ====================
+router.get("/users", ...tenant, requireRole(...MANAGERS, "finance"), h(userCtrl.listUsers));
+router.post("/users", ...tenant, requireRole(...MANAGERS), validate({ body: v.createUserBody }), h(userCtrl.createUser));
+router.put("/users/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: v.updateUserBody }), h(userCtrl.updateUser));
+router.delete("/users/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(userCtrl.deactivateUser));
+router.post("/users/:id/reset-password", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(userCtrl.resetUserPassword));
 
-// ==================== 7. ORDERS & INVOICING ====================
-router.get("/orders", authenticate, tenantContext, orderCtrl.getOrders);
-router.post("/orders", authenticate, tenantContext, orderCtrl.createOrder);
-router.get("/orders/:id/invoice", authenticate, tenantContext, orderCtrl.getOrderInvoice);
+// ==================== 5. PRODUCTS ====================
+router.get("/products", ...tenant, validate({ query: v.listProductsQuery }), h(prodCtrl.getProducts));
+router.post("/products", ...tenant, requireRole(...STOCK), validate({ body: v.createProductBody }), h(prodCtrl.createProduct));
+router.post("/products/bulk", ...tenant, requireRole(...STOCK), validate({ body: v.bulkProductsBody }), h(prodCtrl.bulkUpsertProducts));
+router.post("/products/stock", ...tenant, requireRole(...STOCK), validate({ body: v.stockImportBody }), h(prodCtrl.importStock));
+router.put("/products/:id", ...tenant, requireRole(...STOCK), validate({ params: v.idParams, body: v.updateProductBody }), h(prodCtrl.updateProduct));
+router.delete("/products/:id", ...tenant, requireRole(...STOCK), validate({ params: v.idParams }), h(prodCtrl.deleteProduct));
 
-// ==================== 8. DYNAMIC QRIS & PAYMENTS ====================
-router.post("/payments/qris", authenticate, tenantContext, paymentCtrl.createQrisPayment);
+// ==================== 6. LEADS ====================
+router.get("/leads", ...tenant, requireRole(...SALES, "finance"), validate({ query: v.listLeadsQuery }), h(leadCtrl.getLeads));
+router.post("/leads", ...tenant, requireRole(...SALES), validate({ body: v.createLeadBody }), h(leadCtrl.createLead));
+router.put("/leads/:id", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: v.updateLeadBody }), h(leadCtrl.updateLead));
+router.delete("/leads/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(leadCtrl.deleteLead));
 
-// ==================== 9. SHIPPING & COD ANTI-RTS ====================
-router.post("/shipping/rates", authenticate, shippingCtrl.getRates);
-router.post("/shipping/cod-risk-score", authenticate, shippingCtrl.checkCodRisk);
-router.post("/shipping/book", authenticate, tenantContext, shippingCtrl.bookShipment);
+// ==================== 7. CHAT & AI ====================
+router.post("/ai/ask", publicAiLimiter, validate({ body: v.publicAskBody }), h(chatCtrl.publicAskAi));
+router.get("/chats/:leadId", ...tenant, requireRole(...SALES), validate({ params: v.leadIdParams }), h(chatCtrl.getChatMessages));
+router.post("/chats/send", ...tenant, requireRole(...SALES), validate({ body: v.sendMessageBody }), h(chatCtrl.sendMessage));
+router.post("/ai/chat", ...tenant, requireRole(...SALES), aiLimiter, validate({ body: v.aiChatBody }), h(chatCtrl.aiChatSimulation));
+router.post("/webhooks/whatsapp/simulate", ...tenant, requireRole(...MANAGERS), validate({ body: v.simulateInboundBody }), h(webhookCtrl.simulateWhatsAppInbound));
 
-// ==================== 10. FRAUD DETECTION & RECEIPT OCR ====================
-router.post("/fraud/verify-receipt", authenticate, fraudCtrl.verifyReceipt);
-router.post("/fraud/reconcile-mutation", authenticate, tenantContext, fraudCtrl.reconcileMutation);
+router.get("/bank-accounts", ...tenant, requireRole(...MANAGERS, "finance"), h(bankCtrl.listBankAccounts));
+router.post("/bank-accounts", ...tenant, requireRole(...MANAGERS), validate({ body: v.createBankAccountBody }), h(bankCtrl.createBankAccount));
+router.put("/bank-accounts/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: v.updateBankAccountBody }), h(bankCtrl.updateBankAccount));
+router.delete("/bank-accounts/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(bankCtrl.deleteBankAccount));
+router.get("/reports/my-performance", ...tenant, requireRole(...SALES), h(reportCtrl.getMyPerformance));
+router.get("/audit-logs", ...tenant, requireRole(...MANAGERS, "finance"), h(auditCtrl.listAuditLogs));
 
-// ==================== 11. REPORTS & BUSINESS INTELLIGENCE ====================
-router.get("/reports/summary", authenticate, tenantContext, reportCtrl.getSummaryReport);
+router.get("/ai/persona", ...tenant, requireRole(...SALES), h(personaCtrl.getPersona));
+router.put("/ai/persona", ...tenant, requireRole(...MANAGERS), validate({ body: v.aiPersonaBody }), h(personaCtrl.updatePersona));
 
-// ==================== 12. SYSTEM TELEMETRY & TOKEN LOGS ====================
-router.get("/system/metrics", systemCtrl.getSystemMetrics);
-router.get("/ai/token-usage", tokenUsageCtrl.getTokenUsageSummary);
-router.get("/ai/token-balance", tokenUsageCtrl.getTenantTokenBalance);
-router.post("/ai/token-usage/log", tokenUsageCtrl.logTokenUsage);
+// ==================== 8. ORDERS ====================
+router.get("/orders", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ query: v.listOrdersQuery }), h(orderCtrl.getOrders));
+router.post("/orders", ...tenant, requireRole(...SALES), validate({ body: v.createOrderBody }), h(orderCtrl.createOrder));
+router.get("/orders/:id", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams }), h(orderCtrl.getOrder));
+router.patch("/orders/:id/status", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams, body: v.updateOrderStatusBody }), h(orderCtrl.updateOrderStatus));
+router.get("/orders/:id/invoice", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams }), h(orderCtrl.getOrderInvoice));
+
+// ==================== 9. PAYMENTS ====================
+router.post("/payments/qris", ...tenant, requireRole(...MONEY), validate({ body: v.createQrisBody }), h(paymentCtrl.createQrisPayment));
+router.post("/payments/simulate-settlement", ...tenant, requireRole(...MANAGERS), validate({ body: v.simulateSettlementBody }), h(paymentCtrl.simulateSettlement));
+
+// ==================== 10. SHIPPING & FRAUD ====================
+router.post("/shipping/rates", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ body: v.ratesBody }), h(shippingCtrl.getRates));
+router.post("/shipping/cod-risk-score", ...tenant, requireRole(...MONEY), validate({ body: v.codRiskBody }), h(shippingCtrl.checkCodRisk));
+router.post("/shipping/book", ...tenant, requireRole(...STOCK, "cs", "finance"), validate({ body: v.bookShipmentBody }), h(shippingCtrl.bookShipment));
+router.post("/fraud/verify-receipt", ...tenant, requireRole(...MONEY), validate({ body: v.verifyReceiptBody }), h(fraudCtrl.verifyReceipt));
+router.post("/fraud/reconcile-mutation", ...tenant, requireRole("owner", "supervisor", "finance"), validate({ body: v.reconcileBody }), h(fraudCtrl.reconcileMutation));
+
+// ==================== 11. REPORTS ====================
+router.get("/reports/summary", ...tenant, requireRole(...REPORTING), h(reportCtrl.getSummaryReport));
+
+// ==================== 12. INTEGRATIONS ====================
+router.get("/whatsapp/status", ...tenant, h(integrationCtrl.getWhatsAppStatus));
+router.get("/whatsapp/channel", ...tenant, requireRole(...MANAGERS), h(integrationCtrl.getWhatsAppChannel));
+router.put("/whatsapp/channel", ...tenant, requireRole(...MANAGERS), validate({ body: v.whatsappChannelBody }), h(integrationCtrl.upsertWhatsAppChannel));
+router.delete("/whatsapp/channel", ...tenant, requireRole(...MANAGERS), h(integrationCtrl.deleteWhatsAppChannel));
+router.put("/integrations/meta-capi", ...tenant, requireRole(...MANAGERS), validate({ body: v.metaCapiBody }), h(integrationCtrl.upsertMetaCapi));
+
+// ==================== 13. PLATFORM (superadmin) & TOKEN METERING ====================
+router.get("/system/metrics", authenticate, requireSuperadmin, h(systemCtrl.getSystemMetrics));
+router.get("/system/integrations", authenticate, requireSuperadmin, h(systemCtrl.getIntegrationStatus));
+router.get("/ai/token-usage", authenticate, requireSuperadmin, validate({ query: v.tokenUsageQuery }), h(tokenCtrl.getTokenUsageSummary));
+router.get("/ai/token-balance", ...tenant, h(tokenCtrl.getTenantTokenBalance));
 
 export default router;

@@ -3,84 +3,74 @@ import bcrypt from "bcryptjs";
 import { config } from "../config/env.js";
 
 const ALGORITHM = "aes-256-gcm";
-// Ensure master key is 32 bytes
-const MASTER_KEY = crypto.createHash("sha256").update(config.dbEncryptionKey).digest();
+const MASTER_KEY = Buffer.from(config.dbEncryptionKey, "hex");
+const BCRYPT_ROUNDS = 12;
+
+if (MASTER_KEY.length !== 32) {
+  throw new Error("DB_ENCRYPTION_KEY harus 64 karakter hex (32 byte).");
+}
 
 /**
- * Encrypt sensitive plain text using AES-256-GCM
- * @param {string} plainText 
- * @returns {string} iv:authTag:cipherText
+ * AES-256-GCM encrypt. Output format `iv:authTag:cipherText` (hex).
+ * Throws on failure: silently storing a secret in plain text is worse than an error.
  */
 export function encryptSecret(plainText) {
-  if (!plainText) return "";
-  try {
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv(ALGORITHM, MASTER_KEY, iv);
-    let encrypted = cipher.update(plainText, "utf8", "hex");
-    encrypted += cipher.final("hex");
-    const authTag = cipher.getAuthTag().toString("hex");
-    return `${iv.toString("hex")}:${authTag}:${encrypted}`;
-  } catch (err) {
-    console.error("[Encryption Error]", err.message);
-    return plainText;
+  if (plainText === null || plainText === undefined || plainText === "") {
+    throw new Error("encryptSecret: nilai kosong.");
   }
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, MASTER_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(String(plainText), "utf8"), cipher.final()]);
+  return `${iv.toString("hex")}:${cipher.getAuthTag().toString("hex")}:${encrypted.toString("hex")}`;
 }
 
-/**
- * Decrypt payload encrypted with AES-256-GCM
- * @param {string} encryptedPayload 
- * @returns {string} plainText
- */
-export function decryptSecret(encryptedPayload) {
-  if (!encryptedPayload || !encryptedPayload.includes(":")) return encryptedPayload;
-  try {
-    const [ivHex, authTagHex, cipherText] = encryptedPayload.split(":");
-    const decipher = crypto.createDecipheriv(ALGORITHM, MASTER_KEY, Buffer.from(ivHex, "hex"));
-    decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
-    let decrypted = decipher.update(cipherText, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    return decrypted;
-  } catch (err) {
-    console.error("[Decryption Error]", err.message);
-    return encryptedPayload;
-  }
+/** Inverse of encryptSecret. Throws if the payload is malformed or tampered with. */
+export function decryptSecret(payload) {
+  const parts = String(payload || "").split(":");
+  if (parts.length !== 3) throw new Error("decryptSecret: format payload tidak valid.");
+  const [ivHex, tagHex, dataHex] = parts;
+  const decipher = crypto.createDecipheriv(ALGORITHM, MASTER_KEY, Buffer.from(ivHex, "hex"));
+  decipher.setAuthTag(Buffer.from(tagHex, "hex"));
+  return Buffer.concat([decipher.update(Buffer.from(dataHex, "hex")), decipher.final()]).toString("utf8");
 }
 
-/**
- * Hash password using bcrypt
- */
-export async function hashPassword(password) {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
+export function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
-/**
- * Compare password with hash
- */
 export async function comparePassword(password, hash) {
   if (!password || !hash) return false;
   return bcrypt.compare(password, hash);
 }
 
-/**
- * Generate a clean, secure random password for auto-generated institution accounts
- */
-export function generateRandomPassword(length = 10) {
-  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const lower = "abcdefghjkmnpqrstuvwxyz";
-  const numbers = "23456789";
-  const special = "!@#$%";
-  const all = upper + lower + numbers + special;
+// Hash compared against when the account does not exist, so response time does
+// not reveal whether an email is registered.
+const DUMMY_HASH = bcrypt.hashSync("klozer-timing-equalizer", BCRYPT_ROUNDS);
+export const dummyPasswordCheck = (password) => bcrypt.compare(password || "", DUMMY_HASH);
 
-  let password = "";
-  password += upper[Math.floor(Math.random() * upper.length)];
-  password += lower[Math.floor(Math.random() * lower.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += special[Math.floor(Math.random() * special.length)];
+const UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const LOWER = "abcdefghjkmnpqrstuvwxyz";
+const DIGITS = "23456789";
+const SPECIAL = "!@#$%*?";
+const ALL = UPPER + LOWER + DIGITS + SPECIAL;
+const pick = (set) => set[crypto.randomInt(set.length)];
 
-  for (let i = 4; i < length; i++) {
-    password += all[Math.floor(Math.random() * all.length)];
+/** Cryptographically random password containing every character class (no look-alike glyphs). */
+export function generateRandomPassword(length = 12) {
+  const chars = [pick(UPPER), pick(LOWER), pick(DIGITS), pick(SPECIAL)];
+  while (chars.length < length) chars.push(pick(ALL));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
   }
+  return chars.join("");
+}
 
-  return password.split("").sort(() => 0.5 - Math.random()).join("");
+export const randomToken = (bytes = 24) => crypto.randomBytes(bytes).toString("hex");
+
+export function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a ?? ""), "utf8");
+  const bufB = Buffer.from(String(b ?? ""), "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
 }

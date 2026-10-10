@@ -1,252 +1,213 @@
-import { config } from "../config/env.js";
-import { memoryStore, query } from "../config/db.js";
-import { generateAiCsResponse } from "./aiBrainService.js";
+import { query, queryOne } from "../config/db.js";
+import { config, isTest } from "../config/env.js";
+import { logger } from "../config/logger.js";
+import { decryptSecret } from "../utils/crypto.js";
 import { normalizePhone } from "../utils/helpers.js";
+import { emitToTenant } from "../realtime.js";
+import { generateAiCsResponse } from "./aiBrainService.js";
+import { assertTokenQuota, estimateTokens, recordTokenUsage } from "./tokenService.js";
+
+const HUMAN_TAKEOVER_MINUTES = 10;
 
 /**
- * Calculate human-like typing delay with randomized jitter (Meta Anti-Ban Safeguard)
- * Real human CS agents do not respond in 50ms. Meta's anti-spam algorithms
- * flag accounts with instant, uniform replies. Adding natural read + typing delay
- * prevents WhatsApp WABA account blocks and shadowbans.
- * 
- * @param {string} text - Message text to calculate typing duration
- * @returns {number} Milliseconds to delay
+ * Human-like delay before an automated reply. Instant uniform replies are a
+ * known WhatsApp spam signal. 3.0s - 6.8s depending on reply length.
  */
 export function calculateHumanPacingDelay(text = "") {
-  const baseReadingDelay = 1200 + Math.floor(Math.random() * 800); // 1.2s - 2.0s
-  const typingSpeedPerChar = 18 + Math.floor(Math.random() * 12); // 18ms - 30ms per char
-  const textTypingTime = (text.length || 20) * typingSpeedPerChar;
-  const humanJitter = Math.floor(Math.random() * 1000); // 0s - 1.0s jitter
-
-  const totalDelay = baseReadingDelay + textTypingTime + humanJitter;
-
-  // Clamp delay: minimum 3.0 seconds, maximum 6.8 seconds for optimal UX & safety
-  return Math.min(6800, Math.max(3000, totalDelay));
+  const reading = 1200 + Math.floor(Math.random() * 800);
+  const typing = (text.length || 20) * (18 + Math.floor(Math.random() * 12));
+  const jitter = Math.floor(Math.random() * 1000);
+  return Math.min(6800, Math.max(3000, reading + typing + jitter));
 }
 
-/**
- * Mark inbound WhatsApp message as "read" on Meta Cloud API (Simulates human read receipt)
- * @param {Object} params { messageId, phoneNumberId, accessToken }
- */
-export async function markWhatsAppMessageRead({ messageId, phoneNumberId, accessToken }) {
-  const wabaPhoneId = phoneNumberId || config.meta.phoneNumberId;
-  const token = accessToken || config.meta.accessToken;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  if (!wabaPhoneId || !token || token.includes("development_sandbox")) {
-    return { success: true, simulated: true };
-  }
+/** Per-tenant WhatsApp Cloud API credentials (token decrypted on demand). */
+export async function getChannel(institutionId) {
+  const row = await queryOne(
+    "SELECT phone_number_id, display_phone, encrypted_access_token, is_active FROM whatsapp_channels WHERE institution_id = ? AND is_active = 1",
+    [institutionId]
+  );
+  if (!row) return null;
+  return { phoneNumberId: row.phone_number_id, displayPhone: row.display_phone, accessToken: decryptSecret(row.encrypted_access_token) };
+}
 
+/** Resolve which tenant owns an inbound WhatsApp number. Unknown numbers resolve to null. */
+export async function findChannelByPhoneNumberId(phoneNumberId) {
+  const row = await queryOne("SELECT institution_id FROM whatsapp_channels WHERE phone_number_id = ? AND is_active = 1", [phoneNumberId]);
+  return row ? row.institution_id : null;
+}
+
+async function graphPost(channel, body) {
+  const url = `https://graph.facebook.com/${config.meta.graphVersion}/${encodeURIComponent(channel.phoneNumberId)}/messages`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${channel.accessToken}` },
+    body: JSON.stringify({ messaging_product: "whatsapp", ...body }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await response.json().catch(() => ({}));
+  return { ok: response.ok, data };
+}
+
+export async function markWhatsAppMessageRead({ institutionId, messageId }) {
   try {
-    const url = `https://graph.facebook.com/v19.0/${wabaPhoneId}/messages`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        status: "read",
-        message_id: messageId,
-      }),
-    });
-
-    const data = await response.json();
-    return { success: response.ok, data };
+    const channel = await getChannel(institutionId);
+    if (!channel) return { success: false };
+    const { ok } = await graphPost(channel, { status: "read", message_id: messageId });
+    return { success: ok };
   } catch (err) {
-    console.warn("[WhatsApp Service] Mark read error:", err.message);
-    return { success: false, error: err.message };
+    logger.warn({ err: err.message }, "WhatsApp mark-read failed");
+    return { success: false };
   }
 }
 
 /**
- * Send outbound WhatsApp message via Meta Cloud API
- * @param {Object} params { to, text, phoneNumberId, accessToken, institutionId }
+ * Send a text message through the tenant's own WhatsApp number.
+ * Without a configured channel: simulated success outside production, an
+ * explicit failure in production (a message that was not sent must not look sent).
  */
-export async function sendWhatsAppMessage({
-  to,
-  text,
-  phoneNumberId = null,
-  accessToken = null,
-  institutionId = 1,
-}) {
-  const wabaPhoneId = phoneNumberId || config.meta.phoneNumberId;
-  const token = accessToken || config.meta.accessToken;
-  const cleanTo = normalizePhone(to).replace(/[^0-9]/g, "");
+export async function sendWhatsAppMessage({ institutionId, to, text }) {
+  const cleanTo = normalizePhone(to);
+  if (!cleanTo || !text) return { success: false, error: "Nomor tujuan dan teks wajib diisi." };
 
-  if (!cleanTo || !text) {
-    throw new Error("Recipient phone and message text are required.");
+  let channel;
+  try {
+    channel = await getChannel(institutionId);
+  } catch (err) {
+    logger.error({ err: err.message, institutionId }, "Cannot read WhatsApp channel credentials");
+    return { success: false, error: "Kredensial WhatsApp tidak dapat dibaca." };
   }
 
-  // If live Meta credentials are not yet configured, provide seamless sandbox dispatch
-  if (!wabaPhoneId || !token || token.includes("development_sandbox")) {
-    console.log(
-      `[WhatsApp Service Sandbox Outbound] To: +${cleanTo} | Msg: "${text.slice(0, 60)}..."`
-    );
-    return {
-      success: true,
-      mode: "sandbox_simulated",
-      to: cleanTo,
-      messageId: `wamid.HBgL${Date.now()}`,
-    };
+  if (!channel) {
+    if (config.isProduction) return { success: false, error: "WhatsApp belum dikonfigurasi untuk instansi ini." };
+    logger.info({ to: cleanTo }, "[sandbox] WhatsApp message not sent (no channel configured)");
+    return { success: true, mode: "sandbox_simulated", to: cleanTo, messageId: null };
   }
 
   try {
-    const url = `https://graph.facebook.com/v19.0/${wabaPhoneId}/messages`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: cleanTo,
-        type: "text",
-        text: {
-          preview_url: false,
-          body: text,
-        },
-      }),
+    const { ok, data } = await graphPost(channel, {
+      recipient_type: "individual",
+      to: cleanTo,
+      type: "text",
+      text: { preview_url: false, body: text },
     });
-
-    const data = await response.json();
-    if (!response.ok) {
-      console.error("[WhatsApp Cloud API Send Error]", data);
-      return { success: false, error: data };
+    if (!ok) {
+      logger.error({ institutionId, error: data?.error }, "WhatsApp Cloud API rejected message");
+      return { success: false, error: data?.error?.message || "Ditolak oleh WhatsApp Cloud API." };
     }
-
-    return {
-      success: true,
-      messageId: data?.messages?.[0]?.id,
-      to: cleanTo,
-    };
+    return { success: true, to: cleanTo, messageId: data?.messages?.[0]?.id ?? null };
   } catch (err) {
-    console.error("[WhatsApp Service Network Error]", err.message);
-    return { success: false, error: err.message };
+    logger.error({ err: err.message, institutionId }, "WhatsApp send failed");
+    return { success: false, error: "Gagal menghubungi WhatsApp Cloud API." };
   }
 }
 
+/** Find-or-create the CRM lead for a phone number in one atomic statement. */
+async function upsertLead(institutionId, phone, name) {
+  const result = await query(
+    `INSERT INTO leads (institution_id, phone_number, name, source, status, last_contacted_at)
+     VALUES (?, ?, ?, 'whatsapp', 'new', UTC_TIMESTAMP())
+     ON DUPLICATE KEY UPDATE last_contacted_at = UTC_TIMESTAMP(), id = LAST_INSERT_ID(id)`,
+    [institutionId, phone, name]
+  );
+  return result.insertId;
+}
+
 /**
- * Full Autonomous Inbound AI-CS Orchestrator with Anti-Ban Human Pacing
- * 
- * Flow:
- * 1. Store incoming customer message to thread
- * 2. Mark message as read on Meta
- * 3. Generate AI CS response using NVIDIA NIM (Llama 3.3 70B) + RAG Knowledge
- * 4. Apply anti-ban human typing delay (3.0s - 6.5s)
- * 5. Send outbound reply via Meta Cloud API
- * 6. Store AI response to thread
- * 
- * @param {Object} params { fromPhone, customerName, text, messageId, institutionId }
+ * Store an inbound customer message and, when allowed, answer it with the AI.
+ *
+ * Duplicate deliveries (Meta retries) are dropped by the unique
+ * (institution_id, wa_message_id) index, which also prevents double replies.
+ * The AI stays silent when: the tenant disabled it, its token quota is spent,
+ * a human CS replied in the last few minutes, or no model is available. In the
+ * last case the conversation is flagged for a human.
  */
-export async function processInboundAiReply({
-  fromPhone,
-  customerName = "Pelanggan",
-  text = "",
-  messageId = null,
-  institutionId = 1,
-}) {
-  const cleanPhone = normalizePhone(fromPhone);
+export async function processInboundMessage({ institutionId, fromPhone, customerName = "Pelanggan", text = "", messageId = null, messageType = "text" }) {
+  const phone = normalizePhone(fromPhone);
+  if (!phone) return { success: false, reason: "invalid_phone" };
 
-  // 1. Find or create CRM Lead in store
-  if (!memoryStore.leads) memoryStore.leads = [];
-  let lead = memoryStore.leads.find(
-    (l) => l.phone_number === cleanPhone && l.institution_id === institutionId
+  const leadId = await upsertLead(institutionId, phone, customerName);
+
+  const stored = await query(
+    `INSERT IGNORE INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, message_type, content_text)
+     VALUES (?, ?, ?, 'customer', ?, ?)`,
+    [institutionId, leadId, messageId, messageType, text || null]
   );
+  if (stored.affectedRows === 0) return { success: true, duplicate: true, leadId };
 
-  if (!lead) {
-    lead = {
-      id: memoryStore.leads.length + 1,
-      institution_id: institutionId,
-      name: customerName,
-      phone_number: cleanPhone,
-      source: "whatsapp",
-      status: "new",
-      total_orders_count: 0,
-      total_spend_amount: 0,
-      created_at: new Date().toISOString(),
-    };
-    memoryStore.leads.push(lead);
+  emitToTenant(institutionId, "chat:message", { leadId, direction: "inbound", text, messageType });
+  if (messageId) markWhatsAppMessageRead({ institutionId, messageId }).catch(() => {});
+
+  // Media / non-text: a human should look at it.
+  if (messageType !== "text" || !text.trim()) {
+    emitToTenant(institutionId, "chat:needs_human", { leadId, reason: "non_text_message" });
+    return { success: true, leadId, replied: false, reason: "non_text" };
   }
 
-  // 2. Record Customer Message in Chat History
-  if (!memoryStore.chat_messages) memoryStore.chat_messages = [];
-  const customerMsgRecord = {
-    id: memoryStore.chat_messages.length + 1,
-    institution_id: institutionId,
-    lead_id: lead.id,
-    sender_type: "customer",
-    message_type: "text",
-    content_text: text,
-    is_delivered: 1,
-    created_at: new Date().toISOString(),
-  };
-  memoryStore.chat_messages.push(customerMsgRecord);
+  const inst = await queryOne("SELECT features_json FROM institutions WHERE id = ? AND is_active = 1", [institutionId]);
+  if (!inst || inst.features_json?.personaAi === false) return { success: true, leadId, replied: false, reason: "ai_disabled" };
 
-  // 3. Mark message as read (blue checkmark)
-  if (messageId) {
-    markWhatsAppMessageRead({ messageId }).catch(() => {});
+  const humanActive = await queryOne(
+    `SELECT id FROM chat_messages
+      WHERE lead_id = ? AND sender_type = 'cs' AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE) LIMIT 1`,
+    [leadId, HUMAN_TAKEOVER_MINUTES]
+  );
+  if (humanActive) return { success: true, leadId, replied: false, reason: "human_active" };
+
+  try {
+    await assertTokenQuota(institutionId);
+  } catch {
+    emitToTenant(institutionId, "chat:needs_human", { leadId, reason: "token_quota_exhausted" });
+    return { success: true, leadId, replied: false, reason: "token_quota_exhausted" };
   }
 
-  // 4. Extract Conversation History for Multi-Turn RAG Context
-  const leadHistory = (memoryStore.chat_messages || [])
-    .filter((m) => m.lead_id === lead.id && m.institution_id === institutionId)
-    .slice(-10)
-    .map((m) => ({
-      role: m.sender_type === "customer" ? "user" : "assistant",
-      content: m.content_text,
-    }));
-
-  // 5. Generate AI CS Response (NVIDIA NIM Llama-3.3-70B + RAG)
-  const aiResult = await generateAiCsResponse({
-    institutionId,
-    customerName,
-    customerPhone: cleanPhone,
-    messageText: text,
-    history: leadHistory,
-  });
-
-  const replyText = aiResult?.replyText || "Halo kak, ada yang bisa kami bantu seputar produk kami?";
-
-  // 5. Calculate Human Typing Pacing (Anti-Ban Guardrail)
-  const pacingDelay = calculateHumanPacingDelay(replyText);
-  console.log(
-    `[WhatsApp AI CS] Received "${text.slice(0, 30)}..." -> Reply generated (${aiResult.modelUsed}). Waiting ${pacingDelay}ms human typing delay to protect WhatsApp account from Meta bans...`
+  const historyRows = await query(
+    `SELECT sender_type, content_text FROM chat_messages
+      WHERE lead_id = ? AND institution_id = ? AND content_text IS NOT NULL ORDER BY id DESC LIMIT 10`,
+    [leadId, institutionId]
   );
+  const history = historyRows
+    .reverse()
+    .slice(0, -1) // the current message is passed separately
+    .map((m) => ({ role: m.sender_type === "customer" ? "user" : "assistant", content: m.content_text }));
 
-  // Wait with Promise setTimeout to simulate human typing
-  await new Promise((resolve) => setTimeout(resolve, pacingDelay));
+  const ai = await generateAiCsResponse({ institutionId, customerName, customerPhone: phone, messageText: text, history });
 
-  // 6. Send Outbound WhatsApp Message
-  const sendResult = await sendWhatsAppMessage({
-    to: cleanPhone,
-    text: replyText,
-    institutionId,
-  });
+  if (ai.usage && (ai.usage.promptTokens !== 0 || ai.usage.completionTokens !== 0 || ai.replyText)) {
+    await recordTokenUsage({
+      institutionId,
+      model: ai.modelUsed || "unknown",
+      usageType: "whatsapp_cs",
+      promptTokens: ai.usage?.promptTokens ?? estimateTokens(text) + 400,
+      completionTokens: ai.usage?.completionTokens ?? estimateTokens(ai.replyText || ""),
+      latencyMs: ai.latencyMs ?? 0,
+    }).catch((err) => logger.warn({ err: err.message }, "Token usage not recorded"));
+  }
 
-  // 7. Record AI Response in Chat History
-  const aiMsgRecord = {
-    id: memoryStore.chat_messages.length + 1,
-    institution_id: institutionId,
-    lead_id: lead.id,
-    sender_type: "ai_cs",
-    message_type: "text",
-    content_text: replyText,
-    is_delivered: sendResult.success ? 1 : 0,
-    model_used: aiResult.modelUsed,
-    created_at: new Date().toISOString(),
-  };
-  memoryStore.chat_messages.push(aiMsgRecord);
+  if (!ai.replyText) {
+    emitToTenant(institutionId, "chat:needs_human", { leadId, reason: ai.intent });
+    return { success: true, leadId, replied: false, reason: ai.intent };
+  }
 
-  return {
-    success: true,
-    leadId: lead.id,
-    inboundText: text,
-    replyText,
-    pacingDelayMs: pacingDelay,
-    modelUsed: aiResult.modelUsed,
-    outboundStatus: sendResult,
-  };
+  if (!isTest) await sleep(calculateHumanPacingDelay(ai.replyText));
+  const sent = await sendWhatsAppMessage({ institutionId, to: phone, text: ai.replyText });
+
+  await query(
+    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error)
+     VALUES (?, ?, ?, 'ai_agent', 'text', ?, ?, ?, ?, ?)`,
+    [
+      institutionId,
+      leadId,
+      sent.messageId ?? null,
+      ai.replyText,
+      (ai.usage?.promptTokens ?? 0) + (ai.usage?.completionTokens ?? 0),
+      ai.modelUsed ?? null,
+      sent.success ? 1 : 0,
+      sent.success ? null : String(sent.error).slice(0, 250),
+    ]
+  );
+  emitToTenant(institutionId, "chat:message", { leadId, direction: "outbound", text: ai.replyText, sender: "ai_agent" });
+
+  return { success: true, leadId, replied: true, delivered: sent.success, modelUsed: ai.modelUsed, intent: ai.intent };
 }

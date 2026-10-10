@@ -1,329 +1,232 @@
-import { memoryStore, getDbPool } from "../config/db.js";
+import crypto from "crypto";
+import { query, queryOne, transaction } from "../config/db.js";
+import { config } from "../config/env.js";
+import { logger } from "../config/logger.js";
 import { generateToken } from "../middlewares/authMiddleware.js";
-import { comparePassword, hashPassword, generateRandomPassword } from "../utils/crypto.js";
+import { clearSessionCookie, setSessionCookie } from "../utils/session.js";
+import { disconnectUser } from "../realtime.js";
+import { comparePassword, dummyPasswordCheck, hashPassword, generateRandomPassword } from "../utils/crypto.js";
+import { slugify } from "../utils/helpers.js";
+import { DEFAULT_FEATURES } from "../utils/constants.js";
+import { AppError, conflict, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { sendTrialCredentialsEmail } from "../services/emailService.js";
+import { audit } from "../services/auditService.js";
 
-/**
- * User Login
- * POST /api/v1/auth/login
- */
-export async function login(req, res, next) {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email dan password wajib diisi." });
-    }
+const MAX_FAILED_LOGINS = 5;
+const LOCK_MINUTES = 15;
 
-    const cleanEmail = email.toLowerCase().trim();
-    let user = (memoryStore.users || []).find((u) => u.email.toLowerCase() === cleanEmail);
+export function userPayload(user, inst) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone_number: user.phone_number ?? null,
+    institutionId: user.institution_id,
+    institutionName: inst?.name ?? null,
+    institutionMode: inst?.mode ?? "business",
+    sector: inst?.sector ?? null,
+  };
+}
 
-    // Query MySQL if pool is available
-    const pool = await getDbPool();
-    if (pool) {
-      try {
-        const [dbUsers] = await pool.query("SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
-        if (dbUsers && dbUsers.length > 0) {
-          user = dbUsers[0];
-        }
-      } catch (e) {
-        console.warn("[Login DB Query Warning]", e.message);
-      }
-    }
-
-    if (!user) {
-      // If user not in store or db yet, check if it's spv@geprekjuara.id or standard tenant
-      if (cleanEmail === "spv@geprekjuara.id" || cleanEmail.startsWith("spv@")) {
-        const domain = cleanEmail.replace("spv@", "").replace(".id", "");
-        const formattedName = domain.charAt(0).toUpperCase() + domain.slice(1);
-        user = {
-          id: 6,
-          institution_id: 4,
-          name: `SPV - ${formattedName}`,
-          email: cleanEmail,
-          password_hash: await hashPassword(password),
-          role: "owner",
-        };
-      } else {
-        return res.status(401).json({ success: false, message: "Email atau password salah." });
-      }
-    }
-
-    // Verify Password
-    let isMatch = await comparePassword(password, user.password_hash);
-    if (!isMatch) {
-      // Fallback for numeric PINs e.g. 195098 or Klozer123!
-      if (password === "195098" || password === "Klozer123!" || password === "123456") {
-        isMatch = true;
-      }
-    }
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Email atau password salah." });
-    }
-
-    let institution = (memoryStore.institutions || []).find((i) => i.id === user.institution_id);
-    if (!institution && pool) {
-      try {
-        const [dbInsts] = await pool.query("SELECT * FROM institutions WHERE id = ?", [user.institution_id]);
-        if (dbInsts && dbInsts.length > 0) {
-          institution = dbInsts[0];
-        }
-      } catch (e) {}
-    }
-
-    if (!institution) {
-      institution = {
-        id: user.institution_id || 4,
-        name: user.name?.replace("SPV - ", "") || "Geprek Juara",
-        mode: "business",
-        sector: "Kuliner & F&B",
-      };
-    }
-
-    const token = generateToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      institution_id: user.institution_id,
-      institution_name: institution.name,
-    });
-
-    res.json({
-      success: true,
-      message: "Login berhasil.",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        institutionId: user.institution_id,
-        institutionName: institution.name,
-        institutionMode: institution.mode,
-        sector: institution.sector,
-      },
-      institution,
-    });
-  } catch (err) {
-    next(err);
-  }
+export function institutionPublic(inst) {
+  if (!inst) return null;
+  const { ai_tokens_used, ...rest } = inst;
+  return { ...rest, ai_tokens_used };
 }
 
 /**
- * Register New Institution & Auto-Generate SPV + CS Credentials
- * Format: spv@namabisnis.id, cs1@namabisnis.id, cs2@namabisnis.id
- * Password: Numeric digits (e.g. 6-digit numbers)
- * POST /api/v1/auth/register
+ * POST /auth/login
+ * Generic failure message for unknown email and wrong password, constant-time
+ * work for both, and a temporary lock after repeated failures.
  */
-export async function register(req, res, next) {
-  try {
-    const { institutionName, sector, mode = "business", ownerName, phone } = req.body;
-    if (!institutionName) {
-      return res.status(400).json({ success: false, message: "Nama toko / instansi wajib diisi." });
-    }
+export async function login(req, res) {
+  const { email, password } = req.body;
 
-    // Normalized business slug for email formatting (e.g. mahalaundry -> spv@mahalaundry.id)
-    const rawSlug = institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const businessDomain = rawSlug.length > 0 ? rawSlug : "bisnis";
-    
-    // Auto-generate standard emails
-    const spvEmail = `spv@${businessDomain}.id`;
-    const cs1Email = `cs1@${businessDomain}.id`;
-    const cs2Email = `cs2@${businessDomain}.id`;
+  const user = await queryOne("SELECT * FROM users WHERE email = ?", [email]);
+  if (!user) {
+    await dummyPasswordCheck(password);
+    await audit(req, "auth.login_failed", { metadata: { email, reason: "unknown_email" }, institutionId: null });
+    throw unauthorized("Email atau password salah.");
+  }
 
-    // 1. Create Institution
-    const slug = institutionName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const newInst = {
-      id: (memoryStore.institutions?.length || 0) + 1,
-      name: institutionName,
-      slug,
-      mode,
-      sector: sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
-      phone_number: phone || "+62 812-xxxx-xxxx",
-      email: spvEmail,
-      subscription_tier: "pro",
-      blast_credit_quota: 5000,
-      ai_token_quota: 1000000,
-      features_json: { aiPersona: true, aiAutoLabel: true, printInvoice: true, baileys: true, instagram: true, csBlast: true, publicBooking: true, stockManagement: true, picFeature: true, qrisPayment: true, voiceNoteAi: true, fraudOcr: true, metaCapi: true },
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-    if (!memoryStore.institutions) memoryStore.institutions = [];
-    memoryStore.institutions.push(newInst);
+  if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    throw new AppError(429, "Akun dikunci sementara karena terlalu banyak percobaan gagal. Coba lagi nanti.", { code: "ACCOUNT_LOCKED" });
+  }
 
-    // 2. Auto-Generate NUMERIC Passwords (Berupa Angka 6 Digit)
-    const spvPassword = Math.floor(100000 + Math.random() * 900000).toString();
-    const spvPasswordHash = await hashPassword(spvPassword);
-
-    const newOwner = {
-      id: (memoryStore.users?.length || 0) + 1,
-      institution_id: newInst.id,
-      name: ownerName || `SPV - ${institutionName}`,
-      email: spvEmail,
-      password_hash: spvPasswordHash,
-      role: "owner",
-      phone_number: phone || "",
-      commission_rate_percent: 0,
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-    if (!memoryStore.users) memoryStore.users = [];
-    // Remove if duplicate exists in local array
-    memoryStore.users = memoryStore.users.filter(
-      (u) => u.email.toLowerCase() !== spvEmail.toLowerCase() &&
-             u.email.toLowerCase() !== cs1Email.toLowerCase() &&
-             u.email.toLowerCase() !== cs2Email.toLowerCase()
+  const ok = await comparePassword(password, user.password_hash);
+  if (!ok) {
+    // One atomic statement: concurrent wrong guesses each count, so parallel requests cannot dodge the lock.
+    // The counter is only reset by a successful login, so after a lock expires each further miss re-locks.
+    await query(
+      `UPDATE users
+          SET failed_login_count = failed_login_count + 1,
+              locked_until = IF(failed_login_count >= ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? MINUTE), locked_until)
+        WHERE id = ?`,
+      [MAX_FAILED_LOGINS, LOCK_MINUTES, user.id]
     );
-    memoryStore.users.push(newOwner);
-
-    // 3. Auto-Generate CS 1 & CS 2 with numeric passwords
-    const cs1Password = Math.floor(100000 + Math.random() * 900000).toString();
-    const cs1PasswordHash = await hashPassword(cs1Password);
-    const newCs1 = {
-      id: memoryStore.users.length + 1,
-      institution_id: newInst.id,
-      name: `CS 1 - ${institutionName}`,
-      email: cs1Email,
-      password_hash: cs1PasswordHash,
-      role: "cs",
-      phone_number: phone || "",
-      commission_rate_percent: 5.0,
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-    memoryStore.users.push(newCs1);
-
-    const cs2Password = Math.floor(100000 + Math.random() * 900000).toString();
-    const cs2PasswordHash = await hashPassword(cs2Password);
-    const newCs2 = {
-      id: memoryStore.users.length + 1,
-      institution_id: newInst.id,
-      name: `CS 2 - ${institutionName}`,
-      email: cs2Email,
-      password_hash: cs2PasswordHash,
-      role: "cs",
-      phone_number: phone || "",
-      commission_rate_percent: 5.0,
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    };
-    memoryStore.users.push(newCs2);
-
-    // 4. Starter Leads & Products for This Tenant
-    if (!memoryStore.leads) memoryStore.leads = [];
-    memoryStore.leads.push({
-      id: memoryStore.leads.length + 1,
-      institution_id: newInst.id,
-      phone_number: "6281298765432",
-      name: `Pelanggan Pertama (${institutionName})`,
-      gender: "Umum",
-      city: "Jakarta",
-      address_full: "Jl. Sudirman No. 1, Jakarta",
-      assigned_cs_id: newCs1.id,
-      status: "new_lead",
-      risk_cod_score: 95,
-      last_contacted_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-    });
-
-    if (!memoryStore.products) memoryStore.products = [];
-    memoryStore.products.push({
-      id: memoryStore.products.length + 1,
-      institution_id: newInst.id,
-      sku: `${businessDomain.toUpperCase().slice(0, 4)}-01`,
-      name: `Layanan / Produk Utama ${institutionName}`,
-      category: newInst.sector,
-      description: `Produk / paket unggulan dari ${institutionName}.`,
-      selling_price: 150000,
-      cost_price_hpp: 75000,
-      stock_quantity: 50,
-      low_stock_threshold: 5,
-      weight_in_grams: 500,
-      is_active: 1,
-      created_at: new Date().toISOString(),
-    });
-
-    // Return token + generated credentials bundle for immediate display
-    const token = generateToken({
-      id: newOwner.id,
-      name: newOwner.name,
-      email: newOwner.email,
-      role: "owner",
-      institution_id: newInst.id,
-      institution_name: newInst.name,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Instansi & Kredensial SPV / CS berhasil dibuat secara otomatis!",
-      token,
-      credentialsBundle: {
-        institutionName: newInst.name,
-        sector: newInst.sector,
-        loginUrl: "http://localhost:3000/login",
-        spv: {
-          name: newOwner.name,
-          email: spvEmail,
-          password: spvPassword,
-          role: "Supervisor / Owner",
-        },
-        cs1: {
-          name: newCs1.name,
-          email: cs1Email,
-          password: cs1Password,
-          role: "Customer Service 1",
-        },
-        cs2: {
-          name: newCs2.name,
-          email: cs2Email,
-          password: cs2Password,
-          role: "Customer Service 2",
-        },
-      },
-      user: {
-        id: newOwner.id,
-        name: newOwner.name,
-        email: newOwner.email,
-        role: "owner",
-        institutionId: newInst.id,
-        institutionName: newInst.name,
-        institutionMode: newInst.mode,
-        sector: newInst.sector,
-      },
-      institution: newInst,
-    });
-  } catch (err) {
-    next(err);
+    await audit(req, "auth.login_failed", { userId: user.id, institutionId: user.institution_id, metadata: { reason: "bad_password" } });
+    throw unauthorized("Email atau password salah.");
   }
+
+  if (!user.is_active) throw forbidden("Akun ini dinonaktifkan. Hubungi administrator toko Anda.");
+
+  const inst = await queryOne("SELECT * FROM institutions WHERE id = ?", [user.institution_id]);
+  if (!inst || !inst.is_active) throw forbidden("Instansi Anda dinonaktifkan. Hubungi dukungan Klozer.");
+
+  await query("UPDATE users SET failed_login_count = 0, locked_until = NULL, last_login_at = UTC_TIMESTAMP() WHERE id = ?", [user.id]);
+  await audit(req, "auth.login", { userId: user.id, institutionId: user.institution_id });
+
+  const token = generateToken(user);
+  setSessionCookie(res, token);
+  res.json({
+    success: true,
+    message: "Login berhasil.",
+    token,
+    user: userPayload(user, inst),
+    institution: institutionPublic(inst),
+  });
+}
+
+async function findFreeSlug(tx, institutionName) {
+  const base = slugify(institutionName) || "bisnis";
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const slug = attempt === 0 ? base : `${base}-${crypto.randomInt(10, 9999)}`;
+    const domain = slug.replace(/-/g, "");
+    const taken = await tx.queryOne(
+      `SELECT (SELECT COUNT(*) FROM institutions WHERE slug = ?) + (SELECT COUNT(*) FROM users WHERE email IN (?, ?, ?)) AS n`,
+      [slug, `spv@${domain}.id`, `cs1@${domain}.id`, `cs2@${domain}.id`]
+    );
+    if (Number(taken.n) === 0) return { slug, domain };
+  }
+  throw conflict("Tidak dapat membuat identitas unik untuk nama bisnis ini. Coba nama lain.");
 }
 
 /**
- * Get Current Authenticated Profile
- * GET /api/v1/auth/me
+ * POST /auth/register — self-service tenant signup.
+ * Creates the institution plus an owner and two CS accounts with random
+ * passwords, all in one transaction. Passwords are returned once.
  */
-export async function getMe(req, res, next) {
-  try {
-    const user = (memoryStore.users || []).find((u) => u.id === req.user?.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Pengguna tidak ditemukan." });
+export async function register(req, res) {
+  const { institutionName, sector, mode, ownerName, phone, contactEmail } = req.body;
+
+  const created = await transaction(async (tx) => {
+    const { slug, domain } = await findFreeSlug(tx, institutionName);
+    const spvEmail = `spv@${domain}.id`;
+    const cs1Email = `cs1@${domain}.id`;
+    const cs2Email = `cs2@${domain}.id`;
+
+    const instResult = await tx.query(
+      `INSERT INTO institutions
+         (name, slug, mode, sector, phone_number, email, subscription_tier, blast_credit_quota, ai_token_quota, features_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        institutionName,
+        slug,
+        mode,
+        sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
+        phone || null,
+        contactEmail || spvEmail,
+        config.trial.tier,
+        config.trial.blastCredits,
+        config.trial.aiTokens,
+        JSON.stringify(DEFAULT_FEATURES),
+      ]
+    );
+    const institutionId = instResult.insertId;
+
+    const accounts = [
+      { key: "spv", name: ownerName || `SPV - ${institutionName}`, email: spvEmail, role: "owner", rate: 0, label: "Supervisor / Owner" },
+      { key: "cs1", name: `CS 1 - ${institutionName}`, email: cs1Email, role: "cs", rate: 5, label: "Customer Service 1" },
+      { key: "cs2", name: `CS 2 - ${institutionName}`, email: cs2Email, role: "cs", rate: 5, label: "Customer Service 2" },
+    ];
+
+    const bundle = {};
+    let owner = null;
+    for (const acc of accounts) {
+      const password = generateRandomPassword(12);
+      const result = await tx.query(
+        `INSERT INTO users (institution_id, name, email, password_hash, role, phone_number, commission_rate_percent)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [institutionId, acc.name, acc.email, await hashPassword(password), acc.role, phone || null, acc.rate]
+      );
+      bundle[acc.key] = { name: acc.name, email: acc.email, password, role: acc.label };
+      if (acc.key === "spv") owner = { id: result.insertId, institution_id: institutionId, name: acc.name, email: acc.email, role: "owner", token_version: 0, phone_number: phone || null };
     }
 
-    const inst = (memoryStore.institutions || []).find((i) => i.id === user.institution_id);
+    const institution = await tx.queryOne("SELECT * FROM institutions WHERE id = ?", [institutionId]);
+    return { institution, owner, bundle };
+  });
 
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        institutionId: user.institution_id,
-        institutionName: inst?.name || "Batik Mahakarya",
-        institutionMode: inst?.mode || "business",
-      },
-    });
-  } catch (err) {
-    next(err);
+  const loginUrl = `${config.frontendUrl}/login`;
+  await audit(req, "auth.register", { institutionId: created.institution.id, userId: created.owner.id, metadata: { name: institutionName } });
+
+  if (contactEmail) {
+    sendTrialCredentialsEmail({
+      to: contactEmail,
+      institutionName,
+      sector: created.institution.sector,
+      owner: created.bundle.spv,
+      cs1: created.bundle.cs1,
+      cs2: created.bundle.cs2,
+      loginUrl,
+    }).catch((err) => logger.warn({ err: err.message }, "Credential email failed"));
   }
+
+  res.status(201).json({
+    success: true,
+    message: "Instansi & kredensial SPV / CS berhasil dibuat. Simpan password ini, tidak akan ditampilkan lagi.",
+    token: generateToken(created.owner),
+    credentialsBundle: {
+      institutionName: created.institution.name,
+      sector: created.institution.sector,
+      loginUrl,
+      ...created.bundle,
+    },
+    user: userPayload(created.owner, created.institution),
+    institution: institutionPublic(created.institution),
+  });
+}
+
+/** GET /auth/me */
+export async function getMe(req, res) {
+  const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.user.id]);
+  if (!user) throw notFound("Pengguna tidak ditemukan.");
+  const inst = await queryOne("SELECT * FROM institutions WHERE id = ?", [user.institution_id]);
+  res.json({ success: true, user: userPayload(user, inst), institution: institutionPublic(inst) });
+}
+
+/**
+ * POST /auth/change-password
+ * Bumps token_version so every previously issued token stops working, and
+ * returns a fresh token for the current session.
+ */
+export async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body;
+  const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.user.id]);
+  if (!user || !(await comparePassword(currentPassword, user.password_hash))) {
+    throw unauthorized("Password saat ini salah.");
+  }
+  if (currentPassword === newPassword) {
+    throw new AppError(400, "Password baru harus berbeda dari password saat ini.");
+  }
+
+  await query("UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?", [
+    await hashPassword(newPassword),
+    user.id,
+  ]);
+  await audit(req, "auth.change_password", { entityType: "user", entityId: user.id });
+
+  // Other devices are signed out (their tokens carry the old version); this one gets a fresh session.
+  disconnectUser(user.id);
+  const fresh = { ...user, token_version: user.token_version + 1 };
+  const token = generateToken(fresh);
+  setSessionCookie(res, token);
+  res.json({ success: true, message: "Password berhasil diubah.", token });
+}
+
+/** POST /auth/logout: ends this browser's session. */
+export async function logout(req, res) {
+  clearSessionCookie(res);
+  res.json({ success: true, message: "Anda telah keluar." });
 }

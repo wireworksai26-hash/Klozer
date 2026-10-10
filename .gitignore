@@ -108,3 +108,5 @@ coverage/
 *.mp4
 brag-output/
 
+# Database dumps contain customer data
+backups/

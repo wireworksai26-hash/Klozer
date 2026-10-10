@@ -1,32 +1,81 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   DESIGN TOKENS — single source of truth (see /DESIGN.md)
+   `static` keeps every variable in the output so inline styles and plain CSS
+   can read them too. Tailwind turns each token into a utility:
+     --color-brand   -> bg-brand / text-brand / border-brand
+     --text-label    -> text-label
+     --font-display  -> font-display
+   Do not hard-code hex colors or px font sizes in components; use these.
+   ========================================================================== */
+@theme static {
+  /* ---- Fonts ---- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-sans);
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-serif: var(--font-display);
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-arabic: var(--font-naskh), "Traditional Arabic", serif;
+
+  /* ---- Type scale (one scale for landing, auth and dashboard) ---- */
+  --text-micro: 0.6875rem;       /* 11  badges, counters */
+  --text-caption: 0.75rem;       /* 12  meta, helper text, table heads */
+  --text-label: 0.8125rem;       /* 13  dense UI: labels, secondary rows */
+  --text-body-sm: 0.875rem;      /* 14  default UI text, buttons, inputs */
+  --text-body: 1rem;             /* 16  paragraphs */
+  --text-title: 1.125rem;        /* 18  card titles */
+  --text-subheading: 1.25rem;    /* 20  */
+  --text-heading-sm: 1.5rem;     /* 24  */
+  --text-heading-md: 1.75rem;    /* 28  dashboard page titles */
+  --text-heading: 2rem;          /* 32  */
+  --text-heading-lg: 2.5rem;     /* 40  */
+  --text-display: 3rem;          /* 48  */
+  --text-display-lg: 4rem;       /* 64  hero only */
+
+  /* ---- Brand ---- */
+  --color-brand: #2545ff;
+  --color-brand-hover: #1d37cc;
+  --color-brand-light: #4866ff;  /* brand on dark surfaces */
+  --color-brand-soft: #eaebf8;   /* tinted backgrounds, active states */
+  --color-ink: #0c1754;          /* dark surfaces, display emphasis */
+  --color-charcoal: #171417;     /* landing headlines */
+
+  /* ---- Text (all pass WCAG AA 4.5:1 on white, canvas and dashboard bg) ---- */
+  --color-fg: #1e2640;           /* primary   14.9:1 */
+  --color-fg-muted: #525a78;     /* secondary  6.8:1 */
+  --color-fg-subtle: #646b84;    /* tertiary   5.3:1 — placeholders, meta */
+
+  /* ---- Surfaces & lines ---- */
+  --color-canvas: #f9f8f6;       /* page background */
+  --color-sunken: #f5f4f2;       /* dashboard background, chips, wells */
+  --color-soft: #fcfbf9;         /* subtle fills, row hover */
+  --color-sand: #f4f1ea;         /* alternate landing section band */
+  --color-line: #f0e9e1;         /* every border and divider */
+  --color-line-strong: #ddd6cc;  /* input borders, hover borders */
+}
+
 @layer base {
   :root {
-    /* Colors — DESIGN.md Exact Officevibe Tokens */
-    --color-ink-navy: #0c1754;
-    --color-electric-cobalt: #2545ff;
-    --color-charcoal: #171417;
-    --color-warm-canvas: #f9f8f6;
+    /* Legacy names kept so existing CSS and inline styles keep working. */
+    --color-ink-navy: var(--color-ink);
+    --color-electric-cobalt: var(--color-brand);
+    --color-warm-canvas: var(--color-canvas);
     --color-paper-white: #ffffff;
-    --color-cream-border: #f0e9e1;
+    --color-cream-border: var(--color-line);
     --color-graphite: #222222;
-    --color-stone: #969696;
+    --color-stone: var(--color-fg-subtle);
     --color-smoke: #cccccc;
-    --color-lavender-mist: #eaebf8;
+    --color-lavender-mist: var(--color-brand-soft);
 
-    /* Dashboard: Soft eye-friendly palette */
-    --dash-bg: #f5f4f2;
+    --dash-bg: var(--color-sunken);
     --dash-surface: #ffffff;
-    --dash-border: #ede8e2;
-    --dash-text-primary: #1e2640;      /* slightly softer than pure #0c1754 */
-    --dash-text-secondary: #5a6380;    /* warmer mid-tone, less harsh than #64748b */
-    --dash-text-muted: #8f95a8;        /* gentle muted label color */
-    --dash-accent: #2545ff;
-    --dash-accent-soft: #edeffe;       /* soft lavender tint for highlights */
-
-    /* Typography */
-    --font-display: var(--font-playfair), Georgia, serif;
-    --font-body: var(--font-inter), system-ui, sans-serif;
+    --dash-border: var(--color-line);
+    --dash-text-primary: var(--color-fg);
+    --dash-text-secondary: var(--color-fg-muted);
+    --dash-text-muted: var(--color-fg-subtle);
+    --dash-accent: var(--color-brand);
+    --dash-accent-soft: var(--color-brand-soft);
   }
 
   * {
@@ -39,15 +88,16 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
     overflow-x: hidden;
     max-width: 100vw;
   }
 
   body {
-    background-color: var(--color-warm-canvas);
+    background-color: var(--color-canvas);
     color: var(--color-charcoal);
     font-family: var(--font-body);
-    font-size: 16px;
+    font-size: var(--text-body);
     line-height: 1.6;
     overflow-x: hidden;
     max-width: 100vw;
@@ -55,83 +105,105 @@
   }
 }
 
-/* ========== DASHBOARD TYPOGRAPHY SCALE ========== */
-/* All dashboard pages sit inside [data-dash] or .dashboard-root. 
-   We use a CSS selector trick: bump all Tailwind text-[px] inline sizes
-   slightly by overriding at the root dashboard element level. */
+/* ========== DASHBOARD SHELL ========== */
 .dash-root {
-  font-size: 15px;            /* baseline bump from 14→15px for body copy */
-  color: var(--dash-text-primary);
+  font-size: var(--text-body-sm);
+  color: var(--color-fg);
   line-height: 1.65;
-
-  /* Softer on the eyes: slightly warm-tinted background */
-  background-color: var(--dash-bg);
+  background-color: var(--color-sunken);
 }
 
-/* Bump each common Tailwind inline text size class by ~1-2px in dashboard */
-.dash-root .text-xs,
-.dash-root [class*="text-[11"] {
-  font-size: 12px;
-  letter-spacing: 0.01em;
-}
-
-.dash-root .text-sm,
-.dash-root [class*="text-[12"] {
-  font-size: 13.5px;
-}
-
-.dash-root [class*="text-[13"] {
-  font-size: 14.5px;
-}
-
-.dash-root [class*="text-[14"] {
-  font-size: 15px;
-}
-
-.dash-root [class*="text-[15"] {
-  font-size: 16px;
-}
-
-/* Headings in dashboard: a touch larger + softer weight */
-.dash-root h1,
-.dash-root [class*="text-[24"],
-.dash-root [class*="text-[26"] {
-  color: var(--dash-text-primary);
-  letter-spacing: -0.02em;
-}
-
-/* Secondary / label text — softer color */
-.dash-root label,
-.dash-root [class*="text-[#64748b]"],
-.dash-root [class*="text-[#969696]"] {
-  color: var(--dash-text-secondary);
-}
-
-/* Table cells: slightly larger and warmer */
-.dash-root td {
-  font-size: 14px;
-  color: var(--dash-text-primary);
-}
-
-.dash-root th {
-  font-size: 12px;
-  color: var(--dash-text-muted);
-}
-
-/* Sidebar nav link text */
 .dash-root nav a {
-  font-size: 14px;
+  font-size: var(--text-body-sm);
 }
 
+/* ========== TYPOGRAPHY HIERARCHY ========== */
+@layer components {
+  /* Landing: one headline recipe, three steps — 28 -> 40 -> 48 */
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: var(--text-heading-md);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--color-charcoal);
+    text-wrap: balance;
+  }
+  @media (min-width: 640px) {
+    .section-title { font-size: var(--text-heading-lg); }
+  }
+  @media (min-width: 768px) {
+    .section-title { font-size: var(--text-display); }
+  }
 
+  .section-lead {
+    font-size: var(--text-body);
+    line-height: 1.7;
+    color: var(--color-fg-muted);
+  }
+  @media (min-width: 640px) {
+    .section-lead { font-size: var(--text-title); }
+  }
+  .section-title + .section-lead {
+    margin-top: 1rem;
+  }
 
-/* ========== TYPOGRAPHY (DESIGN.md) ========== */
-.font-display {
-  font-family: var(--font-display);
-}
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: var(--text-heading-lg);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--color-charcoal);
+    text-wrap: balance;
+  }
+  @media (min-width: 640px) {
+    .hero-title { font-size: var(--text-display); }
+  }
+  @media (min-width: 1024px) {
+    .hero-title { font-size: var(--text-display-lg); }
+  }
 
-.font-body {
-  font-family: var(--font-body);
+  /* Landing: shared page container (replaces 1240px/1480px variants) */
+  .container-page {
+    width: 100%;
+    max-width: 1480px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .container-page { padding-inline: 2.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .container-page { padding-inline: 3.5rem; }
+  }
+  @media (min-width: 1280px) {
+    .container-page { padding-inline: 4rem; }
+  }
+
+  /* Dashboard: page title and card/section title */
+  .page-title {
+    font-size: var(--text-heading-sm);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--color-fg);
+  }
+  @media (min-width: 640px) {
+    .page-title { font-size: var(--text-heading-md); }
+  }
+
+  .card-title {
+    font-size: var(--text-title);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--color-fg);
+  }
+
+  /* Dashboard modal widths: sm (confirm) / md (form) / lg (wide form) */
+  .modal-sm { width: 100%; max-width: 25rem; }
+  .modal-md { width: 100%; max-width: 30rem; }
+  .modal-lg { width: 100%; max-width: 45rem; }
 }
 
 .text-display-headline {
@@ -146,7 +218,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-  color: var(--color-ink-navy);
+  color: var(--color-ink);
   display: inline-block;
   padding: 0 4px;
 }
@@ -155,108 +227,104 @@
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-  color: var(--color-electric-cobalt);
+  color: var(--color-brand);
   display: inline-block;
   padding: 0 4px;
 }
 
 .eyebrow-label {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--color-charcoal);
 }
 
-.text-heading {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-charcoal);
+/* ========== BUTTONS ========== */
+/* In @layer components so utilities (text-*, font-*, px-*) can still tune them. */
+@layer components {
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 24px;
+    font-family: var(--font-body);
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: #ffffff;
+    background-color: var(--color-brand);
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-brand-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 69, 255, 0.28);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    font-family: var(--font-body);
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: var(--color-brand);
+    background-color: transparent;
+    border: 1.5px solid var(--color-brand);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-outline:hover {
+    background-color: var(--color-brand-soft);
+    transform: translateY(-2px);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-family: var(--font-body);
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    color: var(--color-graphite);
+    background: transparent;
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .btn-ghost:hover {
+    color: var(--color-brand);
+    background-color: rgba(37, 69, 255, 0.06);
+  }
 }
 
-/* ========== BUTTONS (DESIGN.md) ========== */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 11px 24px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-paper-white);
-  background-color: var(--color-electric-cobalt);
-  border: none;
-  border-radius: 100px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn-primary:hover {
-  background-color: #1a35dd;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 69, 255, 0.28);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-outline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 22px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-electric-cobalt);
-  background-color: transparent;
-  border: 1.5px solid var(--color-electric-cobalt);
-  border-radius: 100px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn-outline:hover {
-  background-color: var(--color-lavender-mist);
-  transform: translateY(-2px);
-}
-
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-graphite);
-  background: transparent;
-  border: none;
-  border-radius: 100px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-
-.btn-ghost:hover {
-  color: var(--color-electric-cobalt);
-  background-color: rgba(37, 69, 255, 0.06);
-}
-
-/* ========== CARDS & DASHBOARD SURFACES ========== */
+/* ========== CARDS & SURFACES ========== */
 .card {
   background: var(--color-paper-white);
   border-radius: 16px;
-  border: 1px solid var(--color-cream-border);
+  border: 1px solid var(--color-line);
   padding: 24px;
   box-shadow: 0 4px 20px rgba(12, 23, 84, 0.04);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -269,7 +337,7 @@
 .card-paper {
   background: var(--color-paper-white);
   border-radius: 16px;
-  border: 1px solid var(--color-cream-border);
+  border: 1px solid var(--color-line);
   box-shadow: 0 4px 24px rgba(12, 23, 84, 0.08);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -281,7 +349,7 @@
 }
 
 .card-dark-navy {
-  background: var(--color-ink-navy);
+  background: var(--color-ink);
   border-radius: 16px;
   color: var(--color-paper-white);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -295,7 +363,7 @@
 .card-accent-border {
   background: var(--color-paper-white);
   border-radius: 16px;
-  border: 1.5px solid var(--color-electric-cobalt);
+  border: 1.5px solid var(--color-brand);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -310,15 +378,15 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   border-radius: 100px;
   white-space: nowrap;
 }
 
 .badge-lavender {
-  background-color: var(--color-lavender-mist);
-  color: var(--color-ink-navy);
+  background-color: var(--color-brand-soft);
+  color: var(--color-ink);
 }
 
 .badge-success {
@@ -337,16 +405,17 @@
 }
 
 .badge-info {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand-hover);
 }
 
-/* ========== TABLE STYLING (FIX FOR DASHBOARD TABLES) ========== */
+/* ========== TABLES ========== */
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: 16px;
-  border: 1px solid var(--color-cream-border);
+  border: 1px solid var(--color-line);
   background: var(--color-paper-white);
 }
 
@@ -358,25 +427,25 @@ table {
 }
 
 thead {
-  background-color: #f7f5f0;
+  background-color: var(--color-canvas);
 }
 
 th {
   padding: 14px 18px;
-  font-size: 12.5px;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--dash-text-muted, #64748b);
-  border-bottom: 1px solid var(--color-cream-border);
+  color: var(--color-fg-subtle);
+  border-bottom: 1px solid var(--color-line);
   white-space: nowrap;
 }
 
 td {
   padding: 15px 18px;
-  font-size: 14.5px;
-  color: var(--dash-text-primary, #1e2640);
-  border-bottom: 1px solid var(--color-cream-border);
+  font-size: var(--text-body-sm);
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-line);
   vertical-align: middle;
 }
 
@@ -389,7 +458,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background-color: #fcfbf9;
+  background-color: var(--color-soft);
 }
 
 /* ========== FORM INPUTS ========== */
@@ -397,25 +466,34 @@ tbody tr:hover {
   width: 100%;
   padding: 10px 16px;
   font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--color-charcoal);
+  font-size: var(--text-body-sm);
+  color: var(--color-fg);
   background: var(--color-paper-white);
-  border: 1px solid var(--color-cream-border);
+  border: 1px solid var(--color-line-strong);
   border-radius: 12px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input:focus {
-  border-color: var(--color-electric-cobalt);
+  border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgba(37, 69, 255, 0.12);
 }
 
 .input::placeholder {
-  color: var(--color-stone);
+  color: var(--color-fg-subtle);
 }
 
-/* ========== INTUITIVE ANIMATION KEYFRAMES ========== */
+/* iOS Safari zooms the page when a focused field is below 16px. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* ========== ANIMATION KEYFRAMES ========== */
 @keyframes floatSubtle {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);

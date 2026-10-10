@@ -389,3 +389,32 @@ No distinct primary action color was observed; use the extracted neutral button 
   --radius-full: 100px;
 }
 ```
+
+## Implementation Tokens (source of truth: `frontend/src/app/globals.css`)
+
+The tokens above are the visual reference. In code they live in one `@theme` block in `globals.css`; components must use the generated utilities, not hex values or `text-[Npx]`.
+
+### Fonts
+| Role | Token / utility | Face |
+|------|-----------------|------|
+| UI + body (dashboard, auth, landing body) | `font-sans` / `font-body` | Inter |
+| Landing headlines only | `font-display` | Playfair Display (+ italic signature) |
+| IDs, SKU, IP, URLs, emails, codes | `font-mono` | JetBrains Mono |
+| Arabic (doa) | `font-arabic` | Noto Naskh Arabic |
+
+Phone numbers and amounts use Inter with `tabular-nums`, not mono. Weights: 400 / 500 / 600 / 700 only (no `font-extrabold` / `font-black`).
+
+### Type scale
+`text-micro` 11 · `text-caption` 12 · `text-label` 13 · `text-body-sm` 14 · `text-body` 16 · `text-title` 18 · `text-subheading` 20 · `text-heading-sm` 24 · `text-heading-md` 28 · `text-heading` 32 · `text-heading-lg` 40 · `text-display` 48 · `text-display-lg` 64
+
+### Color utilities
+| Token | Hex | Use |
+|-------|-----|-----|
+| `brand` / `brand-hover` / `brand-light` / `brand-soft` | #2545ff / #1d37cc / #4866ff / #eaebf8 | Primary action, active state, tint |
+| `ink` / `charcoal` | #0c1754 / #171417 | Dark surfaces; landing headlines |
+| `fg` / `fg-muted` / `fg-subtle` | #1e2640 / #525a78 / #646b84 | Text tiers (14.9 / 6.8 / 5.3 : 1 on white) |
+| `canvas` / `sunken` / `soft` / `sand` | #f9f8f6 / #f5f4f2 / #fcfbf9 / #f4f1ea | Page, dashboard bg, subtle fill, alt landing band |
+| `line` / `line-strong` | #f0e9e1 / #ddd6cc | Every border; input borders |
+
+### Hierarchy classes
+`hero-title` (40 → 48 → 64), `section-title` (28 → 40 → 48) + `eyebrow-label` + `section-lead` for every landing section header; `container-page` for the landing width; `page-title` (24 → 28) and `card-title` (18) in the dashboard; `modal-sm/md/lg` (400/480/720) for dialogs.

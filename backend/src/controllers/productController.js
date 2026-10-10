@@ -1,116 +1,167 @@
-import { memoryStore } from "../config/db.js";
-import { paginate } from "../utils/helpers.js";
+import { query, queryOne, transaction } from "../config/db.js";
+import { buildPagination, escapeLike, parsePagination } from "../utils/helpers.js";
+import { badRequest, notFound } from "../utils/errors.js";
+import { audit } from "../services/auditService.js";
 
-/**
- * Get Paginated Products List (Multi-Tenant Isolated)
- * GET /api/v1/products
- */
-export async function getProducts(req, res, next) {
-  try {
-    const requestedInstId = req.query.institutionId ? Number(req.query.institutionId) : null;
-    const institutionId = requestedInstId || Number(req.tenantId || req.user?.institution_id || req.headers["x-institution-id"] || 1);
-    const { page = 1, limit = 50, search = "", category = "" } = req.query;
+const UPDATABLE = [
+  "sku",
+  "name",
+  "category",
+  "description",
+  "image_url",
+  "selling_price",
+  "cost_price_hpp",
+  "stock_quantity",
+  "low_stock_threshold",
+  "weight_in_grams",
+  "is_active",
+];
 
-    let list = (memoryStore.products || []);
-    
-    // Filter by institution unless superadmin requests all
-    if (!(req.user?.role === "superadmin" && req.query.all === "true")) {
-      list = list.filter((p) => Number(p.institution_id) === institutionId);
-      
-      // If still empty and querying inst 1 fallback for legacy default
-      if (list.length === 0 && institutionId === 1) {
-        list = (memoryStore.products || []).filter((p) => Number(p.institution_id) === 1);
-      }
-    }
+/** GET /products — always scoped to the caller's tenant. */
+export async function getProducts(req, res) {
+  const paging = parsePagination(req.query, { defaultLimit: 50 });
+  const where = [];
+  const params = [];
 
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s));
-    }
-
-    if (category && category !== "all") {
-      list = list.filter((p) => p.category === category);
-    }
-
-    const result = paginate(list, page, limit);
-    res.json({ success: true, ...result, data: result.items, products: result.items });
-  } catch (err) {
-    next(err);
+  const crossTenant = req.user.role === "superadmin" && req.query.all === "true";
+  if (!crossTenant) {
+    where.push("institution_id = ?");
+    params.push(req.tenantId);
   }
+  if (req.query.search) {
+    const like = `%${escapeLike(req.query.search)}%`;
+    where.push("(name LIKE ? OR sku LIKE ?)");
+    params.push(like, like);
+  }
+  if (req.query.category && req.query.category !== "all") {
+    where.push("category = ?");
+    params.push(req.query.category);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+  const [{ total }] = await query(`SELECT COUNT(*) AS total FROM products ${clause}`, params);
+  const items = await query(`SELECT * FROM products ${clause} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, paging.limit, paging.offset]);
+
+  res.json({ success: true, items, pagination: buildPagination(paging, Number(total)), data: items, products: items });
+}
+
+/** POST /products */
+export async function createProduct(req, res) {
+  const b = req.body;
+  const result = await query(
+    `INSERT INTO products
+       (institution_id, sku, name, category, description, image_url, selling_price, cost_price_hpp,
+        stock_quantity, low_stock_threshold, weight_in_grams, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      req.tenantId,
+      b.sku,
+      b.name,
+      b.category ?? "Umum",
+      b.description ?? null,
+      b.image_url ?? null,
+      b.selling_price,
+      b.cost_price_hpp,
+      b.stock_quantity,
+      b.low_stock_threshold,
+      b.weight_in_grams,
+      b.is_active ? 1 : 0,
+    ]
+  );
+  const product = await queryOne("SELECT * FROM products WHERE id = ?", [result.insertId]);
+  await audit(req, "product.create", { entityType: "product", entityId: product.id });
+  res.status(201).json({ success: true, message: "Produk berhasil ditambahkan.", data: product });
+}
+
+/** PUT /products/:id — only whitelisted columns can change. */
+export async function updateProduct(req, res) {
+  const existing = await queryOne("SELECT id FROM products WHERE id = ? AND institution_id = ?", [req.params.id, req.tenantId]);
+  if (!existing) throw notFound("Produk tidak ditemukan.");
+
+  const sets = [];
+  const values = [];
+  for (const key of UPDATABLE) {
+    if (req.body[key] !== undefined) {
+      sets.push(`${key} = ?`);
+      values.push(key === "is_active" ? (req.body[key] ? 1 : 0) : req.body[key]);
+    }
+  }
+  if (sets.length) {
+    await query(`UPDATE products SET ${sets.join(", ")} WHERE id = ? AND institution_id = ?`, [...values, req.params.id, req.tenantId]);
+  }
+
+  const product = await queryOne("SELECT * FROM products WHERE id = ?", [req.params.id]);
+  await audit(req, "product.update", { entityType: "product", entityId: product.id, metadata: Object.keys(req.body) });
+  res.json({ success: true, message: "Produk berhasil diperbarui.", data: product });
+}
+
+/** DELETE /products/:id */
+export async function deleteProduct(req, res) {
+  const result = await query("DELETE FROM products WHERE id = ? AND institution_id = ?", [req.params.id, req.tenantId]);
+  if (!result.affectedRows) throw notFound("Produk tidak ditemukan.");
+  await audit(req, "product.delete", { entityType: "product", entityId: req.params.id });
+  res.json({ success: true, message: "Produk berhasil dihapus." });
 }
 
 /**
- * Create Product with Multi-Level Variants & HPP
- * POST /api/v1/products
+ * POST /products/bulk — import a catalogue in one transaction.
+ * Existing SKUs are updated, new ones created. Mode "replace" additionally
+ * deactivates (never deletes) products that are not in the file, so it is reversible.
  */
-export async function createProduct(req, res, next) {
-  try {
-    const institutionId = req.tenantId || 1;
-    const { sku, name, category, selling_price, cost_price_hpp, stock_quantity, weight_in_grams, description, image_url } = req.body;
-
-    if (!sku || !name || selling_price === undefined) {
-      return res.status(400).json({ success: false, message: "SKU, nama produk, dan harga jual wajib diisi." });
-    }
-
-    const newProd = {
-      id: (memoryStore.products?.length || 0) + 1,
-      institution_id: institutionId,
-      sku,
-      name,
-      category: category || "Umum",
-      description: description || "",
-      image_url: image_url || "",
-      selling_price: Number(selling_price),
-      cost_price_hpp: Number(cost_price_hpp || 0),
-      stock_quantity: Number(stock_quantity || 0),
-      low_stock_threshold: 5,
-      weight_in_grams: Number(weight_in_grams || 200),
-      is_active: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    if (!memoryStore.products) memoryStore.products = [];
-    memoryStore.products.push(newProd);
-
-    res.status(201).json({ success: true, message: "Produk berhasil ditambahkan.", data: newProd });
-  } catch (err) {
-    next(err);
+export async function bulkUpsertProducts(req, res) {
+  const { items, mode } = req.body;
+  const seen = new Set();
+  for (const item of items) {
+    const key = item.sku.toLowerCase();
+    if (seen.has(key)) throw badRequest(`SKU duplikat di file impor: ${item.sku}`);
+    seen.add(key);
   }
+
+  const summary = await transaction(async (tx) => {
+    const existing = new Set(
+      (await tx.query("SELECT sku FROM products WHERE institution_id = ? AND sku IN (?)", [req.tenantId, items.map((i) => i.sku)])).map((r) => r.sku.toLowerCase())
+    );
+    let created = 0;
+    let updated = 0;
+    for (const p of items) {
+      await tx.query(
+        `INSERT INTO products
+           (institution_id, sku, name, category, description, selling_price, cost_price_hpp, stock_quantity, low_stock_threshold, weight_in_grams, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+         ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), description = VALUES(description),
+           selling_price = VALUES(selling_price), cost_price_hpp = VALUES(cost_price_hpp), stock_quantity = VALUES(stock_quantity),
+           low_stock_threshold = VALUES(low_stock_threshold), weight_in_grams = VALUES(weight_in_grams), is_active = 1`,
+        [req.tenantId, p.sku, p.name, p.category ?? "Umum", p.description ?? null, p.selling_price, p.cost_price_hpp, p.stock_quantity, p.low_stock_threshold, p.weight_in_grams]
+      );
+      if (existing.has(p.sku.toLowerCase())) updated++;
+      else created++;
+    }
+    let deactivated = 0;
+    if (mode === "replace") {
+      const result = await tx.query("UPDATE products SET is_active = 0 WHERE institution_id = ? AND sku NOT IN (?) AND is_active = 1", [
+        req.tenantId,
+        items.map((i) => i.sku),
+      ]);
+      deactivated = result.affectedRows;
+    }
+    return { created, updated, deactivated };
+  });
+
+  await audit(req, "product.bulk_import", { metadata: { ...summary, mode } });
+  res.status(201).json({ success: true, message: "Impor produk selesai.", ...summary });
 }
 
-/**
- * Update Product
- * PUT /api/v1/products/:id
- */
-export async function updateProduct(req, res, next) {
-  try {
-    const institutionId = req.tenantId || 1;
-    const prodId = parseInt(req.params.id, 10);
-    const prod = (memoryStore.products || []).find((p) => p.id === prodId && p.institution_id === institutionId);
-
-    if (!prod) {
-      return res.status(404).json({ success: false, message: "Produk tidak ditemukan." });
+/** POST /products/stock — set absolute stock by SKU. Unknown SKUs are reported, not created. */
+export async function importStock(req, res) {
+  const unknown = [];
+  let updated = 0;
+  await transaction(async (tx) => {
+    for (const item of req.body.items) {
+      const result = await tx.query("UPDATE products SET stock_quantity = ? WHERE institution_id = ? AND sku = ?", [item.stock_quantity, req.tenantId, item.sku]);
+      if (result.affectedRows) updated++;
+      else unknown.push(item.sku);
     }
-
-    Object.assign(prod, req.body, { updated_at: new Date().toISOString() });
-    res.json({ success: true, message: "Produk berhasil diperbarui.", data: prod });
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * Delete Product
- * DELETE /api/v1/products/:id
- */
-export async function deleteProduct(req, res, next) {
-  try {
-    const institutionId = req.tenantId || 1;
-    const prodId = parseInt(req.params.id, 10);
-    memoryStore.products = (memoryStore.products || []).filter((p) => !(p.id === prodId && p.institution_id === institutionId));
-    res.json({ success: true, message: "Produk berhasil dihapus." });
-  } catch (err) {
-    next(err);
-  }
+  });
+  await audit(req, "product.stock_import", { metadata: { updated, unknown: unknown.length } });
+  res.json({ success: true, updated, unknownSkus: unknown });
 }

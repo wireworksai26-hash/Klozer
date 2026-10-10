@@ -13,7 +13,7 @@ import ChatWidget from "@/components/landing/ChatWidget";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#f9f8f6] text-[#171417] selection:bg-[#2545ff] selection:text-white relative w-full max-w-[100vw] overflow-x-hidden">
+    <div className="min-h-screen bg-canvas text-charcoal selection:bg-brand selection:text-white relative w-full max-w-[100vw] overflow-x-hidden">
       <Navbar />
       <main className="w-full max-w-[100vw] overflow-x-hidden">
         <Hero />

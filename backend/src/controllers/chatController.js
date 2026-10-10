@@ -1,150 +1,92 @@
-import { memoryStore } from "../config/db.js";
-import { generateAiCsResponse } from "../services/aiBrainService.js";
-import { transcribeAudio, synthesizeSpeech } from "../services/voiceNoteService.js";
+import { query, queryOne } from "../config/db.js";
+import { notFound, serviceUnavailable } from "../utils/errors.js";
+import { emitToTenant } from "../realtime.js";
+import { generateAiCsResponse, generateLandingAiResponse } from "../services/aiBrainService.js";
+import { assertTokenQuota, estimateTokens, recordTokenUsage } from "../services/tokenService.js";
+import { sendWhatsAppMessage } from "../services/whatsappService.js";
 
-/**
- * Get Chat Messages Thread for a Lead
- * GET /api/v1/chats/:leadId
- */
-export async function getChatMessages(req, res, next) {
-  try {
-    const institutionId = req.tenantId || 1;
-    const leadId = parseInt(req.params.leadId, 10);
+/** GET /chats/:leadId — most recent 200 messages, oldest first. */
+export async function getChatMessages(req, res) {
+  const lead = await queryOne("SELECT * FROM leads WHERE id = ? AND institution_id = ?", [req.params.leadId, req.tenantId]);
+  if (!lead) throw notFound("Kontak tidak ditemukan.");
 
-    const messages = (memoryStore.chat_messages || []).filter(
-      (m) => m.lead_id === leadId && m.institution_id === institutionId
-    );
+  const messages = await query(
+    `SELECT * FROM (
+       SELECT * FROM chat_messages WHERE lead_id = ? AND institution_id = ? ORDER BY id DESC LIMIT 200
+     ) recent ORDER BY id ASC`,
+    [lead.id, req.tenantId]
+  );
+  res.json({ success: true, data: { lead, messages } });
+}
 
-    const lead = (memoryStore.leads || []).find((l) => l.id === leadId && l.institution_id === institutionId);
+/** POST /chats/send — a human CS replies to a customer through WhatsApp. */
+export async function sendMessage(req, res) {
+  const { lead_id, content_text } = req.body;
+  const lead = await queryOne("SELECT id, phone_number FROM leads WHERE id = ? AND institution_id = ?", [lead_id, req.tenantId]);
+  if (!lead) throw notFound("Kontak tidak ditemukan.");
 
-    res.json({
-      success: true,
-      data: {
-        lead,
-        messages,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
+  const sent = await sendWhatsAppMessage({ institutionId: req.tenantId, to: lead.phone_number, text: content_text });
+
+  const result = await query(
+    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, sender_user_id, message_type, content_text, is_delivered, delivery_error)
+     VALUES (?, ?, ?, 'cs', ?, 'text', ?, ?, ?)`,
+    [req.tenantId, lead.id, sent.messageId ?? null, req.user.id, content_text, sent.success ? 1 : 0, sent.success ? null : String(sent.error).slice(0, 250)]
+  );
+  await query("UPDATE leads SET last_contacted_at = UTC_TIMESTAMP(), status = IF(status = 'new', 'in_progress', status) WHERE id = ?", [lead.id]);
+
+  const message = await queryOne("SELECT * FROM chat_messages WHERE id = ?", [result.insertId]);
+  emitToTenant(req.tenantId, "chat:message", { leadId: lead.id, direction: "outbound", text: content_text, sender: "cs" });
+
+  res.status(sent.success ? 201 : 202).json({
+    success: sent.success,
+    message: sent.success ? "Pesan berhasil dikirim." : `Pesan tersimpan tetapi gagal terkirim: ${sent.error}`,
+    data: message,
+  });
 }
 
 /**
- * Send Message (Text / Voice Note / QRIS) & Trigger AI Auto-Reply if enabled
- * POST /api/v1/chats/send
+ * POST /ai/chat — AI sandbox for signed-in staff. Grounded in the caller's own
+ * tenant data, and metered against the tenant's token quota.
  */
-export async function sendMessage(req, res, next) {
-  try {
-    const institutionId = req.tenantId || 1;
-    const { lead_id, message_type = "text", content_text = "", sender_type = "cs" } = req.body;
+export async function aiChatSimulation(req, res) {
+  const b = req.body;
+  await assertTokenQuota(req.tenantId);
 
-    if (!lead_id) {
-      return res.status(400).json({ success: false, message: "Lead ID wajib disertakan." });
-    }
+  const ai = await generateAiCsResponse({
+    institutionId: req.tenantId,
+    customerName: b.customerName || "Pelanggan",
+    customerPhone: b.customerPhone || "",
+    messageText: b.message,
+    history: b.history || [],
+    customProducts: b.products || null,
+    promos: b.promos || null,
+    institutionName: b.institutionName || null,
+    sector: b.sector || null,
+    address: b.address || null,
+    hours: b.hours || null,
+  });
 
-    const message = {
-      id: (memoryStore.chat_messages?.length || 0) + 1,
-      institution_id: institutionId,
-      lead_id: parseInt(lead_id, 10),
-      sender_type,
-      sender_user_id: req.user?.id || null,
-      message_type,
-      content_text,
-      is_delivered: 1,
-      created_at: new Date().toISOString(),
-    };
-
-    if (!memoryStore.chat_messages) memoryStore.chat_messages = [];
-    memoryStore.chat_messages.push(message);
-
-    res.status(201).json({
-      success: true,
-      message: "Pesan berhasil dikirim.",
-      data: message,
+  let tokenDeduction = null;
+  if (ai.usage && ai.modelUsed) {
+    tokenDeduction = await recordTokenUsage({
+      institutionId: req.tenantId,
+      userId: req.user.id,
+      model: ai.modelUsed,
+      usageType: "ai_sandbox",
+      promptTokens: ai.usage.promptTokens ?? estimateTokens(b.message) + 400,
+      completionTokens: ai.usage.completionTokens ?? estimateTokens(ai.replyText || ""),
+      latencyMs: ai.latencyMs ?? 0,
     });
-  } catch (err) {
-    next(err);
   }
+
+  if (!ai.replyText && ai.intent === "llm_unavailable") {
+    throw serviceUnavailable("AI sedang tidak tersedia (belum dikonfigurasi atau penyedia sedang gangguan).", { code: "AI_UNAVAILABLE" });
+  }
+
+  res.json({ ...ai, tokenDeduction });
 }
 
-import { deductTokens } from "./tokenUsageController.js";
-
-/**
- * AI CS Copilot & Sandbox Assistant
- * POST /api/v1/ai/chat
- */
-export async function aiChatSimulation(req, res, next) {
-  try {
-    const institutionId = req.tenantId || req.body.institutionId || 1;
-    const {
-      message,
-      customerName,
-      customerPhone,
-      history,
-      products,
-      promos,
-      institutionName,
-      sector,
-      address,
-      hours,
-    } = req.body;
-
-    if (!message) {
-      return res.status(400).json({ success: false, message: "Pesan tidak boleh kosong." });
-    }
-
-    const aiResult = await generateAiCsResponse({
-      institutionId,
-      customerName: customerName || "Pelanggan",
-      customerPhone: customerPhone || "",
-      messageText: message,
-      history: history || [],
-      customProducts: products || null,
-      promos: promos || null,
-      institutionName: institutionName || null,
-      sector: sector || null,
-      address: address || null,
-      hours: hours || null,
-    });
-
-    // Real Server-Side Token Deduction
-    const promptTok = Math.floor(message.length / 2.8) + 52;
-    const compTok = Math.floor((aiResult?.replyText || "").length / 3.2) + 38;
-    const totalTok = promptTok + compTok;
-
-    const tokenDeduction = deductTokens(institutionName || institutionId, totalTok);
-
-    res.json({
-      ...aiResult,
-      tokenDeduction: {
-        ...tokenDeduction,
-        promptTokens: promptTok,
-        completionTokens: compTok,
-        totalTokens: totalTok,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
+/** POST /ai/ask — public landing-page assistant (rate limited, not tenant data). */
+export async function publicAskAi(req, res) {
+  res.json(await generateLandingAiResponse(req.body.question));
 }
-
-/**
- * Public Landing Page "Tanya AI" Endpoint
- * POST /api/v1/ai/ask
- */
-export async function publicAskAi(req, res, next) {
-  try {
-    const { question } = req.body;
-    if (!question || !question.trim()) {
-      return res.status(400).json({ success: false, message: "Pertanyaan tidak boleh kosong." });
-    }
-
-    const { generateLandingAiResponse } = await import("../services/aiBrainService.js");
-    const result = await generateLandingAiResponse(question);
-
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-}
-

@@ -1,5 +1,10 @@
 node_modules
 .next
-.env.local
+.env
+.env.*
+!.env.example
 .git
 .gitignore
+README.md
+Dockerfile
+.dockerignore

@@ -57,21 +57,21 @@ export default function MetricCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-[#e8eaef] p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_rgba(16,24,40,0.06)] hover:border-[#d0d5dd] transition-all duration-200 flex flex-col justify-between group ${className}`}
+      className={`bg-white rounded-2xl border border-line p-5 shadow-[0_1px_3px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_rgba(16,24,40,0.06)] hover:border-[#d0d5dd] transition-all duration-200 flex flex-col justify-between group ${className}`}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
-        <span className="text-[13px] font-medium text-[#64748b] tracking-tight truncate">
+        <span className="text-body-sm font-medium text-fg-muted tracking-tight truncate">
           {title}
         </span>
         {Icon && (
-          <div className="w-8 h-8 rounded-lg bg-[#f4f6fb] text-[#475467] flex items-center justify-center flex-shrink-0 group-hover:bg-[#2545ff]/10 group-hover:text-[#2545ff] transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-[#f4f6fb] text-fg-muted flex items-center justify-center flex-shrink-0 group-hover:bg-brand/10 group-hover:text-brand transition-colors">
             <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
 
       <div className="flex items-baseline justify-between gap-2 my-1">
-        <div className="text-[26px] font-extrabold text-[#0f172a] tracking-tight leading-none">
+        <div className="text-heading-md font-bold text-fg tracking-tight leading-none">
           {prefix}
           {value}
           {suffix}
@@ -79,10 +79,10 @@ export default function MetricCard({
         {renderSparkline()}
       </div>
 
-      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-[#f1f3f7]">
+      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-line">
         {delta && (
           <div
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-bold ${
               deltaType === "positive"
                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                 : deltaType === "negative"
@@ -95,7 +95,7 @@ export default function MetricCard({
           </div>
         )}
         {subtitle && (
-          <span className="text-[11.5px] text-[#94a3b8] font-medium truncate ml-auto">
+          <span className="text-caption text-fg-subtle font-medium truncate ml-auto">
             {subtitle}
           </span>
         )}

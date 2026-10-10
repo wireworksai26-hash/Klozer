@@ -1,46 +1,52 @@
-import { createMidtransQrisCharge, handleMidtransWebhook } from "../services/midtransService.js";
+import { queryOne } from "../config/db.js";
+import { config } from "../config/env.js";
+import { badRequest, conflict, notFound } from "../utils/errors.js";
+import { createQrisCharge, handleMidtransNotification, settlePayment } from "../services/midtransService.js";
+import { audit } from "../services/auditService.js";
 
-/**
- * Generate Dynamic QRIS Payment via Midtrans Sandbox / Production
- * POST /api/v1/payments/qris
- */
-export async function createQrisPayment(req, res, next) {
-  try {
-    const institutionId = req.tenantId || req.institutionId || 1;
-    const { order_id, amount, customer_name, customer_phone } = req.body;
-
-    if (!order_id || !amount) {
-      return res.status(400).json({ success: false, message: "Order ID dan nominal pembayaran wajib diisi." });
-    }
-
-    const qrisResult = await createMidtransQrisCharge({
-      orderId: order_id,
-      amount: Number(amount),
-      customerName: customer_name,
-      customerPhone: customer_phone,
-      institutionId,
-    });
-
-    res.status(201).json(qrisResult);
-  } catch (err) {
-    next(err);
+/** POST /payments/qris — the charged amount is always the order's stored total. */
+export async function createQrisPayment(req, res) {
+  const ref = req.body.order_id;
+  const order = await queryOne(
+    "SELECT * FROM orders WHERE institution_id = ? AND (id = ? OR order_number = ?) LIMIT 1",
+    [req.tenantId, Number.isInteger(ref) ? ref : 0, String(ref)]
+  );
+  if (!order) throw notFound("Pesanan tidak ditemukan.");
+  if (order.status !== "waiting_payment") {
+    throw conflict(`Pesanan berstatus '${order.status}' dan tidak menunggu pembayaran.`);
   }
+  if (Number(order.total_amount) < 1500) throw badRequest("Nominal pesanan terlalu kecil untuk pembayaran QRIS.");
+
+  const lead = await queryOne("SELECT name, phone_number FROM leads WHERE id = ?", [order.lead_id]);
+  const charge = await createQrisCharge({
+    institutionId: req.tenantId,
+    order,
+    customerName: lead?.name,
+    customerPhone: lead?.phone_number,
+  });
+
+  await audit(req, "payment.qris_created", { entityType: "order", entityId: order.id, metadata: { reference: charge.paymentReference, amount: charge.amount } });
+  res.status(201).json(charge);
 }
 
 /**
- * Webhook Payment Settlement (Midtrans / Sandbox Notification) with Idempotency
- * POST /api/v1/payments/webhook
+ * POST /payments/webhook — Midtrans notification (public, authenticated by signature).
+ * Responds 200 once the notification is verified, so Midtrans does not retry
+ * events we have deliberately ignored.
  */
-export async function paymentWebhookHandler(req, res, next) {
-  try {
-    const payload = req.body;
-    if (!payload || Object.keys(payload).length === 0) {
-      return res.status(400).json({ success: false, message: "Payload webhook tidak boleh kosong." });
-    }
+export async function paymentWebhookHandler(req, res) {
+  const result = await handleMidtransNotification(req.body || {});
+  res.json(result);
+}
 
-    const result = await handleMidtransWebhook(payload);
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
+/** POST /payments/simulate-settlement — development only; never exposed in production. */
+export async function simulateSettlement(req, res) {
+  if (config.isProduction) throw notFound();
+  const payment = await queryOne("SELECT payment_reference FROM payments WHERE payment_reference = ? AND institution_id = ?", [
+    req.body.payment_reference,
+    req.tenantId,
+  ]);
+  if (!payment) throw notFound("Referensi pembayaran tidak ditemukan.");
+  const outcome = await settlePayment(payment.payment_reference);
+  res.json({ success: true, changed: Boolean(outcome.changed) });
 }

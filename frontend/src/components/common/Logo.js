@@ -6,10 +6,10 @@ export default function Logo({ variant = "dark", size = "md", href = "/", withIc
   //          "light" (for dark backgrounds like footer: white text + cobalt dot)
   
   const sizeClasses = {
-    sm: "text-[18px]",
-    md: "text-[23px]",
-    lg: "text-[28px]",
-    xl: "text-[34px]",
+    sm: "text-title",
+    md: "text-heading-sm",
+    lg: "text-heading-md",
+    xl: "text-heading",
   };
 
   const iconSizes = {
@@ -27,27 +27,27 @@ export default function Logo({ variant = "dark", size = "md", href = "/", withIc
   };
 
   const content = (
-    <span className="inline-flex items-center gap-2 select-none font-extrabold tracking-[-0.05em] leading-none transition-transform hover:opacity-90">
+    <span className="inline-flex items-center gap-2 select-none font-bold tracking-[-0.05em] leading-none transition-transform hover:opacity-90">
       {withIcon && <KlozerIcon className={`${iconSizes[size] || "w-6 h-6"} rounded-lg shadow-2xs flex-shrink-0`} />}
       <span className="inline-flex items-baseline gap-1">
-        <span className={variant === "light" ? "text-white" : "text-[#171417]"} style={{ fontFamily: "var(--font-body), Inter, sans-serif" }}>
+        <span className={variant === "light" ? "text-white" : "text-charcoal"} style={{ fontFamily: "var(--font-body), Inter, sans-serif" }}>
           klozer
         </span>
-        <span className={`${dotSizeClasses[size] || "w-2 h-2"} rounded-full bg-[#2545ff] inline-block mb-0.5 flex-shrink-0`} />
+        <span className={`${dotSizeClasses[size] || "w-2 h-2"} rounded-full bg-brand inline-block mb-0.5 flex-shrink-0`} />
       </span>
     </span>
   );
 
   if (href) {
     return (
-      <Link href={href} className={`no-underline inline-flex items-center ${sizeClasses[size] || "text-[23px]"}`}>
+      <Link href={href} className={`no-underline inline-flex items-center ${sizeClasses[size] || "text-heading-sm"}`}>
         {content}
       </Link>
     );
   }
 
   return (
-    <div className={`inline-flex items-center ${sizeClasses[size] || "text-[23px]"}`}>
+    <div className={`inline-flex items-center ${sizeClasses[size] || "text-heading-sm"}`}>
       {content}
     </div>
   );

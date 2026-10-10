@@ -1,153 +1,67 @@
-# Klozer.id — AI Conversational Commerce & Multi-Tenant CRM Platform
+# Klozer.id: AI Conversational Commerce dan CRM Multi-Tenant
 
-Platform otomatisasi penjualan WhatsApp, In-Chat Dynamic QRIS, AI Voice Note Transcription, dan Smart CRM Multi-Tenant untuk bisnis retail, kuliner, fesyen, layanan jasa, hingga lembaga sosial (NGO).
+Platform penjualan lewat WhatsApp untuk bisnis retail, kuliner, fesyen, jasa, dan lembaga sosial. AI membalas pelanggan memakai data toko Anda sendiri, QRIS diterbitkan dari chat, dan setiap bisnis (tenant) terisolasi penuh dari bisnis lain.
 
----
+## Yang sudah berfungsi
 
-## Ringkasan Fitur Utama
+- **Multi-tenant**: setiap query dibatasi `institution_id` dari token sesi, bukan dari input klien. Peran: superadmin, owner, supervisor, finance, CS, PIC gudang.
+- **Live Chat WhatsApp** (Meta Cloud API): pesan masuk tampil realtime (Socket.io), balasan CS dikirim lewat nomor tenant. Tanda tangan webhook diperiksa dan pesan ganda dari retry Meta diabaikan.
+- **Balasan AI**: NVIDIA NIM dengan failover Gemini. AI hanya memakai katalog aktif, stok, rekening terdaftar, dan persona tenant. Kuota token per tenant dicatat. Jika AI tidak tersedia, kuota habis, atau pelanggan mengirim gambar/suara, percakapan diteruskan ke CS dan muncul notifikasi.
+- **Pesanan**: harga dan HPP selalu dihitung server, stok tidak bisa oversell (diuji dengan pembelian paralel), alur status dijaga, pembatalan mengembalikan stok.
+- **QRIS (Midtrans)**: nominal dari pesanan di server, webhook diverifikasi tanda tangan dan nominalnya, notifikasi ganda diproses sekali, komisi CS dihitung sekali.
+- **Laporan dan keuangan** dari data nyata, komisi CS, rekening pembayaran, log aktivitas (audit), impor produk dan stok dari Excel.
+- **Keamanan**: password bcrypt, kunci akun setelah gagal berulang, token dicabut seketika saat staf dinonaktifkan atau password diganti, token WhatsApp dienkripsi AES-256-GCM, pembatas laju, header keamanan, konfigurasi production gagal-cepat bila secret lemah.
 
-- **Multi-Tenant Architecture**: Isolasi data penuh antar-instansi. Pendaftaran instansi otomatis men-generate akun Owner dan 2 akun Customer Service (CS 1 & CS 2).
-- **In-Chat Dynamic QRIS**: Pembuatan QRIS dinamis otomatis dalam obrolan WhatsApp dengan biaya flat Rp 750 per transaksi sukses.
-- **AI Brain & Guardrails**: Terintegrasi dengan Google Gemini AI (`gemini-3.5-flash-lite`) dengan filter keamanan anti-prompt injection dan eskalasi otomatis ke human CS.
-- **AI Voice Note Recognition**: Transkripsi dan ekstraksi entitas pesanan otomatis dari pesan suara pelanggan bahasa Indonesia.
-- **Anti-Fraud & OCR Receipt Scanner**: Verifikasi keaslian bukti transfer bank via OCR untuk mencegah penipuan struk palsu.
-- **Meta Conversions API (CAPI)**: Pengiriman event pembelian *server-side* langsung ke Meta Ads Manager secara real-time.
-- **Manajemen Komisi CS & Live Chat**: Monitoring performa CS, sistem bagi hasil komisi otomatis, dan routing percakapan pelanggan.
+Modul yang belum terhubung ke backend (label AI, broadcast, Instagram, gudang multi-lokasi, chat internal, template pesan, etalase publik) tidak ditampilkan di menu. Halamannya menyatakan "Belum tersedia" dan tidak menampilkan data contoh.
 
----
-
-## Arsitektur & Struktur Direktori
+## Struktur
 
 ```text
-Klozer.id/
-├── backend/                  # REST API Server & Layanan AI / Webhook
-│   ├── src/
-│   │   ├── config/           # Konfigurasi DB (MySQL & In-Memory Store) & Environment
-│   │   ├── controllers/      # Auth, AI, Leads, Orders, Products, Fraud, Reports
-│   │   ├── database/         # Schema SQL (17 tabel), Seeds SQL, & Migrator
-│   │   ├── middlewares/      # JWT Authentication, RBAC, Multi-Tenant Scoping
-│   │   ├── routes/           # REST API Endpoint Routing
-│   │   ├── services/         # Gemini AI, QRIS, Meta CAPI, OCR, Voice Note
-│   │   └── utils/            # Kriptografi, Validator HMAC, Helper Pagination
-│   ├── .env.example          # Template konfigurasi backend
-│   └── package.json
-│
-├── frontend/                 # Web Dashboard & Landing Page (Next.js 16)
-│   ├── public/               # Asset SVG, Favicon, & Gambar Industri
-│   ├── src/
-│   │   ├── app/              # Next.js App Router (Landing, Login, Register, Dashboard)
-│   │   ├── components/       # Komponen Landing, Dashboard, & SVG Icon Set
-│   │   ├── context/          # Dashboard Global State Context (Multi-Tenant)
-│   │   └── hooks/            # Custom Hooks (GSAP Animations)
-│   ├── .env.example          # Template konfigurasi frontend
-│   └── package.json
-│
-├── DESIGN.md                 # Design System & Pedoman Antarmuka
-├── PRD-AI-CONVERSATIONAL-COMMERCE-CRM.md
-├── SCHEMA-AI-CONVERSATIONAL-COMMERCE-CRM.md
-└── README.md
+backend/    Express API, migrasi MySQL (src/database/migrations), test (test/)
+frontend/   Next.js 16 dashboard dan landing page
+scripts/    backup.sh dan restore.sh untuk MySQL
+Caddyfile, docker-compose.yml, .env.example   deployment production
 ```
 
----
+## Menjalankan lokal
 
-## Panduan Instalasi Lokal (Quick Start)
+Kebutuhan: Node.js 22+, MySQL 8.
 
-### 1. Kebutuhan Sistem
-- **Node.js**: Versi 18.x atau lebih baru
-- **MySQL**: Versi 8.0+ (Opsional jika menggunakan mode database lokal)
-- **NPM / Yarn / PNPM**
+```bash
+cd backend  && cp .env.example .env && npm ci && npm run dev    # http://localhost:5000
+cd frontend && npm ci && npm run dev                            # http://localhost:3000
+```
 
----
+Di mode development, database dibuat otomatis dan secret memakai nilai bawaan lokal. `/api` dan `/socket.io` diteruskan Next ke backend, jadi tidak perlu CORS atau URL API di frontend. Untuk membuat akun superadmin, isi `SUPERADMIN_EMAIL` dan `SUPERADMIN_PASSWORD` di `backend/.env`. `npm run seed` (hanya development) membuat dua tenant demo dengan password `DemoPass123!` (ubah lewat `SEED_PASSWORD`).
 
-### 2. Setup Backend Server
+## Test
 
-1. Buka terminal dan masuk ke direktori `backend/`:
-   ```bash
-   cd backend
-   npm install
-   ```
+```bash
+docker run -d --name klozer_test_mysql -p 3307:3306 -e MYSQL_ROOT_PASSWORD=testroot mysql:8.0
+cd backend  && npm test       # 157 test pada MySQL asli
+cd frontend && npm test       # test mapper data dan ekspor CSV
+```
 
-2. Buat file `.env` dari template:
-   ```bash
-   cp .env.example .env
-   ```
+CI (`.github/workflows/ci.yml`) menjalankan lint, test, audit dependensi, build, dan build image Docker.
 
-3. Sesuaikan konfigurasi `.env`:
-   ```env
-   PORT=5000
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=
-   DB_NAME=klozer_db
+## Deploy
 
-   JWT_SECRET=klozer_ultra_secure_jwt_secret_key_2026
-   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-   GEMINI_MODEL=gemini-3.5-flash-lite
-   ```
+Lihat [DEPLOY.md](DEPLOY.md): Docker Compose dengan Caddy (HTTPS otomatis), backup harian, dan petunjuk update.
 
-4. Jalankan migrasi dan seed database:
-   ```bash
-   npm run migrate
-   ```
+## API inti
 
-5. Jalankan backend development server:
-   ```bash
-   npm run dev
-   ```
-   *Backend akan berjalan di `http://localhost:5000`*.
+Semua di bawah `/api/v1`, kecuali dinyatakan lain, wajib memakai `Authorization: Bearer <token>`.
 
----
-
-### 3. Setup Frontend Client
-
-1. Buka terminal baru dan masuk ke direktori `frontend/`:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. Jalankan frontend development server:
-   ```bash
-   npm run dev
-   ```
-   *Frontend akan berjalan di `http://localhost:3000`*.
-
----
-
-## Akun Uji Coba Default (Seed Accounts)
-
-Seluruh akun default menggunakan kata sandi: `Klozer123!`
-
-| Peran (Role) | Email | Deskripsi Hak Akses |
-| :--- | :--- | :--- |
-| **Superadmin** | `superadmin@klozer.id` | Akses penuh seluruh instansi, analitik server, dan kuota AI |
-| **Owner (Batik Mahakarya)** | `owner@batikmahakarya.id` | Manajemen produk, keuangan, komisi tim, dan integrasi WA |
-| **CS 1 (Frontliner)** | `siti@batikmahakarya.id` | Inbox chat pelanggan, pembuatan transaksi QRIS dinamis |
-| **CS 2 (Frontliner)** | `budi@batikmahakarya.id` | Inbox chat pelanggan, booking reservasi |
-| **Finance** | `finance@batikmahakarya.id` | Rekonsiliasi mutasi bank, invoice, dan laporan laba-rugi |
-
----
-
-## Endpoint API Inti
-
-| Method | Endpoint | Deskripsi | Autentikasi |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/login` | Login pengguna & penerbitan JWT | Publik |
-| `POST` | `/api/v1/auth/register` | Pendaftaran instansi baru & auto-generate Owner + CS | Publik |
-| `GET` | `/api/v1/auth/me` | Profil pengguna yang sedang login | Bearer Token |
-| `POST` | `/api/v1/ai/ask` | Endpoint AI Assistant dengan Guardrails | Publik / Token |
-| `GET` | `/api/v1/leads` | Daftar kontak & CRM leads (Multi-Tenant) | Bearer Token |
-| `GET` | `/api/v1/orders` | Daftar transaksi pesanan (Multi-Tenant) | Bearer Token |
-| `GET` | `/api/v1/products` | Katalog produk ber-HPP & stok | Bearer Token |
-| `POST` | `/api/v1/payments/qris/generate` | Pembuatan Dynamic QRIS resmi Bank Indonesia | Bearer Token |
-| `POST` | `/api/v1/webhook/whatsapp` | Webhook Meta WhatsApp Cloud API | Signature Meta |
-
----
-
-## Keamanan & Kepatuhan Data
-
-- Seluruh secret API keys dilindungi melalui `.gitignore`.
-- Password dienkripsi menggunakan standard `bcrypt` hashing.
-- Query database difilter secara ketat dengan `institution_id` untuk menjamin privasi data antar-perusahaan.
-- Validasi webhook Meta menggunakan verifikasi signature SHA256 HMAC.
+| Endpoint | Fungsi |
+| :--- | :--- |
+| `POST /auth/login`, `/auth/register` | login, daftar tenant (publik, dibatasi laju) |
+| `GET /auth/me`, `POST /auth/change-password` | sesi dan ganti password |
+| `GET/POST /products`, `POST /products/bulk`, `POST /products/stock` | katalog dan impor |
+| `GET/POST /leads`, `GET /chats/:leadId`, `POST /chats/send` | CRM dan chat |
+| `GET/POST /orders`, `PATCH /orders/:id/status` | pesanan |
+| `POST /payments/qris` | terbitkan QRIS untuk pesanan |
+| `POST /payments/webhook` | notifikasi Midtrans (publik, tanda tangan) |
+| `GET/POST /webhooks/whatsapp` | webhook Meta (publik, tanda tangan) |
+| `GET /reports/summary`, `GET /audit-logs` | laporan dan jejak aktivitas |
+| `PUT /ai/persona`, `POST /ai/chat` | persona AI dan simulator |
+| `GET /system/metrics`, `/system/integrations`, `/ai/token-usage` | khusus superadmin |

@@ -99,20 +99,20 @@ export default function Testimonials() {
   }, []);
 
   return (
-    <section id="testimoni" ref={containerRef} className="py-14 sm:py-18 md:py-24 bg-[#f9f8f6] border-b border-[#f0e9e1] overflow-hidden">
-      <div className="max-w-[1480px] w-full mx-auto px-6 sm:px-10 lg:px-14 xl:px-16">
+    <section id="testimoni" ref={containerRef} className="py-20 md:py-28 bg-canvas border-b border-line overflow-hidden">
+      <div className="container-page">
         
         {/* Section Headline */}
         <div className="text-center max-w-[840px] mx-auto mb-14 md:mb-16">
-          <span className="eyebrow-label text-[#2545ff] block mb-2">BUKTI KEPUASAN PENGGUNA</span>
-          <h2 className="text-display-headline text-[32px] sm:text-[42px] md:text-[46px] text-[#171417] leading-[1.15]">
+          <span className="eyebrow-label text-brand block mb-2">BUKTI KEPUASAN PENGGUNA</span>
+          <h2 className="section-title">
             <span className="italic-signature">Pemilik bisnis di Indonesia</span>{" "}
             memilih Klozer untuk meningkatkan omzet WhatsApp mereka
           </h2>
         </div>
 
         {/* 4 Pastel Cards Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {testimonials.map((t, idx) => (
             <div
               key={idx}
@@ -120,23 +120,23 @@ export default function Testimonials() {
             >
               <div>
                 {/* Rating score header */}
-                <div className="flex items-center gap-1.5 font-bold text-[14px] text-[#171417] mb-4">
+                <div className="flex items-center gap-1.5 font-bold text-body-sm text-charcoal mb-4">
                   <StarIcon className="w-4 h-4 text-amber-500 fill-amber-500" />
                   <span>{t.score}</span>
                 </div>
 
                 {/* Quote */}
-                <p className="text-[14px] leading-[1.65] text-[#171417] font-normal mb-6">
-                  "{t.quote}"
+                <p className="text-body-sm leading-[1.65] text-charcoal font-normal mb-6">
+                  &quot;{t.quote}&quot;
                 </p>
               </div>
 
               {/* Author Info */}
               <div className="pt-4 border-t border-black/10">
-                <div className="text-[13px] font-bold text-[#171417]">
+                <div className="text-body-sm font-bold text-charcoal">
                   — {t.author}
                 </div>
-                <div className="text-[11px] text-[#171417]/70 mt-0.5">
+                <div className="text-caption text-charcoal/70 mt-0.5">
                   {t.role} · {t.date}
                 </div>
               </div>

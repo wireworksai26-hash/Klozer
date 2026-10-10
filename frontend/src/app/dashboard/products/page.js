@@ -115,25 +115,25 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">Master Data Produk</h1>
-          <p className="text-[13.5px] text-[#64748b]">Kelola stok gudang, harga jual, HPP, dan sinkronisasi katalog WhatsApp otomatis.</p>
+          <h1 className="page-title">Master Data Produk</h1>
+          <p className="text-body-sm text-fg-muted">Kelola stok gudang, harga jual, HPP, dan sinkronisasi katalog WhatsApp otomatis.</p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white p-1 rounded-xl border border-[#f0e9e1] shadow-xs">
+        <div className="flex flex-wrap items-center [&>button]:whitespace-nowrap [&>a]:whitespace-nowrap gap-3">
+          <div className="flex items-center bg-white p-1 rounded-xl border border-line shadow-xs">
             <button
               onClick={() => setView("grid")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold border-none cursor-pointer transition-all ${
-                view === "grid" ? "bg-[#2545ff] text-white shadow-xs" : "bg-transparent text-[#64748b]"
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "grid" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
               Grid
             </button>
             <button
               onClick={() => setView("table")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold border-none cursor-pointer transition-all ${
-                view === "table" ? "bg-[#2545ff] text-white shadow-xs" : "bg-transparent text-[#64748b]"
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "table" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
               Tabel
@@ -143,7 +143,7 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
-            className="px-4 py-2.5 bg-white hover:bg-emerald-50 text-[#1e2640] hover:text-emerald-700 border border-[#ede8e2] rounded-xl text-[13px] font-extrabold flex items-center gap-2 cursor-pointer transition-all shadow-xs"
+            className="px-4 py-2.5 bg-white hover:bg-emerald-50 text-fg hover:text-emerald-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs"
           >
             <UploadIcon className="w-4 h-4 text-emerald-600" />
             <span>Impor / Ekspor Excel</span>
@@ -151,7 +151,7 @@ export default function ProductsPage() {
 
           <button
             onClick={handleOpenAdd}
-            className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2"
+            className="btn-primary !py-2.5 !px-5 text-body-sm font-bold flex items-center gap-2"
           >
             <span>+</span>
             <span>Tambah Produk</span>
@@ -160,9 +160,9 @@ export default function ProductsPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#f0e9e1] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 bg-[#f9f8f6] border border-[#f0e9e1] rounded-full px-3.5 py-2 w-full sm:w-[320px]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2">
+      <div className="bg-white p-4 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-2 w-full sm:w-[320px]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646b84" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -170,20 +170,20 @@ export default function ProductsPage() {
             placeholder="Cari nama produk, kode SKU..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none outline-none text-[13px] text-[#0c1754] placeholder:text-[#969696] flex-1 font-medium"
+            className="bg-transparent border-none outline-none text-body-sm text-ink placeholder:text-fg-subtle flex-1 font-medium"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          <span className="text-[12px] font-bold text-[#64748b] whitespace-nowrap">Kategori:</span>
+          <span className="text-label font-bold text-fg-muted whitespace-nowrap">Kategori:</span>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all border cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-all border cursor-pointer ${
                 categoryFilter === cat
-                  ? "bg-[#2545ff] text-white border-[#2545ff]"
-                  : "bg-[#f9f8f6] text-[#64748b] border-[#f0e9e1] hover:bg-white"
+                  ? "bg-brand text-white border-brand"
+                  : "bg-canvas text-fg-muted border-line hover:bg-white"
               }`}
             >
               {cat === "all" ? "Semua" : cat}
@@ -195,27 +195,27 @@ export default function ProductsPage() {
       {/* GRID VIEW */}
       {view === "grid" ? (
         filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 border border-[#f0e9e1] shadow-xs text-center">
+          <div className="bg-white rounded-2xl p-12 border border-line shadow-xs text-center">
             <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
-              <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
-                <TagIcon className="w-6 h-6 text-[#2545ff]" />
+              <div className="w-12 h-12 rounded-2xl bg-brand-soft text-brand flex items-center justify-center mb-3">
+                <TagIcon className="w-6 h-6 text-brand" />
               </div>
-              <div className="font-extrabold text-[#0c1754] text-[16px]">Katalog Produk Masih Kosong</div>
-              <p className="text-[12.5px] text-[#64748b] mt-1 mb-5 leading-relaxed">
+              <div className="font-bold text-ink text-body">Katalog Produk Masih Kosong</div>
+              <p className="text-label text-fg-muted mt-1 mb-5 leading-relaxed">
                 Katalog produk untuk instansi <strong>{activeInstitution?.name || "Anda"}</strong> belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 <button
                   type="button"
                   onClick={handleOpenAdd}
-                  className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
+                  className="btn-primary !py-2 !px-4 text-label font-bold"
                 >
                   + Tambah Produk Manual
                 </button>
                 <button
                   type="button"
                   onClick={() => loadTemplateProducts("auto")}
-                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[12.5px] font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-label font-bold cursor-pointer transition-colors flex items-center gap-1.5"
                 >
                   <SparklesIcon className="w-4 h-4 text-amber-600" />
                   <span>Muat Produk Rekomendasi Instansi</span>
@@ -224,23 +224,23 @@ export default function ProductsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((p) => {
               const isLow = (p.stock || 0) <= (p.lowStock || 5);
               return (
                 <div
                   key={p.id}
-                  className={`bg-white rounded-2xl p-5 border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all ${
+                  className={`bg-white rounded-2xl p-5 border border-line shadow-[0_2px_12px_rgba(12,23,84,0.04)] flex flex-col justify-between hover:shadow-md transition-all ${
                     !p.active ? "opacity-60 bg-gray-50/80" : ""
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-mono text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] px-2 py-0.5 rounded">
+                      <span className="font-mono text-caption font-bold text-brand bg-brand-soft px-2 py-0.5 rounded">
                         {p.sku}
                       </span>
                       <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                        className={`text-caption font-bold px-2 py-0.5 rounded-full ${
                           p.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
                         }`}
                       >
@@ -248,33 +248,33 @@ export default function ProductsPage() {
                       </span>
                     </div>
 
-                    <h4 className="text-[15px] font-bold text-[#0c1754] leading-snug mb-1">{p.name}</h4>
-                    <span className="text-[12px] text-[#969696] font-medium block mb-3">{p.category}</span>
+                    <h4 className="text-body font-bold text-ink leading-snug mb-1">{p.name}</h4>
+                    <span className="text-label text-fg-subtle font-medium block mb-3">{p.category}</span>
 
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-[17px] font-extrabold text-[#0c1754]">Rp {p.price.toLocaleString()}</span>
-                      <span className="text-[11.5px] text-[#64748b]">HPP: Rp {p.hpp.toLocaleString()}</span>
+                      <span className="text-title font-bold text-ink">Rp {p.price.toLocaleString("id-ID")}</span>
+                      <span className="text-caption text-fg-muted">HPP: Rp {p.hpp.toLocaleString("id-ID")}</span>
                     </div>
 
                     {/* Stock Meter */}
-                    <div className="bg-[#f9f8f6] p-2.5 rounded-xl border border-[#f0e9e1] flex items-center justify-between mb-4">
+                    <div className="bg-canvas p-2.5 rounded-xl border border-line flex items-center justify-between mb-4">
                       <div>
-                        <span className="text-[11px] text-[#969696] block">Sisa Stok:</span>
-                        <span className={`text-[13px] font-extrabold ${isLow ? "text-red-600" : "text-[#0c1754]"}`}>
+                        <span className="text-caption text-fg-subtle block">Sisa Stok:</span>
+                        <span className={`text-body-sm font-bold ${isLow ? "text-red-600" : "text-ink"}`}>
                           {p.stock} pcs {isLow && "(Kritis!)"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleQuickStock(p.id, p.stock, -1)}
-                          className="w-7 h-7 rounded-lg bg-white border border-[#f0e9e1] hover:bg-red-50 hover:text-red-600 font-bold text-[14px] flex items-center justify-center cursor-pointer transition-colors"
+                          className="w-7 h-7 rounded-lg bg-white border border-line hover:bg-red-50 hover:text-red-600 font-bold text-body-sm flex items-center justify-center cursor-pointer transition-colors"
                           title="Kurangi stok (-1)"
                         >
                           -
                         </button>
                         <button
                           onClick={() => handleQuickStock(p.id, p.stock, 1)}
-                          className="w-7 h-7 rounded-lg bg-white border border-[#f0e9e1] hover:bg-emerald-50 hover:text-emerald-600 font-bold text-[14px] flex items-center justify-center cursor-pointer transition-colors"
+                          className="w-7 h-7 rounded-lg bg-white border border-line hover:bg-emerald-50 hover:text-emerald-600 font-bold text-body-sm flex items-center justify-center cursor-pointer transition-colors"
                           title="Tambah stok (+1)"
                         >
                           +
@@ -284,13 +284,13 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Card Action Buttons */}
-                  <div className="flex items-center gap-2 pt-3 border-t border-[#f0e9e1]">
+                  <div className="flex items-center gap-2 pt-3 border-t border-line">
                     <button
                       onClick={() => {
                         setSelectedHppProduct(p);
                         setShowHppModal(true);
                       }}
-                      className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-[11px] rounded-lg transition-colors border border-amber-200 cursor-pointer flex items-center gap-1 shrink-0"
+                      className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-caption rounded-lg transition-colors border border-amber-200 cursor-pointer flex items-center gap-1 shrink-0"
                       title="Kalkulasi Resep & HPP via AI"
                     >
                       <SparklesIcon className="w-3 h-3 text-amber-600" />
@@ -298,7 +298,7 @@ export default function ProductsPage() {
                     </button>
                     <button
                       onClick={() => handleOpenEdit(p)}
-                      className="flex-1 py-1.5 px-3 bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white text-[#2545ff] font-bold text-[12px] rounded-lg transition-colors border-none cursor-pointer text-center"
+                      className="flex-1 py-1.5 px-3 bg-brand-soft hover:bg-brand hover:text-white text-brand font-bold text-label rounded-lg transition-colors border-none cursor-pointer text-center"
                     >
                       Edit
                     </button>
@@ -320,44 +320,44 @@ export default function ProductsPage() {
         )
       ) : (
         /* TABLE VIEW */
-        <div className="bg-white rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-line shadow-[0_2px_12px_rgba(12,23,84,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">SKU & Produk</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Kategori</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Harga Jual</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">HPP</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Stok Gudang</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Status WA</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b] text-right">Aksi</th>
+                <tr className="bg-canvas border-b border-line">
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">SKU & Produk</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Kategori</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Harga Jual</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">HPP</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Stok Gudang</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Status WA</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#f0e9e1] text-[13.5px]">
+              <tbody className="divide-y divide-line text-body-sm">
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 px-4 text-center">
                       <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
-                        <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
-                          <TagIcon className="w-6 h-6 text-[#2545ff]" />
+                        <div className="w-12 h-12 rounded-2xl bg-brand-soft text-brand flex items-center justify-center mb-3">
+                          <TagIcon className="w-6 h-6 text-brand" />
                         </div>
-                        <div className="font-extrabold text-[#0c1754] text-[16px]">Katalog Produk Masih Kosong</div>
-                        <p className="text-[12.5px] text-[#64748b] mt-1 mb-5 leading-relaxed">
+                        <div className="font-bold text-ink text-body">Katalog Produk Masih Kosong</div>
+                        <p className="text-label text-fg-muted mt-1 mb-5 leading-relaxed">
                           Katalog produk untuk instansi <strong>{activeInstitution?.name || "Anda"}</strong> belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-2.5">
                           <button
                             type="button"
                             onClick={handleOpenAdd}
-                            className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
+                            className="btn-primary !py-2 !px-4 text-label font-bold"
                           >
                             + Tambah Produk Manual
                           </button>
                           <button
                             type="button"
                             onClick={() => loadTemplateProducts("auto")}
-                            className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[12.5px] font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                            className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-label font-bold cursor-pointer transition-colors flex items-center gap-1.5"
                           >
                             <SparklesIcon className="w-4 h-4 text-amber-600" />
                             <span>Muat Produk Rekomendasi Instansi</span>
@@ -368,22 +368,22 @@ export default function ProductsPage() {
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#fcfbf9] transition-colors">
+                    <tr key={p.id} className="hover:bg-soft transition-colors">
                       <td className="py-4 px-5">
-                        <div className="font-bold text-[#0c1754] text-[14px]">{p.name}</div>
-                        <span className="font-mono text-[11px] font-bold text-[#2545ff]">{p.sku}</span>
+                        <div className="font-bold text-ink text-body-sm">{p.name}</div>
+                        <span className="font-mono text-caption font-bold text-brand">{p.sku}</span>
                       </td>
-                      <td className="py-4 px-5 text-[#64748b] font-medium">{p.category}</td>
-                      <td className="py-4 px-5 font-bold text-[#0c1754]">Rp {p.price.toLocaleString()}</td>
-                      <td className="py-4 px-5 text-[#64748b]">Rp {p.hpp.toLocaleString()}</td>
+                      <td className="py-4 px-5 text-fg-muted font-medium">{p.category}</td>
+                      <td className="py-4 px-5 font-bold text-ink">Rp {p.price.toLocaleString("id-ID")}</td>
+                      <td className="py-4 px-5 text-fg-muted">Rp {p.hpp.toLocaleString("id-ID")}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2">
-                          <span className={`font-bold ${(p.stock || 0) <= (p.lowStock || 5) ? "text-red-600" : "text-[#0c1754]"}`}>
+                          <span className={`font-bold ${(p.stock || 0) <= (p.lowStock || 5) ? "text-red-600" : "text-ink"}`}>
                             {p.stock} pcs
                           </span>
                           <button
                             onClick={() => handleQuickStock(p.id, p.stock, 1)}
-                            className="w-6 h-6 rounded bg-[#f9f8f6] hover:bg-[#eaebf8] text-[#2545ff] font-bold text-[12px] border border-[#f0e9e1] cursor-pointer"
+                            className="w-6 h-6 rounded bg-canvas hover:bg-brand-soft text-brand font-bold text-label border border-line cursor-pointer"
                           >
                             +
                           </button>
@@ -393,7 +393,7 @@ export default function ProductsPage() {
                         <button
                           type="button"
                           onClick={() => toggleProductStatus(p.id)}
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border-none cursor-pointer ${
+                          className={`px-2.5 py-0.5 rounded-full text-caption font-bold border-none cursor-pointer ${
                             p.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
                           }`}
                         >
@@ -408,7 +408,7 @@ export default function ProductsPage() {
                               setSelectedHppProduct(p);
                               setShowHppModal(true);
                             }}
-                            className="px-2.5 py-1 text-[11px] font-extrabold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-2.5 py-1 text-caption font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"
                             title="Kalkulasi Resep & HPP via AI"
                           >
                             <SparklesIcon className="w-3 h-3 text-amber-600" />
@@ -416,13 +416,13 @@ export default function ProductsPage() {
                           </button>
                           <button
                             onClick={() => handleOpenEdit(p)}
-                            className="px-2.5 py-1 text-[12px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                            className="px-2.5 py-1 text-label font-bold text-brand bg-brand-soft hover:bg-brand hover:text-white rounded-lg transition-colors border-none cursor-pointer"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(p.id)}
-                            className="px-2.5 py-1 text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                            className="px-2.5 py-1 text-label font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
                           >
                             Hapus
                           </button>
@@ -439,10 +439,10 @@ export default function ProductsPage() {
 
       {/* Modal: Add or Edit Product */}
       {(showAddModal || editingProduct) && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[500px] p-6 shadow-2xl border border-[#f0e9e1] animate-scale-pop max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-              <h3 className="text-[18px] font-extrabold text-[#0c1754]">
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="card-title">
                 {editingProduct ? "Edit Master Produk" : "Tambah Produk Baru"}
               </h3>
               <button
@@ -450,42 +450,42 @@ export default function ProductsPage() {
                   setShowAddModal(false);
                   setEditingProduct(null);
                 }}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-canvas hover:bg-brand-soft flex items-center justify-center text-fg-muted border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="flex flex-col gap-3.5 text-[13px]">
+            <form onSubmit={handleSaveForm} className="flex flex-col gap-3.5 text-body-sm">
               <div>
-                <label className="font-bold text-[#0c1754] block mb-1">Nama Produk *</label>
+                <label className="font-bold text-ink block mb-1">Nama Produk *</label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Kemeja Batik Lengan Panjang"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium focus:border-[#2545ff]"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Kode SKU</label>
+                  <label className="font-bold text-ink block mb-1">Kode SKU</label>
                   <input
                     type="text"
                     required
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-mono font-bold"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Kategori</label>
+                  <label className="font-bold text-ink block mb-1">Kategori</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   >
                     <option value="Pakaian Pria">Pakaian Pria</option>
                     <option value="Pakaian Wanita">Pakaian Wanita</option>
@@ -496,20 +496,20 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Harga Jual (Rp) *</label>
+                  <label className="font-bold text-ink block mb-1">Harga Jual (Rp) *</label>
                   <input
                     type="number"
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-bold"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
                   />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-[#0c1754]">HPP Modal (Rp)</label>
+                    <label className="font-bold text-ink">HPP Modal (Rp)</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -521,7 +521,7 @@ export default function ProductsPage() {
                         });
                         setShowHppModal(true);
                       }}
-                      className="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10.5px] font-extrabold rounded-lg flex items-center gap-1 border border-purple-200 cursor-pointer transition-all"
+                      className="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 text-micro font-bold rounded-lg flex items-center gap-1 border border-purple-200 cursor-pointer transition-all"
                     >
                       <SparklesIcon className="w-3.5 h-3.5 text-purple-600" />
                       <span>Hitung via AI</span>
@@ -532,57 +532,57 @@ export default function ProductsPage() {
                     required
                     value={formData.hpp}
                     onChange={(e) => setFormData({ ...formData, hpp: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Jumlah Stok Saat Ini</label>
+                  <label className="font-bold text-ink block mb-1">Jumlah Stok Saat Ini</label>
                   <input
                     type="number"
                     required
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-bold"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Peringatan Stok Kritis (&le;)</label>
+                  <label className="font-bold text-ink block mb-1">Peringatan Stok Kritis (&le;)</label>
                   <input
                     type="number"
                     required
                     value={formData.lowStock}
                     onChange={(e) => setFormData({ ...formData, lowStock: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-[#0c1754] block mb-1">Varian Produk (Pisahkan dengan koma)</label>
+                <label className="font-bold text-ink block mb-1">Varian Produk (Pisahkan dengan koma)</label>
                 <input
                   type="text"
                   placeholder="Contoh: S, M, L, XL"
                   value={formData.variants}
                   onChange={(e) => setFormData({ ...formData, variants: e.target.value })}
-                  className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#f0e9e1] mt-2">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingProduct(null);
                   }}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
+                  className="btn-outline !py-2 !px-4 text-body-sm"
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-primary !py-2 !px-5 text-[13px] font-bold">
+                <button type="submit" className="btn-primary !py-2 !px-5 text-body-sm font-bold">
                   {editingProduct ? "Simpan Perubahan" : "Simpan Produk"}
                 </button>
               </div>
@@ -593,19 +593,19 @@ export default function ProductsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[380px] p-5 shadow-2xl border border-[#f0e9e1] animate-scale-pop text-center">
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 shadow-2xl border border-line animate-scale-pop text-center">
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
               <AlertTriangleIcon className="w-6 h-6" />
             </div>
-            <h3 className="text-[17px] font-extrabold text-[#0c1754] mb-1.5">Hapus Produk Ini?</h3>
-            <p className="text-[13px] text-[#64748b] mb-5">
+            <h3 className="card-title mb-1.5">Hapus Produk Ini?</h3>
+            <p className="text-body-sm text-fg-muted mb-5">
               Produk akan dihapus dari katalog bot WhatsApp dan inventaris gudang.
             </p>
             <div className="flex items-center justify-center gap-2.5">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="btn-outline !py-2 !px-4 text-[13px]"
+                className="btn-outline !py-2 !px-4 text-body-sm"
               >
                 Batal
               </button>
@@ -614,7 +614,7 @@ export default function ProductsPage() {
                   deleteProduct(deleteConfirmId);
                   setDeleteConfirmId(null);
                 }}
-                className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-[13px] border-none cursor-pointer shadow-sm"
+                className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-body-sm border-none cursor-pointer shadow-sm"
               >
                 Ya, Hapus
               </button>

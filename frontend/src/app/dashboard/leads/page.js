@@ -4,7 +4,8 @@ import { useDashboard } from "@/context/DashboardContext";
 import { ShieldCheckIcon, AlertTriangleIcon, UsersIcon, XIcon } from "@/components/icons";
 
 export default function LeadsPage() {
-  const { leads, addLead, updateLead, deleteLead } = useDashboard();
+  const { leads, addLead, updateLead, deleteLead, teamMembers } = useDashboard();
+  const salesStaff = teamMembers.filter((m) => m.status === "active" && ["cs", "supervisor", "owner"].includes(m.roleKey));
 
   const [view, setView] = useState("kanban");
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,10 +17,10 @@ export default function LeadsPage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    source: "Instagram Ads (Reels)",
-    interest: "Kemeja Batik Modern",
+    source: "WhatsApp Direct Link",
+    interest: "",
     status: "new",
-    cs: "Sarah Amalia",
+    cs: "",
     codScore: 85,
     estValue: 300000,
     notes: "",
@@ -29,10 +30,10 @@ export default function LeadsPage() {
     setFormData({
       name: "",
       phone: "+62 8",
-      source: "Instagram Ads (Reels)",
-      interest: "Kemeja Batik Modern",
+      source: "WhatsApp Direct Link",
+      interest: "",
       status: "new",
-      cs: "Sarah Amalia",
+      cs: "",
       codScore: 85,
       estValue: 300000,
       notes: "",
@@ -78,7 +79,7 @@ export default function LeadsPage() {
   const getRiskBadge = (score, risk) => {
     if (risk === "low" || score >= 80) {
       return (
-        <span className="text-[11px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Tingkat keberhasilan kirim COD tinggi">
+        <span className="text-caption font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Tingkat keberhasilan kirim COD tinggi">
           <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-600" />
           <span>COD Aman ({score}%)</span>
         </span>
@@ -86,14 +87,14 @@ export default function LeadsPage() {
     }
     if (risk === "medium" || score >= 60) {
       return (
-        <span className="text-[11px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Perlu konfirmasi ulang sebelum kirim COD">
+        <span className="text-caption font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Perlu konfirmasi ulang sebelum kirim COD">
           <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-600" />
           <span>Sedang ({score}%)</span>
         </span>
       );
     }
     return (
-      <span className="text-[11px] font-extrabold bg-red-100 text-red-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Riwayat retur tinggi, sarankan bayar QRIS">
+      <span className="text-caption font-bold bg-red-100 text-red-800 px-2 py-0.5 rounded-full inline-flex items-center gap-1" title="Riwayat retur tinggi, sarankan bayar QRIS">
         <AlertTriangleIcon className="w-3.5 h-3.5 text-red-600" />
         <span>Resiko RTS ({score}%)</span>
       </span>
@@ -121,24 +122,24 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">CRM & Distribusi Leads</h1>
-          <p className="text-[13.5px] text-[#64748b]">Lacak calon pembeli WhatsApp, skor mitigasi resiko COD, dan penugasan CS.</p>
+          <h1 className="page-title">CRM & Distribusi Leads</h1>
+          <p className="text-body-sm text-fg-muted">Lacak calon pembeli WhatsApp, skor mitigasi resiko COD, dan penugasan CS.</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white p-1 rounded-xl border border-[#f0e9e1] shadow-xs">
+        <div className="flex flex-wrap items-center [&>button]:whitespace-nowrap [&>a]:whitespace-nowrap gap-3">
+          <div className="flex items-center bg-white p-1 rounded-xl border border-line shadow-xs">
             <button
               onClick={() => setView("kanban")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold border-none cursor-pointer transition-all ${
-                view === "kanban" ? "bg-[#2545ff] text-white shadow-xs" : "bg-transparent text-[#64748b]"
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "kanban" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
               Kanban
             </button>
             <button
               onClick={() => setView("table")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold border-none cursor-pointer transition-all ${
-                view === "table" ? "bg-[#2545ff] text-white shadow-xs" : "bg-transparent text-[#64748b]"
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "table" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
               Tabel
@@ -147,7 +148,7 @@ export default function LeadsPage() {
 
           <button
             onClick={handleOpenAdd}
-            className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2"
+            className="btn-primary !py-2.5 !px-5 text-body-sm font-bold flex items-center gap-2"
           >
             <span>+</span>
             <span>Tambah Lead Baru</span>
@@ -156,9 +157,9 @@ export default function LeadsPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-[#f0e9e1] shadow-xs flex items-center justify-between">
-        <div className="flex items-center gap-2 bg-[#f9f8f6] border border-[#f0e9e1] rounded-full px-3.5 py-2 w-full sm:w-[360px]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#969696" strokeWidth="2">
+      <div className="bg-white p-4 rounded-2xl border border-line shadow-xs flex items-center justify-between">
+        <div className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-2 w-full sm:w-[360px]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646b84" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input
@@ -166,12 +167,12 @@ export default function LeadsPage() {
             placeholder="Cari nama pelanggan, nomor WA, produk minat..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none outline-none text-[13px] text-[#0c1754] placeholder:text-[#969696] flex-1 font-medium"
+            className="bg-transparent border-none outline-none text-body-sm text-ink placeholder:text-fg-subtle flex-1 font-medium"
           />
         </div>
 
-        <span className="text-[12px] text-[#969696] hidden sm:inline">
-          Total: <strong className="text-[#0c1754]">{filtered.length} Leads Terpantau</strong>
+        <span className="text-label text-fg-subtle hidden sm:inline">
+          Total: <strong className="text-ink">{filtered.length} Leads Terpantau</strong>
         </span>
       </div>
 
@@ -181,12 +182,12 @@ export default function LeadsPage() {
           {stages.map((stage) => {
             const stageLeads = filtered.filter((l) => l.status === stage.key);
             return (
-              <div key={stage.key} className="bg-[#f9f8f6] p-4 rounded-2xl border border-[#f0e9e1] flex flex-col gap-3 min-h-[420px]">
+              <div key={stage.key} className="bg-canvas p-4 rounded-2xl border border-line flex flex-col gap-3 min-h-[420px]">
                 
                 {/* Column Header */}
                 <div className={`flex items-center justify-between pb-2.5 border-b-2 ${stage.color}`}>
-                  <span className="text-[13px] font-bold text-[#0c1754]">{stage.label}</span>
-                  <span className="text-[11px] font-extrabold bg-white text-[#2545ff] border border-[#f0e9e1] px-2 py-0.5 rounded-full">
+                  <span className="text-body-sm font-bold text-ink">{stage.label}</span>
+                  <span className="text-caption font-bold bg-white text-brand border border-line px-2 py-0.5 rounded-full">
                     {stageLeads.length}
                   </span>
                 </div>
@@ -196,41 +197,41 @@ export default function LeadsPage() {
                   {stageLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="bg-white p-4 rounded-xl border border-[#f0e9e1] shadow-xs hover:shadow-md transition-all flex flex-col gap-2 cursor-pointer"
+                      className="bg-white p-4 rounded-xl border border-line shadow-xs hover:shadow-md transition-all flex flex-col gap-2 cursor-pointer"
                       onClick={() => handleOpenEdit(lead)}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] px-2 py-0.5 rounded">
+                        <span className="text-caption font-bold text-brand bg-brand-soft px-2 py-0.5 rounded">
                           {lead.source}
                         </span>
                         {getRiskBadge(lead.codScore, lead.codRisk)}
                       </div>
 
                       <div>
-                        <h4 className="text-[14px] font-bold text-[#0c1754]">{lead.name}</h4>
-                        <div className="text-[12px] text-[#64748b] font-medium">{lead.phone}</div>
+                        <h4 className="text-body-sm font-bold text-ink">{lead.name}</h4>
+                        <div className="text-label text-fg-muted font-medium">{lead.phone}</div>
                       </div>
 
-                      <div className="bg-[#f9f8f6] p-2 rounded-lg text-[11.5px] text-[#171417] border border-[#f0e9e1]">
-                        <span className="text-[#969696] block">Minat Produk:</span>
-                        <span className="font-bold">{lead.interest}</span> (Rp {lead.estValue.toLocaleString()})
+                      <div className="bg-canvas p-2 rounded-lg text-caption text-charcoal border border-line">
+                        <span className="text-fg-subtle block">Minat Produk:</span>
+                        <span className="font-bold">{lead.interest}</span> (Rp {lead.estValue.toLocaleString("id-ID")})
                       </div>
 
                       {lead.notes && (
-                        <p className="text-[11.5px] text-[#64748b] italic line-clamp-2">
-                          "{lead.notes}"
+                        <p className="text-caption text-fg-muted italic line-clamp-2">
+                          &quot;{lead.notes}&quot;
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between pt-2 border-t border-[#f0e9e1] text-[11px] text-[#969696]">
-                        <span>CS: <strong className="text-[#0c1754]">{lead.cs}</strong></span>
+                      <div className="flex items-center justify-between pt-2 border-t border-line text-caption text-fg-subtle">
+                        <span>CS: <strong className="text-ink">{lead.cs}</strong></span>
                         <span>{lead.lastInteraction}</span>
                       </div>
                     </div>
                   ))}
 
                   {stageLeads.length === 0 && (
-                    <div className="py-8 text-center text-[12px] text-[#969696] italic">
+                    <div className="py-8 text-center text-label text-fg-subtle italic">
                       Belum ada lead di tahap ini
                     </div>
                   )}
@@ -242,36 +243,36 @@ export default function LeadsPage() {
         </div>
       ) : (
         /* TABLE VIEW */
-        <div className="bg-white rounded-2xl border border-[#f0e9e1] shadow-[0_2px_12px_rgba(12,23,84,0.04)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-line shadow-[0_2px_12px_rgba(12,23,84,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#f9f8f6] border-b border-[#f0e9e1]">
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Calon Pembeli</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Sumber Iklan</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Minat Produk</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Mitigasi COD</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">Tahap CRM</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b]">CS Bertugas</th>
-                  <th className="py-3.5 px-5 text-[12px] font-bold uppercase text-[#64748b] text-right">Aksi</th>
+                <tr className="bg-canvas border-b border-line">
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Calon Pembeli</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Sumber Iklan</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Minat Produk</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Mitigasi COD</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">Tahap CRM</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">CS Bertugas</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#f0e9e1] text-[13.5px]">
+              <tbody className="divide-y divide-line text-body-sm">
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 px-4 text-center">
                       <div className="flex flex-col items-center justify-center max-w-[360px] mx-auto">
-                        <div className="w-12 h-12 rounded-2xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-3">
-                          <UsersIcon className="w-6 h-6 text-[#2545ff]" />
+                        <div className="w-12 h-12 rounded-2xl bg-brand-soft text-brand flex items-center justify-center mb-3">
+                          <UsersIcon className="w-6 h-6 text-brand" />
                         </div>
-                        <div className="font-extrabold text-[#0c1754] text-[15px]">Belum Ada Lead / Kontak</div>
-                        <p className="text-[12.5px] text-[#64748b] mt-1 mb-4">
+                        <div className="font-bold text-ink text-body">Belum Ada Lead / Kontak</div>
+                        <p className="text-label text-fg-muted mt-1 mb-4">
                           Kontak calon pembeli dari Meta Ads CAPI atau chat WhatsApp baru akan otomatis tercatat di sini.
                         </p>
                         <button
                           type="button"
                           onClick={handleOpenAdd}
-                          className="btn-primary !py-2 !px-4 text-[12.5px] font-bold"
+                          className="btn-primary !py-2 !px-4 text-label font-bold"
                         >
                           + Tambah Lead Pertama
                         </button>
@@ -280,37 +281,37 @@ export default function LeadsPage() {
                   </tr>
                 ) : (
                   filtered.map((l) => (
-                    <tr key={l.id} className="hover:bg-[#fcfbf9] transition-colors">
+                    <tr key={l.id} className="hover:bg-soft transition-colors">
                       <td className="py-4 px-5">
-                        <div className="font-bold text-[#0c1754] text-[14px]">{l.name}</div>
-                        <span className="font-mono text-[11px] font-bold text-[#64748b]">{l.phone}</span>
+                        <div className="font-bold text-ink text-body-sm">{l.name}</div>
+                        <span className="tabular-nums text-caption font-bold text-fg-muted">{l.phone}</span>
                       </td>
                       <td className="py-4 px-5">
-                        <span className="text-[12px] font-bold bg-[#eaebf8] text-[#2545ff] px-2.5 py-1 rounded-full">
+                        <span className="text-label font-bold bg-brand-soft text-brand px-2.5 py-1 rounded-full">
                           {l.source}
                         </span>
                       </td>
-                      <td className="py-4 px-5 text-[#0c1754] font-medium">{l.interest}</td>
+                      <td className="py-4 px-5 text-ink font-medium">{l.interest}</td>
                       <td className="py-4 px-5">
                         {getRiskBadge(l.codScore, l.codRisk)}
                       </td>
                       <td className="py-4 px-5">
-                        <span className="font-bold text-[12px] bg-[#eaebf8] text-[#2545ff] px-2.5 py-0.5 rounded-full capitalize">
+                        <span className="font-bold text-label bg-brand-soft text-brand px-2.5 py-0.5 rounded-full capitalize">
                           {l.status.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="py-4 px-5 font-medium text-[#171417]">{l.cs}</td>
+                      <td className="py-4 px-5 font-medium text-charcoal">{l.cs}</td>
                       <td className="py-4 px-5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenEdit(l)}
-                            className="px-2.5 py-1 text-[12px] font-bold text-[#2545ff] bg-[#eaebf8] hover:bg-[#2545ff] hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                            className="px-2.5 py-1 text-label font-bold text-brand bg-brand-soft hover:bg-brand hover:text-white rounded-lg transition-colors border-none cursor-pointer"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(l.id)}
-                            className="px-2.5 py-1 text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                            className="px-2.5 py-1 text-label font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
                           >
                             Hapus
                           </button>
@@ -327,10 +328,10 @@ export default function LeadsPage() {
 
       {/* Modal: Add or Edit Lead */}
       {(showAddModal || editingLead) && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[500px] p-6 shadow-2xl border border-[#f0e9e1] animate-scale-pop max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#f0e9e1] mb-4">
-              <h3 className="text-[18px] font-extrabold text-[#0c1754]">
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="card-title">
                 {editingLead ? "Edit Data Lead CRM" : "Tambah Calon Pembeli (Lead)"}
               </h3>
               <button
@@ -338,45 +339,45 @@ export default function LeadsPage() {
                   setShowAddModal(false);
                   setEditingLead(null);
                 }}
-                className="w-7 h-7 rounded-full bg-[#f9f8f6] hover:bg-[#eaebf8] flex items-center justify-center text-[#64748b] border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-canvas hover:bg-brand-soft flex items-center justify-center text-fg-muted border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveLead} className="flex flex-col gap-3.5 text-[13px]">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSaveLead} className="flex flex-col gap-3.5 text-body-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Nama Pelanggan *</label>
+                  <label className="font-bold text-ink block mb-1">Nama Pelanggan *</label>
                   <input
                     type="text"
                     required
                     placeholder="Nama Lengkap"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium focus:border-[#2545ff]"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Nomor WhatsApp *</label>
+                  <label className="font-bold text-ink block mb-1">Nomor WhatsApp *</label>
                   <input
                     type="text"
                     required
                     placeholder="+62 812-xxxx"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium focus:border-[#2545ff]"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Sumber Kontak (Traffic)</label>
+                  <label className="font-bold text-ink block mb-1">Sumber Kontak (Traffic)</label>
                   <select
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   >
                     <option value="Instagram Ads (Reels)">Instagram Ads (Reels)</option>
                     <option value="Facebook Ads (Feed)">Facebook Ads (Feed)</option>
@@ -386,11 +387,11 @@ export default function LeadsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Tahap Status</label>
+                  <label className="font-bold text-ink block mb-1">Tahap Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   >
                     <option value="new">Lead Baru Masuk</option>
                     <option value="follow_up">Sedang Follow-Up</option>
@@ -400,79 +401,82 @@ export default function LeadsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Minat Produk</label>
+                  <label className="font-bold text-ink block mb-1">Minat Produk</label>
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Kemeja Batik Modern"
+                    placeholder="Produk yang diminati pelanggan"
                     value={formData.interest}
                     onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Estimasi Nilai (Rp)</label>
+                  <label className="font-bold text-ink block mb-1">Estimasi Nilai (Rp)</label>
                   <input
                     type="number"
                     required
                     value={formData.estValue}
                     onChange={(e) => setFormData({ ...formData, estValue: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-bold"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Tugaskan ke CS</label>
+                  <label className="font-bold text-ink block mb-1">Tugaskan ke CS</label>
                   <select
                     value={formData.cs}
                     onChange={(e) => setFormData({ ...formData, cs: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                   >
-                    <option value="Sarah Amalia">Sarah Amalia (CS Senior)</option>
-                    <option value="Rizky Ramadhan">Rizky Ramadhan (CS Junior)</option>
-                    <option value="Belum Ditugaskan">Belum Ditugaskan (Auto-Round Robin)</option>
+                    <option value="">Belum ditugaskan</option>
+                    {salesStaff.map((m) => (
+                      <option key={m.id} value={m.name}>
+                        {m.name} ({m.role})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-[#0c1754] block mb-1">Skor Keberhasilan COD (%)</label>
+                  <label className="font-bold text-ink block mb-1">Skor Keberhasilan COD (%)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={formData.codScore}
                     onChange={(e) => setFormData({ ...formData, codScore: e.target.value })}
-                    className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-bold"
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-[#0c1754] block mb-1">Catatan Tambahan</label>
+                <label className="font-bold text-ink block mb-1">Catatan Tambahan</label>
                 <textarea
                   rows="2"
                   placeholder="Kebutuhan khusus atau jadwal follow-up..."
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full bg-[#f9f8f6] border border-[#f0e9e1] rounded-xl p-2.5 text-[#0c1754] outline-none font-medium"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#f0e9e1] mt-2">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingLead(null);
                   }}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
+                  className="btn-outline !py-2 !px-4 text-body-sm"
                 >
                   Batal
                 </button>
-                <button type="submit" className="btn-primary !py-2 !px-5 text-[13px] font-bold">
+                <button type="submit" className="btn-primary !py-2 !px-5 text-body-sm font-bold">
                   {editingLead ? "Simpan Perubahan" : "Simpan Lead"}
                 </button>
               </div>
@@ -483,19 +487,19 @@ export default function LeadsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[380px] p-5 shadow-2xl border border-[#f0e9e1] animate-scale-pop text-center">
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 shadow-2xl border border-line animate-scale-pop text-center">
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
               <AlertTriangleIcon className="w-6 h-6" />
             </div>
-            <h3 className="text-[17px] font-extrabold text-[#0c1754] mb-1.5">Hapus Data Lead?</h3>
-            <p className="text-[13px] text-[#64748b] mb-5">
+            <h3 className="card-title mb-1.5">Hapus Data Lead?</h3>
+            <p className="text-body-sm text-fg-muted mb-5">
               Data calon pembeli #{deleteConfirmId} akan dihapus dari sistem CRM.
             </p>
             <div className="flex items-center justify-center gap-2.5">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="btn-outline !py-2 !px-4 text-[13px]"
+                className="btn-outline !py-2 !px-4 text-body-sm"
               >
                 Batal
               </button>
@@ -504,7 +508,7 @@ export default function LeadsPage() {
                   deleteLead(deleteConfirmId);
                   setDeleteConfirmId(null);
                 }}
-                className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-[13px] border-none cursor-pointer shadow-sm"
+                className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-body-sm border-none cursor-pointer shadow-sm"
               >
                 Ya, Hapus
               </button>

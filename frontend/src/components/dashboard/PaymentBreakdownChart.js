@@ -58,7 +58,7 @@ export default function PaymentBreakdownChart({
         pct: qrisPct,
         amount: formatCurrency(qrisAmount),
         txCount: qrisCount,
-        color: "bg-[#2545ff]",
+        color: "bg-brand",
         hex: "#2545ff",
       },
       {
@@ -83,21 +83,21 @@ export default function PaymentBreakdownChart({
   }, [data, orders]);
 
   return (
-    <div className={`bg-white rounded-2xl border border-[#e8eaef] p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] flex flex-col justify-between ${className}`}>
+    <div className={`bg-white rounded-2xl border border-line p-6 shadow-[0_1px_3px_rgba(16,24,40,0.04)] flex flex-col justify-between ${className}`}>
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-[#f1f3f7]">
+        <div className="flex items-center justify-between pb-3 border-b border-line">
           <div>
-            <h3 className="text-[16px] font-bold text-[#0f172a]">{title}</h3>
-            <p className="text-[12.5px] text-[#64748b] mt-0.5">{subtitle}</p>
+            <h3 className="card-title">{title}</h3>
+            <p className="text-label text-fg-muted mt-0.5">{subtitle}</p>
           </div>
-          <span className="text-[11.5px] font-bold text-[#2545ff] bg-[#f0f4ff] px-2.5 py-1 rounded-full border border-[#dbeafe]">
+          <span className="text-caption font-bold text-brand bg-brand-soft px-2.5 py-1 rounded-full border border-brand-soft">
             {totalTx} Transaksi
           </span>
         </div>
 
         {/* Segmented Stacked Progress Bar */}
         <div className="my-5">
-          <div className="h-4 w-full bg-[#f1f3f7] rounded-full overflow-hidden flex gap-0.5 p-0.5">
+          <div className="h-4 w-full bg-sunken rounded-full overflow-hidden flex gap-0.5 p-0.5">
             {totalTx === 0 ? (
               <div className="w-full h-full bg-slate-200 rounded-full" />
             ) : (
@@ -119,7 +119,7 @@ export default function PaymentBreakdownChart({
             {methods.map((m, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#f8fafc] transition-colors border border-transparent hover:border-[#f1f3f7]"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-soft transition-colors border border-transparent hover:border-line"
               >
                 <div className="flex items-center gap-2.5">
                   <div
@@ -127,15 +127,15 @@ export default function PaymentBreakdownChart({
                     style={{ backgroundColor: m.hex }}
                   />
                   <div>
-                    <div className="text-[13px] font-bold text-[#0f172a]">{m.name}</div>
-                    <div className="text-[11px] text-[#64748b]">
+                    <div className="text-body-sm font-bold text-fg">{m.name}</div>
+                    <div className="text-caption text-fg-muted">
                       {m.txCount} Transaksi ({m.pct}%)
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[13px] font-extrabold text-[#0f172a]">{m.amount}</div>
-                  <div className="text-[10.5px] text-emerald-600 font-semibold">100% Lolos Audit</div>
+                  <div className="text-body-sm font-bold text-fg">{m.amount}</div>
+                  <div className="text-micro text-emerald-600 font-semibold">100% Lolos Audit</div>
                 </div>
               </div>
             ))}
@@ -143,7 +143,7 @@ export default function PaymentBreakdownChart({
         </div>
       </div>
 
-      <div className="pt-3 border-t border-[#f1f3f7] flex items-center justify-between text-[11.5px] text-[#64748b]">
+      <div className="pt-3 border-t border-line flex items-center justify-between text-caption text-fg-muted">
         <span>Rekonsiliasi Mutasi: <strong>Otomatis</strong></span>
         <span className="text-emerald-600 font-bold">● Anti-Struk Palsu AI Aktif</span>
       </div>

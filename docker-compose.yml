@@ -1,87 +1,145 @@
+# Klozer production stack.
+#   cp .env.example .env   # then fill in every value
+#   docker compose up -d --build
+#
+# Only Caddy (80/443) is reachable from outside. The database and the API sit on a private
+# network. Required secrets have no defaults on purpose: compose refuses to start without them.
+
+name: klozer
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
-  # Database Service (MySQL 8.0)
   db:
     image: mysql:8.0
-    container_name: klozer_mysql
     restart: unless-stopped
+    init: true
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-klozer_secure_root_password_2026}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Isi DB_ROOT_PASSWORD di .env}
       MYSQL_DATABASE: ${DB_NAME:-klozer_db}
       MYSQL_USER: ${DB_USER:-klozer_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-klozer_secure_pass_2026}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+      - --max-connections=200
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - klozer_network
+      retries: 10
+      start_period: 40s
+    networks: [internal]
+    logging: *default-logging
 
-  # Backend Service (Node.js Express + Socket.io)
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    container_name: klozer_backend
     restart: unless-stopped
+    init: true
     depends_on:
       db:
         condition: service_healthy
     environment:
-      PORT: 5000
       NODE_ENV: production
+      PORT: 5000
       DB_HOST: db
       DB_PORT: 3306
-      DB_USER: ${DB_USER:-klozer_user}
-      DB_PASSWORD: ${DB_PASSWORD:-klozer_secure_pass_2026}
       DB_NAME: ${DB_NAME:-klozer_db}
-      JWT_SECRET: ${JWT_SECRET:-klozer_ultra_secure_jwt_secret_key_2026_prod}
-    ports:
-      - "5000:5000"
-    networks:
-      - klozer_network
+      DB_USER: ${DB_USER:-klozer_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Isi JWT_SECRET di .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY:?Isi DB_ENCRYPTION_KEY di .env}
+      APP_URL: https://${DOMAIN:?Isi DOMAIN di .env}
+      FRONTEND_URL: https://${DOMAIN}
+      CORS_ORIGINS: https://${DOMAIN}
+      TRUST_PROXY_HOPS: 1
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+      SUPERADMIN_NAME: ${SUPERADMIN_NAME:-Platform Superadmin}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:-}
+      META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v21.0}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-}
+      MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-nvidia}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-meta/llama-3.3-70b-instruct}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Klozer <no-reply@klozer.id>}
+    networks: [internal]
+    logging: *default-logging
 
-  # Frontend Service (Next.js 16)
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: klozer_frontend
+      args:
+        NEXT_PUBLIC_API_URL: ""
+        NEXT_PUBLIC_SOCKET_URL: ""
     restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      PORT: 3000
-      NODE_ENV: production
-      NEXT_TELEMETRY_DISABLED: 1
-    ports:
-      - "3000:3000"
-    networks:
-      - klozer_network
+    init: true
+    depends_on: [backend]
+    networks: [internal]
+    logging: *default-logging
 
-  # Reverse Proxy (Nginx)
-  nginx:
-    image: nginx:alpine
-    container_name: klozer_nginx
+  caddy:
+    image: caddy:2-alpine
     restart: unless-stopped
+    depends_on: [frontend, backend]
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Isi ACME_EMAIL di .env (email untuk notifikasi sertifikat HTTPS)}
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [internal]
+    logging: *default-logging
+
+  # Daily compressed dump, 14 days retained in ./backups. Copy these off the server too.
+  backup:
+    image: mysql:8.0
+    restart: unless-stopped
     depends_on:
-      - frontend
-      - backend
-    networks:
-      - klozer_network
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-klozer_db}
+      DB_USER: ${DB_USER:-klozer_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    entrypoint: ["/bin/bash", "/scripts/backup.sh", "--loop"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+    networks: [internal]
+    logging: *default-logging
 
 volumes:
   mysql_data:
+  caddy_data:
+  caddy_config:
 
 networks:
-  klozer_network:
+  internal:
     driver: bridge

@@ -1,12 +1,12 @@
-import { memoryStore } from "../config/db.js";
-
 /**
+ * Static ESTIMATE of courier rates by weight. These are not live courier quotes:
+ * wire a rate provider (e.g. Biteship/RajaOngkir) here to replace them.
  * Calculate Multi-Courier Shipping Rates
- * @param {Object} params { originCity, destinationCity, weightGrams }
+ * @param {Object} params { weightGrams }
  * @returns {Promise<Array>} Available courier options
  */
-export async function calculateShippingRates({ originCity = "Surakarta", destinationCity = "Jakarta Selatan", weightGrams = 500 }) {
-  const baseWeightKg = Math.ceil(weightGrams / 1000);
+export async function calculateShippingRates({ weightGrams = 500 }) {
+  const baseWeightKg = Math.max(1, Math.ceil(weightGrams / 1000));
   
   return [
     {
@@ -50,7 +50,7 @@ export async function calculateShippingRates({ originCity = "Surakarta", destina
  * @param {Object} params { phone, address, pastReturnRate }
  * @returns {Object} Score details, risk level, and mitigation strategies
  */
-export function calculateCodRiskScore({ phone = "", address = "", pastReturnRate = 0 }) {
+export function calculateCodRiskScore({ address = "", pastReturnRate = 0 }) {
   let score = 100;
   const addressFlags = [];
 
@@ -131,40 +131,5 @@ export function calculateCodRiskScore({ phone = "", address = "", pastReturnRate
     suggestedMessage: requiresMicroDeposit
       ? `Halo Kak! Untuk memastikan kurir lancar mengantar ke alamat Kakak, pesanan COD ini memerlukan komitmen ongkir sebesar Rp ${microDepositAmount.toLocaleString("id-ID")} via Dynamic QRIS. Sisa tagihan barang dibayar ke kurir saat paket sampai. Mau kami buatkan link QRIS-nya sekarang?`
       : null,
-  };
-}
-
-/**
- * Generate AWB Shipping Booking
- */
-export async function bookCourierPickup({ orderId, courierCode = "jnt", isCod = false, codAmount = 0 }) {
-  const awbNumber = `${courierCode.toUpperCase()}${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
-
-  const shipment = {
-    id: (memoryStore.shipping_shipments?.length || 0) + 1,
-    order_id: orderId,
-    courier_code: courierCode,
-    service_name: "REG",
-    awb_number: awbNumber,
-    shipping_fee_customer: 18000,
-    shipping_fee_real: 15500,
-    cashback_amount: 2500,
-    is_cod: isCod ? 1 : 0,
-    cod_amount: isCod ? Number(codAmount) : 0,
-    cod_status: isCod ? "pending_courier" : "none",
-    shipping_status: "pickup_requested",
-    label_pdf_url: `https://storage.klozer.id/labels/awb-${awbNumber}.pdf`,
-    created_at: new Date().toISOString(),
-  };
-
-  if (!memoryStore.shipping_shipments) memoryStore.shipping_shipments = [];
-  memoryStore.shipping_shipments.push(shipment);
-
-  return {
-    success: true,
-    awbNumber,
-    courier: courierCode.toUpperCase(),
-    labelPdfUrl: shipment.label_pdf_url,
-    status: "pickup_requested",
   };
 }

@@ -99,7 +99,7 @@ export default function ChatWidget() {
           {/* Mobile Floating Button */}
           <button
             onClick={() => setIsOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#2545ff] text-white shadow-[0_8px_25px_rgba(37,69,255,0.45)] flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 border-2 border-white"
+            className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-brand text-white shadow-[0_8px_25px_rgba(37,69,255,0.45)] flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 border-2 border-white"
             title="Tanya AI Klozer"
             aria-label="Buka Chat AI"
           >
@@ -110,7 +110,7 @@ export default function ChatWidget() {
           {/* Desktop Right-Edge Vertical Tab */}
           <button
             onClick={() => setIsOpen(true)}
-            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-[#0c1754] hover:bg-[#2545ff] text-white py-3 px-2.5 rounded-l-2xl shadow-[0_8px_30px_rgba(12,23,84,0.3)] flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:pl-3.5 group border-none"
+            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-ink hover:bg-brand text-white py-3 px-2.5 rounded-l-2xl shadow-[0_8px_30px_rgba(12,23,84,0.3)] flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:pl-3.5 group border-none"
             title="Buka Tanya Asisten AI Klozer"
             aria-label="Buka Asisten AI"
           >
@@ -119,7 +119,7 @@ export default function ChatWidget() {
               <KlozerIcon className="w-6 h-6 rounded-lg group-hover:scale-105 transition-transform" />
             </div>
             <span
-              className="text-[12px] font-bold tracking-wider uppercase text-white/90"
+              className="text-label font-bold tracking-wider uppercase text-white/90"
               style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
             >
               Tanya AI Klozer
@@ -130,20 +130,20 @@ export default function ChatWidget() {
 
       {/* Compact Floating Side Card (NOT Full Screen) */}
       {isOpen && (
-        <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 w-[calc(100vw-32px)] sm:w-[380px] max-w-[380px] h-[520px] max-h-[85vh] bg-white rounded-[24px] shadow-[0_20px_70px_rgba(12,23,84,0.28)] border border-[#f0e9e1] flex flex-col overflow-hidden animate-scale-pop">
+        <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 w-[calc(100vw-32px)] sm:w-[380px] max-w-[380px] h-[520px] max-h-[85vh] bg-white rounded-[24px] shadow-[0_20px_70px_rgba(12,23,84,0.28)] border border-line flex flex-col overflow-hidden animate-scale-pop">
 
           {/* Header */}
-          <div className="p-4 bg-[#0c1754] text-white flex items-center justify-between flex-shrink-0 relative z-20">
+          <div className="p-4 bg-ink text-white flex items-center justify-between flex-shrink-0 relative z-20">
             <div className="flex items-center gap-2.5">
               <KlozerIcon className="w-8 h-8 rounded-xl shadow-sm flex-shrink-0" />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-[14px]">Asisten AI Klozer</span>
-                  <span className="text-[9px] font-extrabold bg-[#2545ff] text-white px-1.5 py-0.5 rounded-full">
+                  <span className="font-bold text-body-sm">Asisten AI Klozer</span>
+                  <span className="text-micro font-bold bg-brand text-white px-1.5 py-0.5 rounded-full">
                     24/7
                   </span>
                 </div>
-                <div className="text-[11px] text-emerald-400 flex items-center gap-1">
+                <div className="text-caption text-emerald-400 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Online Siap Menjawab</span>
                 </div>
@@ -167,14 +167,14 @@ export default function ChatWidget() {
           </div>
 
           {/* Quick Suggestion Chips Header */}
-          <div className="px-3.5 py-2.5 bg-[#f9f8f6] border-b border-[#f0e9e1] flex-shrink-0">
+          <div className="px-3.5 py-2.5 bg-canvas border-b border-line flex-shrink-0">
             <div className="flex flex-wrap gap-1.5">
               {quickChips.map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSend(chip)}
-                  className="px-2.5 py-1 rounded-full bg-white hover:bg-[#eaebf8] hover:text-[#2545ff] text-[#171417] text-[11px] font-medium border border-[#f0e9e1] cursor-pointer transition-all hover:scale-105"
+                  className="px-2.5 py-1 rounded-full bg-white hover:bg-brand-soft hover:text-brand text-charcoal text-caption font-medium border border-line cursor-pointer transition-all hover:scale-105"
                 >
                   {chip}
                 </button>
@@ -183,7 +183,7 @@ export default function ChatWidget() {
           </div>
 
           {/* Scrollable Message Feed */}
-          <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3.5 bg-[#fcfbf9]">
+          <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3.5 bg-soft">
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -191,49 +191,49 @@ export default function ChatWidget() {
                   }`}
               >
                 <div
-                  className={`p-3.5 rounded-2xl text-[12.5px] leading-relaxed whitespace-pre-line ${msg.sender === "user"
-                      ? "bg-[#2545ff] text-white rounded-br-none shadow-xs font-medium"
-                      : "bg-white text-[#171417] rounded-bl-none border border-[#f0e9e1] shadow-xs"
+                  className={`p-3.5 rounded-2xl text-label leading-relaxed whitespace-pre-line ${msg.sender === "user"
+                      ? "bg-brand text-white rounded-br-none shadow-xs font-medium"
+                      : "bg-white text-charcoal rounded-bl-none border border-line shadow-xs"
                     }`}
                 >
                   {typeof msg.text === "string"
                     ? msg.text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1")
                     : msg.text}
                 </div>
-                <span className="text-[9.5px] text-[#969696] mt-0.5 px-1 font-medium">{msg.time}</span>
+                <span className="text-micro text-fg-subtle mt-0.5 px-1 font-medium">{msg.time}</span>
               </div>
             ))}
 
             {/* Typing indicator */}
             {isTyping && (
-              <div className="self-start bg-white p-2.5 rounded-2xl rounded-bl-none border border-[#f0e9e1] flex items-center gap-1.5 w-fit shadow-xs">
-                <span className="text-[10px] text-[#969696]">AI sedang mengetik</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2545ff] typing-dot-1" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2545ff] typing-dot-2" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2545ff] typing-dot-3" />
+              <div className="self-start bg-white p-2.5 rounded-2xl rounded-bl-none border border-line flex items-center gap-1.5 w-fit shadow-xs">
+                <span className="text-micro text-fg-subtle">AI sedang mengetik</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-brand typing-dot-1" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand typing-dot-2" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand typing-dot-3" />
               </div>
             )}
           </div>
 
           {/* Compact Input Form */}
-          <div className="p-3 bg-white border-t border-[#f0e9e1] flex-shrink-0">
+          <div className="p-3 bg-white border-t border-line flex-shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-center gap-2 bg-[#f9f8f6] border border-[#f0e9e1] rounded-full px-3.5 py-1.5 focus-within:border-[#2545ff] focus-within:bg-white transition-all shadow-xs"
+              className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-1.5 focus-within:border-brand focus-within:bg-white transition-all shadow-xs"
             >
               <input
                 type="text"
                 placeholder="Tanya seputar Klozer..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="flex-1 text-[12.5px] bg-transparent border-none outline-none text-[#171417] placeholder:text-[#969696]"
+                className="flex-1 text-label bg-transparent border-none outline-none text-charcoal placeholder:text-fg-subtle"
               />
               <button
                 type="submit"
-                className="w-7 h-7 rounded-full bg-[#2545ff] text-white flex items-center justify-center flex-shrink-0 border-none cursor-pointer hover:bg-[#1a35dd] hover:scale-105 active:scale-95 transition-all shadow-xs"
+                className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center flex-shrink-0 border-none cursor-pointer hover:bg-brand-hover hover:scale-105 active:scale-95 transition-all shadow-xs"
                 aria-label="Kirim pertanyaan"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
