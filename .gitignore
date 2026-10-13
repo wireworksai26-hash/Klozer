@@ -3,6 +3,9 @@
 # Prevents any sensitive API Keys, .env secrets, logs, and build artifacts from leaking
 # ==============================================================================
 
+# Nested clone (duplicate)
+Klozer/
+
 # 1. Environment & Secret Keys (CRITICAL SECURITY)
 .env
 .env.*
