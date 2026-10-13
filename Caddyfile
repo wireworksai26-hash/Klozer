@@ -1,0 +1,45 @@
+# Automatic HTTPS (Let's Encrypt) for $DOMAIN. With DOMAIN=localhost Caddy issues a local certificate.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# API requests are small JSON; nothing legitimate needs more.
+	request_body {
+		max_size 2MB
+	}
+
+	# Liveness/readiness are for orchestration, not the public internet.
+	handle /ready {
+		respond 404
+	}
+	handle /health {
+		respond 404
+	}
+
+	handle /api/* {
+		reverse_proxy backend:5000
+	}
+
+	handle /socket.io* {
+		reverse_proxy backend:5000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,150 @@
+"use client";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { StarIcon } from "@/components/icons";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+const testimonials = [
+  {
+    bg: "bg-tint-lavender", // Lavender
+    score: "5.0",
+    quote: "Dulu CS kami sering begadang cuma buat kirim nomor rekening. Sejak pakai QRIS otomatis Klozer, pembeli langsung bayar dan omzet naik 40%.",
+    author: "Rendra Pratama",
+    role: "Owner Toko Fashion Pria",
+    date: "Agustus 2026",
+  },
+  {
+    bg: "bg-tint-mint", // Mint
+    score: "5.0",
+    quote: "Fitur deteksi struk palsunya benar-benar penyelamat. Pernah ada yang kirim bukti transfer editan, langsung ketahuan sama AI Klozer.",
+    author: "Nadia Maharani",
+    role: "Founder Brand Skincare",
+    date: "Juli 2026",
+  },
+  {
+    bg: "bg-tint-sand", // Warm Yellow
+    score: "4.9",
+    quote: "Banyak pelanggan kami yang malas ngetik dan lebih suka kirim voice note. AI Klozer bisa paham dan balas pakai suara ramah.",
+    author: "Hendra Wijaya",
+    role: "Distributor Retail",
+    date: "Agustus 2026",
+  },
+  {
+    bg: "bg-tint-blush", // Soft Pink
+    score: "5.0",
+    quote: "Sangat membantu untuk rekap donasi dan infak. Donatur senang karena langsung dapat tanda terima resmi di chat WhatsApp.",
+    author: "Ustadz Firdaus",
+    role: "Pengurus Lembaga ZISWAF",
+    date: "Agustus 2026",
+  },
+];
+
+export default function Testimonials() {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof window === "undefined") return;
+
+    const ctx = gsap.context(() => {
+      // Entrance reveal
+      gsap.fromTo(
+        ".pastel-card-item",
+        { y: 40, opacity: 0, scale: 0.95 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+
+      // Desktop-Only Alternating Parallax (Disabled on Mobile to prevent card overlap)
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 1024px)", () => {
+        gsap.to(".pastel-card-0, .pastel-card-2", {
+          y: -22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
+
+        gsap.to(".pastel-card-1, .pastel-card-3", {
+          y: 22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <section id="testimoni" ref={containerRef} className="py-20 md:py-28 bg-canvas border-b border-line overflow-hidden">
+      <div className="container-page">
+        
+        {/* Section Headline */}
+        <div className="text-center max-w-[840px] mx-auto mb-14 md:mb-16">
+          <span className="eyebrow-label text-brand block mb-2">BUKTI KEPUASAN PENGGUNA</span>
+          <h2 className="section-title">
+            <span className="italic-signature">Pemilik bisnis di Indonesia</span>{" "}
+            memilih Klozer untuk meningkatkan omzet WhatsApp mereka
+          </h2>
+        </div>
+
+        {/* 4 Pastel Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {testimonials.map((t, idx) => (
+            <div
+              key={idx}
+              className={`pastel-card-item pastel-card-${idx} ${t.bg} rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-sm min-h-[310px] transition-all duration-300 hover:-translate-y-2 hover:shadow-md cursor-default will-change-transform`}
+            >
+              <div>
+                {/* Rating score header */}
+                <div className="flex items-center gap-1.5 font-bold text-body-sm text-charcoal mb-4">
+                  <StarIcon className="w-4 h-4 text-warning-500 fill-warning-500" />
+                  <span>{t.score}</span>
+                </div>
+
+                {/* Quote */}
+                <p className="text-body-sm leading-relaxed text-charcoal font-normal mb-6">
+                  &quot;{t.quote}&quot;
+                </p>
+              </div>
+
+              {/* Author Info */}
+              <div className="pt-4 border-t border-black/10">
+                <div className="text-body-sm font-bold text-charcoal">
+                  — {t.author}
+                </div>
+                <div className="text-caption text-charcoal/70 mt-0.5">
+                  {t.role} · {t.date}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,662 @@
+"use client";
+import { useState } from "react";
+import { useDashboard } from "@/context/DashboardContext";
+import { AlertTriangleIcon, CheckCircleIcon, TagIcon, XIcon, DownloadIcon, UploadIcon, SparklesIcon, DollarSignIcon } from "@/components/icons";
+import DataTransferModal from "@/components/common/DataTransferModal";
+import AiHppModal from "@/components/common/AiHppModal";
+
+export default function ProductsPage() {
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    toggleProductStatus,
+    deleteProduct,
+    importProducts,
+    loadTemplateProducts,
+    activeInstitution,
+    currentUser,
+    t,
+  } = useDashboard();
+
+  const [view, setView] = useState("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showHppModal, setShowHppModal] = useState(false);
+  const [selectedHppProduct, setSelectedHppProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    sku: "",
+    category: "Pakaian Pria",
+    price: 150000,
+    hpp: 85000,
+    stock: 20,
+    lowStock: 10,
+    variants: "M, L, XL",
+    active: true,
+  });
+
+  const handleOpenAdd = () => {
+    setFormData({
+      name: "",
+      sku: `KLZ-${Math.floor(100 + Math.random() * 900)}`,
+      category: "Pakaian Pria",
+      price: 150000,
+      hpp: 85000,
+      stock: 20,
+      lowStock: 10,
+      variants: "M, L, XL",
+      active: true,
+    });
+    setShowAddModal(true);
+  };
+
+  const handleOpenEdit = (prd) => {
+    setEditingProduct(prd);
+    setFormData({
+      name: prd.name,
+      sku: prd.sku,
+      category: prd.category,
+      price: prd.price,
+      hpp: prd.hpp,
+      stock: prd.stock,
+      lowStock: prd.lowStock,
+      variants: prd.variants.join(", "),
+      active: prd.active,
+    });
+  };
+
+  const handleSaveForm = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+
+    const payload = {
+      ...formData,
+      price: Number(formData.price),
+      hpp: Number(formData.hpp),
+      stock: Number(formData.stock),
+      lowStock: Number(formData.lowStock),
+      variants: formData.variants.split(",").map((v) => v.trim()).filter(Boolean),
+    };
+
+    if (editingProduct) {
+      updateProduct(editingProduct.id, payload);
+      setEditingProduct(null);
+    } else {
+      addProduct(payload);
+      setShowAddModal(false);
+    }
+  };
+
+  const handleQuickStock = (id, currentStock, delta) => {
+    const nextStock = Math.max(0, currentStock + delta);
+    updateProduct(id, { stock: nextStock });
+  };
+
+  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))];
+
+  const filtered = products.filter((p) => {
+    const matchSearch =
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
+    return matchSearch && matchCategory;
+  });
+
+  return (
+    <div className="flex flex-col gap-6">
+      
+      {/* Header */}
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">{t("Master Data Produk")}</h1>
+          <p className="text-body-sm text-fg-muted">{t("Kelola stok gudang, harga jual, HPP, dan sinkronisasi katalog WhatsApp otomatis.")}</p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center [&>button]:whitespace-nowrap [&>a]:whitespace-nowrap gap-3">
+          <div className="flex items-center bg-white p-1 rounded-xl border border-line shadow-xs">
+            <button
+              onClick={() => setView("grid")}
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "grid" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
+              }`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setView("table")}
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+                view === "table" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
+              }`}
+            >
+              {t("Tabel")}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowTransferModal(true)}
+            className="px-4 py-2.5 bg-white hover:bg-success-50 text-fg hover:text-success-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs"
+          >
+            <UploadIcon className="w-4 h-4 text-success-600" />
+            <span>{t("Impor / Ekspor Excel")}</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="btn-primary !py-2.5 !px-5 text-body-sm font-bold flex items-center gap-2"
+          >
+            <span>+</span>
+            <span>{t("Tambah Produk")}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-line shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-2 w-full sm:w-[320px]">
+          <svg className="text-fg-subtle" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder={t("Cari nama produk, kode SKU...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent border-none outline-none text-body-sm text-ink placeholder:text-fg-subtle flex-1 font-medium"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <span className="text-label font-bold text-fg-muted whitespace-nowrap">{t("Kategori:")}</span>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                categoryFilter === cat
+                  ? "bg-brand text-white border-brand"
+                  : "bg-canvas text-fg-muted border-line hover:bg-white"
+              }`}
+            >
+              {cat === "all" ? t("Semua") : t(cat)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* GRID VIEW */}
+      {view === "grid" ? (
+        filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 border border-line shadow-xs text-center">
+            <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-brand-soft text-brand flex items-center justify-center mb-3">
+                <TagIcon className="w-6 h-6 text-brand" />
+              </div>
+              <div className="font-bold text-ink text-body">{t("Katalog Produk Masih Kosong")}</div>
+              <p className="text-label text-fg-muted mt-1 mb-5 leading-relaxed">
+                {t("Katalog produk untuk instansi")} <strong>{activeInstitution?.name || t("Anda")}</strong> {t("belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.")}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleOpenAdd}
+                  className="btn-primary !py-2 !px-4 text-label font-bold"
+                >
+                  {t("+ Tambah Produk Manual")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadTemplateProducts("auto")}
+                  className="px-4 py-2 rounded-xl bg-warning-50 hover:bg-warning-100 text-warning-900 border border-warning-200 text-label font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                >
+                  <SparklesIcon className="w-4 h-4 text-warning-600" />
+                  <span>{t("Muat Produk Rekomendasi Instansi")}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-[1700px]:grid-cols-4 gap-5">
+            {filtered.map((p) => {
+              const isLow = (p.stock || 0) <= (p.lowStock || 5);
+              return (
+                <div
+                  key={p.id}
+                  className={`bg-white rounded-2xl p-5 border border-line shadow-soft flex flex-col justify-between hover:shadow-md transition-all ${
+                    !p.active ? "opacity-60 bg-soft/80" : ""
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-mono text-caption font-bold text-brand bg-brand-soft px-2 py-0.5 rounded">
+                        {p.sku}
+                      </span>
+                      <span
+                        className={`text-caption font-bold px-2 py-0.5 rounded-full ${
+                          p.active ? "bg-success-100 text-success-800" : "bg-line-strong text-fg"
+                        }`}
+                      >
+                        {p.active ? t("Aktif di WA") : t("Nonaktif")}
+                      </span>
+                    </div>
+
+                    <h4 className="text-body font-bold text-ink leading-snug mb-1">{p.name}</h4>
+                    <span className="text-label text-fg-subtle font-medium block mb-3">{t(p.category)}</span>
+
+                    <div className="flex items-baseline gap-2 mb-3 whitespace-nowrap">
+                      <span className="text-title font-bold text-ink tabular-nums">Rp {p.price.toLocaleString("id-ID")}</span>
+                      <span className="text-caption text-fg-muted tabular-nums">{t("HPP:")} Rp {p.hpp.toLocaleString("id-ID")}</span>
+                    </div>
+
+                    {/* Stock Meter */}
+                    <div className="bg-canvas p-2.5 rounded-xl border border-line flex items-center justify-between mb-4">
+                      <div className="whitespace-nowrap">
+                        <span className="text-caption text-fg-subtle block">{t("Sisa Stok:")}</span>
+                        <span className={`text-body-sm font-bold ${isLow ? "text-danger-600" : "text-ink"}`}>
+                          {p.stock} pcs {isLow && t("(Kritis!)")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleQuickStock(p.id, p.stock, -1)}
+                          className="w-7 h-7 rounded-lg bg-white border border-line hover:bg-danger-50 hover:text-danger-600 font-bold text-body-sm flex items-center justify-center cursor-pointer transition-colors"
+                          title={t("Kurangi stok (-1)")}
+                        >
+                          -
+                        </button>
+                        <button
+                          onClick={() => handleQuickStock(p.id, p.stock, 1)}
+                          className="w-7 h-7 rounded-lg bg-white border border-line hover:bg-success-50 hover:text-success-600 font-bold text-body-sm flex items-center justify-center cursor-pointer transition-colors"
+                          title={t("Tambah stok (+1)")}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Action Buttons */}
+                  <div className="flex items-center gap-2 pt-3 border-t border-line">
+                    <button
+                      onClick={() => {
+                        setSelectedHppProduct(p);
+                        setShowHppModal(true);
+                      }}
+                      className="py-1.5 px-2 bg-warning-50 hover:bg-warning-100 text-warning-800 font-bold text-caption rounded-lg transition-colors border border-warning-200 cursor-pointer flex items-center gap-1 shrink-0"
+                      title={t("Kalkulasi Resep & HPP via AI")}
+                    >
+                      <SparklesIcon className="w-3 h-3 text-warning-600" />
+                      <span>{t("AI HPP")}</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenEdit(p)}
+                      className="flex-1 py-1.5 px-3 bg-brand-soft hover:bg-brand hover:text-white text-brand font-bold text-label rounded-lg transition-colors border-none cursor-pointer text-center"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(p.id)}
+                      className="p-1.5 bg-danger-50 hover:bg-danger-600 hover:text-white text-danger-600 rounded-lg transition-colors border-none cursor-pointer"
+                      title={t("Hapus Produk")}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        /* TABLE VIEW */
+        <div className="bg-white rounded-2xl border border-line shadow-soft overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-canvas border-b border-line">
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("SKU & Produk")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("Kategori")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("Harga Jual")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("HPP")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("Stok Gudang")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted">{t("Status WA")}</th>
+                  <th className="py-3.5 px-5 text-label font-bold uppercase text-fg-muted text-right">{t("Aksi")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line text-body-sm">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 px-4 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-[420px] mx-auto">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-soft text-brand flex items-center justify-center mb-3">
+                          <TagIcon className="w-6 h-6 text-brand" />
+                        </div>
+                        <div className="font-bold text-ink text-body">{t("Katalog Produk Masih Kosong")}</div>
+                        <p className="text-label text-fg-muted mt-1 mb-5 leading-relaxed">
+                          {t("Katalog produk untuk instansi")} <strong>{activeInstitution?.name || t("Anda")}</strong> {t("belum diisi. Anda dapat menambahkan produk secara manual atau memuat paket produk rekomendasi instansi.")}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={handleOpenAdd}
+                            className="btn-primary !py-2 !px-4 text-label font-bold"
+                          >
+                            {t("+ Tambah Produk Manual")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => loadTemplateProducts("auto")}
+                            className="px-4 py-2 rounded-xl bg-warning-50 hover:bg-warning-100 text-warning-900 border border-warning-200 text-label font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                          >
+                            <SparklesIcon className="w-4 h-4 text-warning-600" />
+                            <span>{t("Muat Produk Rekomendasi Instansi")}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((p) => (
+                    <tr key={p.id} className="hover:bg-soft transition-colors">
+                      <td className="py-4 px-5">
+                        <div className="font-bold text-ink text-body-sm">{p.name}</div>
+                        <span className="font-mono text-caption font-bold text-brand">{p.sku}</span>
+                      </td>
+                      <td className="py-4 px-5 text-fg-muted font-medium">{t(p.category)}</td>
+                      <td className="py-4 px-5 font-bold text-ink">Rp {p.price.toLocaleString("id-ID")}</td>
+                      <td className="py-4 px-5 text-fg-muted">Rp {p.hpp.toLocaleString("id-ID")}</td>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${(p.stock || 0) <= (p.lowStock || 5) ? "text-danger-600" : "text-ink"}`}>
+                            {p.stock} pcs
+                          </span>
+                          <button
+                            onClick={() => handleQuickStock(p.id, p.stock, 1)}
+                            className="w-6 h-6 rounded bg-canvas hover:bg-brand-soft text-brand font-bold text-label border border-line cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5">
+                        <button
+                          type="button"
+                          onClick={() => toggleProductStatus(p.id)}
+                          className={`px-2.5 py-0.5 rounded-full text-caption font-bold border-none cursor-pointer ${
+                            p.active ? "bg-success-100 text-success-800" : "bg-line-strong text-fg"
+                          }`}
+                        >
+                          {p.active ? t("Aktif") : t("Nonaktif")}
+                        </button>
+                      </td>
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedHppProduct(p);
+                              setShowHppModal(true);
+                            }}
+                            className="px-2.5 py-1 text-caption font-bold text-warning-800 bg-warning-50 hover:bg-warning-100 rounded-lg border border-warning-200 transition-colors cursor-pointer flex items-center gap-1"
+                            title={t("Kalkulasi Resep & HPP via AI")}
+                          >
+                            <SparklesIcon className="w-3 h-3 text-warning-600" />
+                            <span>{t("AI HPP")}</span>
+                          </button>
+                          <button
+                            onClick={() => handleOpenEdit(p)}
+                            className="px-2.5 py-1 text-label font-bold text-brand bg-brand-soft hover:bg-brand hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(p.id)}
+                            className="px-2.5 py-1 text-label font-bold text-danger-600 bg-danger-50 hover:bg-danger-600 hover:text-white rounded-lg transition-colors border-none cursor-pointer"
+                          >
+                            {t("Hapus")}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add or Edit Product */}
+      {(showAddModal || editingProduct) && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="card-title">
+                {editingProduct ? t("Edit Master Produk") : t("Tambah Produk Baru")}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingProduct(null);
+                }}
+                className="w-7 h-7 rounded-full bg-canvas hover:bg-brand-soft flex items-center justify-center text-fg-muted border-none cursor-pointer"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveForm} className="flex flex-col gap-3.5 text-body-sm">
+              <div>
+                <label className="font-bold text-ink block mb-1">{t("Nama Produk *")}</label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t("Contoh: Kemeja Batik Lengan Panjang")}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-ink block mb-1">{t("Kode SKU")}</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-ink block mb-1">{t("Kategori")}</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
+                  >
+                    <option value="Pakaian Pria">{t("Pakaian Pria")}</option>
+                    <option value="Pakaian Wanita">{t("Pakaian Wanita")}</option>
+                    <option value="Skincare">Skincare & Beauty</option>
+                    <option value="F&B">{t("F&B & Kuliner")}</option>
+                    <option value="Aksesoris">{t("Aksesoris")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-ink block mb-1">{t("Harga Jual (Rp) *")}</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-ink">{t("HPP Modal (Rp)")}</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedHppProduct({
+                          name: formData.name || "Ayam Geprek",
+                          category: formData.category,
+                          price: Number(formData.price) || 25000,
+                          hpp: Number(formData.hpp) || 0,
+                        });
+                        setShowHppModal(true);
+                      }}
+                      className="px-2 py-0.5 bg-accent-100 hover:bg-accent-200 text-accent-800 text-micro font-bold rounded-lg flex items-center gap-1 border border-accent-200 cursor-pointer transition-all"
+                    >
+                      <SparklesIcon className="w-3.5 h-3.5 text-accent-600" />
+                      <span>{t("Hitung via AI")}</span>
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    required
+                    value={formData.hpp}
+                    onChange={(e) => setFormData({ ...formData, hpp: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-ink block mb-1">{t("Jumlah Stok Saat Ini")}</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-ink block mb-1">{t("Peringatan Stok Kritis (&le;)")}</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.lowStock}
+                    onChange={(e) => setFormData({ ...formData, lowStock: e.target.value })}
+                    className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-ink block mb-1">{t("Varian Produk (Pisahkan dengan koma)")}</label>
+                <input
+                  type="text"
+                  placeholder={t("Contoh: S, M, L, XL")}
+                  value={formData.variants}
+                  onChange={(e) => setFormData({ ...formData, variants: e.target.value })}
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingProduct(null);
+                  }}
+                  className="btn-outline !py-2 !px-4 text-body-sm"
+                >
+                  {t("Batal")}
+                </button>
+                <button type="submit" className="btn-primary !py-2 !px-5 text-body-sm font-bold">
+                  {editingProduct ? t("Simpan Perubahan") : t("Simpan Produk")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] p-5 shadow-2xl border border-line animate-scale-pop text-center">
+            <div className="w-12 h-12 rounded-full bg-danger-100 text-danger-600 flex items-center justify-center mx-auto mb-3">
+              <AlertTriangleIcon className="w-6 h-6" />
+            </div>
+            <h3 className="card-title mb-1.5">{t("Hapus Produk Ini?")}</h3>
+            <p className="text-body-sm text-fg-muted mb-5">
+              {t("Produk akan dihapus dari katalog bot WhatsApp dan inventaris gudang.")}
+            </p>
+            <div className="flex items-center justify-center gap-2.5">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="btn-outline !py-2 !px-4 text-body-sm"
+              >
+                {t("Batal")}
+              </button>
+              <button
+                onClick={() => {
+                  deleteProduct(deleteConfirmId);
+                  setDeleteConfirmId(null);
+                }}
+                className="px-4 py-2 rounded-full bg-danger-600 hover:bg-danger-700 text-white font-bold text-body-sm border-none cursor-pointer shadow-sm"
+              >
+                {t("Ya, Hapus")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Data Transfer Modal (Import / Export CSV) */}
+      <DataTransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        type="products"
+        data={products}
+        onImportSuccess={(newItems, mode) => importProducts(newItems, mode)}
+      />
+
+      {/* AI HPP & Margin Intelligence Modal */}
+      <AiHppModal
+        isOpen={showHppModal}
+        onClose={() => {
+          setShowHppModal(false);
+          setSelectedHppProduct(null);
+        }}
+        product={selectedHppProduct}
+        onApplyHpp={(newHpp, newPrice) => {
+          if (showAddModal || editingProduct) {
+            setFormData((prev) => ({
+              ...prev,
+              hpp: newHpp,
+              price: newPrice,
+            }));
+          } else if (selectedHppProduct?.id) {
+            updateProduct(selectedHppProduct.id, {
+              hpp: newHpp,
+              price: newPrice,
+            });
+          }
+        }}
+      />
+
+    </div>
+  );
+}

@@ -1,0 +1,35 @@
+// English phrases: finance
+const phrases = {
+  "Keuangan dan Arus Kas Masuk": "Finance and Incoming Cash Flow",
+  "Ekspor Kas Masuk (CSV)": "Export Incoming Cash (CSV)",
+  "Dari pesanan lunas": "From paid orders",
+  "Aksi": "Actions",
+  "Belum ada pembayaran masuk": "No incoming payments yet",
+  "Tidak ada pesanan yang menunggu pembayaran": "No orders awaiting payment",
+  "Lunas": "Paid",
+  "Memproses...": "Processing...",
+  "Konfirmasi Sudah Dibayar": "Confirm as Paid",
+  "Menunggu pembayaran": "Awaiting payment",
+  "Pembayaran pesanan": "Order payments for",
+  "QRIS terverifikasi otomatis oleh Midtrans; transfer manual dikonfirmasi di sini.": "QRIS is verified automatically by Midtrans; manual transfers are confirmed here.",
+  "{count} pesanan lunas": "{count} paid orders",
+  "{count} pesanan belum dibayar": "{count} unpaid orders",
+  "Total Pemasukan": "Total Income",
+  "Menunggu Pembayaran": "Awaiting Payment",
+  "Rata-rata per Pesanan": "Average per Order",
+  "Sudah Dibayar ({count})": "Paid ({count})",
+  "Menunggu Bayar ({count})": "Awaiting Payment ({count})",
+  "No. Pesanan": "Order No.",
+  "Tanggal": "Date",
+  "Nominal": "Amount",
+  "paid": "Paid",
+  "waiting_payment": "Awaiting Payment",
+  "processing": "Processing",
+  "shipped": "Shipped",
+  "delivered": "Delivered",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
+  "Pesanan||singular": "Order"
+};
+
+export default phrases;

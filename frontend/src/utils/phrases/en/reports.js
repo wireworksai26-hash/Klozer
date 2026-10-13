@@ -1,0 +1,37 @@
+// English phrases: reports
+const phrases = {
+  "Total Omzet": "Total Revenue",
+  "Laba Kotor": "Gross Profit",
+  "Harga jual dikurangi HPP produk": "Selling price minus product COGS",
+  "Rata-rata Nilai Pesanan": "Average Order Value",
+  "Per pesanan lunas": "Per paid order",
+  "Laporan dan Analytics": "Reports and Analytics",
+  "Ekspor Pesanan (CSV)": "Export Orders (CSV)",
+  "Ekspor Performa CS": "Export CS Performance",
+  "Belum ada pesanan lunas.": "No paid orders yet.",
+  "Metode Pembayaran": "Payment Method",
+  "Belum ada data.": "No data yet.",
+  "Produk Terlaris": "Best-Selling Products",
+  "Belum ada penjualan.": "No sales yet.",
+  "Performa Tim CS": "CS Team Performance",
+  "Nama": "Name",
+  "Chat dibalas": "Chats replied",
+  "Omzet": "Revenue",
+  "Komisi": "Commission",
+  "Belum ada staf CS aktif.": "No active CS staff yet.",
+  "{count} pesanan lunas": "{count} paid orders",
+  "{paid} dari {total} pesanan": "{paid} of {total} orders",
+  "Performa bisnis": "Business performance of",
+  "dihitung dari pesanan yang sudah dibayar.": "calculated from paid orders.",
+  "Omzet {days} Hari Terakhir": "Revenue for the Last {days} Days",
+  "terjual": "sold",
+  "No. Pesanan": "Order No.",
+  "Tanggal": "Date",
+  "Pelanggan": "Customer",
+  "Telepon": "Phone",
+  "Metode": "Method",
+  "Ongkir": "Shipping",
+  "Closing": "Closing"
+};
+
+export default phrases;

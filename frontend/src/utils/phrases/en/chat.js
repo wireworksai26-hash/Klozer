@@ -1,0 +1,36 @@
+// English phrases: chat
+const phrases = {
+  "Balasan AI": "AI Reply",
+  "Gagal terkirim": "Failed to send",
+  "Cari nama atau nomor...": "Search name or number...",
+  "Tidak ada hasil": "No results",
+  "Belum ada percakapan": "No conversations yet",
+  "Pesan WhatsApp baru akan tampil di sini otomatis.": "New WhatsApp messages will appear here automatically.",
+  "Hubungkan nomor WhatsApp di Pengaturan untuk mulai menerima pesan.": "Connect your WhatsApp number in Settings to start receiving messages.",
+  "Pilih percakapan": "Select a conversation",
+  "Pesan dari pelanggan yang menghubungi nomor WhatsApp bisnis Anda muncul di sini secara real-time.": "Messages from customers who contact your business WhatsApp number appear here in real time.",
+  "Kembali ke daftar percakapan": "Back to conversation list",
+  "Lihat detail pelanggan": "View customer details",
+  "Terbitkan QRIS": "Issue QRIS",
+  "Memuat pesan...": "Loading messages...",
+  "Belum ada pesan dalam percakapan ini.": "No messages in this conversation yet.",
+  "Ketik balasan WhatsApp...": "Type a WhatsApp reply...",
+  "Kirim": "Send",
+  "Detail pelanggan": "Customer details",
+  "Tutup detail pelanggan": "Close customer details",
+  "Tutup": "Close",
+  "Tambahkan produk aktif terlebih dahulu di Katalog Produk.": "Please add an active product in the Product Catalog first.",
+  "Jumlah": "Quantity",
+  "Dibuat pesanan sungguhan (stok berkurang) dan QRIS dikirim ke chat. Pesanan lunas otomatis saat pembayaran diterima.": "A real order is created (stock decreases) and the QRIS is sent to the chat. The order is marked paid automatically when payment is received.",
+  "Memproses...": "Processing...",
+  "Buat Pesanan dan Kirim QRIS": "Create Order and Send QRIS",
+  "Kota": "City",
+  "Sumber": "Source",
+  "Ditangani": "Handled by",
+  "Skor risiko COD": "COD risk score",
+  "stok": "stock",
+  "Terbitkan QRIS untuk": "Issue QRIS for",
+  "Produk||singular": "Product"
+};
+
+export default phrases;

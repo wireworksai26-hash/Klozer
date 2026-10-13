@@ -1,0 +1,35 @@
+// English phrases: notices
+const phrases = {
+  "Terjadi kesalahan.": "Something went wrong.",
+  "Gagal memuat sesi.": "Failed to load session.",
+  "Sebagian data gagal dimuat: {reason}": "Some data failed to load: {reason}",
+  "kesalahan jaringan": "network error",
+  "Password berhasil diubah.": "Password changed successfully.",
+  "Instansi berhasil dibuat.": "Institution created successfully.",
+  "Instansi berhasil diperbarui.": "Institution updated successfully.",
+  "Instansi dinonaktifkan. Data tetap tersimpan.": "Institution deactivated. Data is preserved.",
+  "Produk ditambahkan.": "Product added.",
+  "Produk dihapus.": "Product deleted.",
+  "Impor selesai: {created} baru, {updated} diperbarui": "Import complete: {created} new, {updated} updated",
+  ", {count} dinonaktifkan": ", {count} deactivated",
+  "Tidak ada baris yang cocok dengan SKU atau nama produk.": "No rows match a SKU or product name.",
+  "{count} stok diperbarui": "{count} stock updated",
+  ", {count} SKU tidak dikenal": ", {count} unknown SKUs",
+  "Pilih produk yang valid untuk pesanan ini.": "Select a valid product for this order.",
+  "Pesanan ini sudah dibuat sebelumnya.": "This order was already created.",
+  "Pesanan berhasil dibuat.": "Order created successfully.",
+  "Kontak ditambahkan.": "Contact added.",
+  "Kontak dihapus.": "Contact deleted.",
+  "Akun staf dinonaktifkan.": "Staff account deactivated.",
+  "Persona AI tersimpan.": "AI persona saved.",
+  "Pesan baru dari pelanggan": "New message from customer",
+  "Pelanggan mengirim lampiran.": "Customer sent an attachment.",
+  "Pelanggan mengirim gambar/suara. AI tidak membalas lampiran.": "Customer sent an image/voice note. The AI does not reply to attachments.",
+  "Kuota token AI habis, percakapan perlu dibalas manual.": "AI token quota exhausted, this conversation needs a manual reply.",
+  "AI sedang tidak tersedia, percakapan perlu dibalas manual.": "AI is currently unavailable, this conversation needs a manual reply.",
+  "AI mendeteksi percakapan yang perlu ditangani manusia.": "AI detected a conversation that needs human handling.",
+  "Butuh penanganan CS": "Needs CS attention",
+  "Percakapan ini perlu dibalas manual.": "This conversation needs a manual reply."
+};
+
+export default phrases;
