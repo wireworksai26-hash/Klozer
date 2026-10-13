@@ -22,4 +22,9 @@ export default [
     files: ["src/config/env.js"],
     rules: { "no-console": "off" },
   },
+  {
+    // Test files need console for debug output and assertions.
+    files: ["test/**"],
+    rules: { "no-console": "off" },
+  },
 ];
