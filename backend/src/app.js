@@ -9,7 +9,6 @@ import { pingDb } from "./config/db.js";
 import apiRouter from "./routes/api.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 import { globalLimiter } from "./middlewares/rateLimit.js";
-import { deepSanitize } from "./utils/sanitize.js";
 
 /**
  * Build the Express app. Kept separate from server.js so tests can mount it
@@ -67,13 +66,6 @@ export function createApp() {
   );
   app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
-  // Global anti-XSS sanitization layer: neutralizes Stored XSS payloads in request bodies
-  app.use((req, res, next) => {
-    if (req.body && typeof req.body === "object") {
-      req.body = deepSanitize(req.body);
-    }
-    next();
-  });
 
   // Liveness: the process is up. Readiness: it can actually serve (database reachable).
   app.get("/health", (req, res) => res.json({ status: "ok", uptime: Math.round(process.uptime()) }));
