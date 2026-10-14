@@ -228,8 +228,8 @@ export default function TrendAreaChart({
       {/* Header: title + live badge stay on one line; the controls wrap under them when space is short */}
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pb-4 border-b border-line">
         <div className="min-w-0">
-          <h3 className="card-title whitespace-nowrap">{t(title)}</h3>
-          <div className="flex items-center gap-2 mt-1 whitespace-nowrap">
+          <h3 className="card-title">{t(title)}</h3>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
             <span className="text-caption font-semibold bg-success-50 text-success-700 px-2 py-0.5 rounded-full border border-success-200 whitespace-nowrap">
               Live Real-Time
             </span>
@@ -275,18 +275,18 @@ export default function TrendAreaChart({
       </div>
 
       {/* KPI Highlight Strip */}
-      <div className="grid grid-cols-3 gap-3 py-3 px-4 my-4 bg-soft rounded-xl border border-line">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 py-3 px-3 sm:px-4 my-4 bg-soft rounded-xl border border-line">
         <div className="min-w-0">
-          <span className="text-caption text-fg-muted font-medium whitespace-nowrap">{t("Total Periode Ini")}</span>
-          <div className="text-body font-bold text-fg mt-0.5 whitespace-nowrap tabular-nums">{formatVal(totalPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium block leading-tight sm:whitespace-nowrap">{t("Total Periode Ini")}</span>
+          <div className="text-body-sm sm:text-body font-bold text-fg mt-0.5 whitespace-nowrap tabular-nums">{formatVal(totalPeriod)}</div>
         </div>
         <div className="min-w-0">
-          <span className="text-caption text-fg-muted font-medium whitespace-nowrap">{t("Rata-rata / Titik")}</span>
-          <div className="text-body font-bold text-brand mt-0.5 whitespace-nowrap tabular-nums">{formatVal(avgPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium block leading-tight sm:whitespace-nowrap">{t("Rata-rata / Titik")}</span>
+          <div className="text-body-sm sm:text-body font-bold text-brand mt-0.5 whitespace-nowrap tabular-nums">{formatVal(avgPeriod)}</div>
         </div>
         <div className="min-w-0">
-          <span className="text-caption text-fg-muted font-medium whitespace-nowrap">{t("Puncak Tertinggi")}</span>
-          <div className="text-body font-bold text-success-600 mt-0.5 whitespace-nowrap tabular-nums">{formatVal(peakPeriod)}</div>
+          <span className="text-caption text-fg-muted font-medium block leading-tight sm:whitespace-nowrap">{t("Puncak Tertinggi")}</span>
+          <div className="text-body-sm sm:text-body font-bold text-success-600 mt-0.5 whitespace-nowrap tabular-nums">{formatVal(peakPeriod)}</div>
         </div>
       </div>
 

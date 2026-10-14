@@ -71,7 +71,7 @@ export default function TokenUsagePage() {
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-line table-scroll">
             <div className="px-5 py-4 border-b border-line font-bold text-ink">{t("Per model")}</div>
             <table className="w-full text-left text-body-sm">
               <thead>
@@ -98,7 +98,7 @@ export default function TokenUsagePage() {
             {data.modelBreakdown.length === 0 && <div className="py-6 text-center text-fg-muted">{t("Belum ada pemakaian pada rentang ini.")}</div>}
           </div>
 
-          <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-line table-scroll">
             <div className="px-5 py-4 border-b border-line font-bold text-ink">{t("Kuota per tenant")}</div>
             <table className="w-full text-left text-body-sm">
               <thead>
@@ -129,7 +129,7 @@ export default function TokenUsagePage() {
             </table>
           </div>
 
-          <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-line table-scroll">
             <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3">
               <span className="font-bold text-ink">{t("60 permintaan terakhir")}</span>
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("Cari tenant atau model...")} className="bg-canvas border border-line rounded-lg px-3 py-1.5 text-body-sm outline-none" />

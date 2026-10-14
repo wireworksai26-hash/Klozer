@@ -175,7 +175,7 @@ export default function ProductsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <span className="text-label font-bold text-fg-muted whitespace-nowrap">{t("Kategori:")}</span>
           {categories.map((cat) => (
             <button
@@ -322,7 +322,7 @@ export default function ProductsPage() {
       ) : (
         /* TABLE VIEW */
         <div className="bg-white rounded-2xl border border-line shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-canvas border-b border-line">

@@ -82,7 +82,7 @@ export default function ScrollAppShowcase() {
 
         {/* Tab Switcher with Mobile Horizontal Scrollable Pills */}
         <div className="flex flex-col items-center justify-center mb-6 w-full">
-          <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-white rounded-full border border-line shadow-sm max-w-full overflow-x-auto scrollbar-none px-2">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 bg-white rounded-3xl sm:rounded-full border border-line shadow-sm max-w-full px-2">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (

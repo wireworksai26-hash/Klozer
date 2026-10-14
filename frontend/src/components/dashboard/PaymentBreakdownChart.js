@@ -89,8 +89,8 @@ export default function PaymentBreakdownChart({
       <div>
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-line">
           <div className="min-w-0">
-            <h3 className="card-title whitespace-nowrap">{t(title)}</h3>
-            <p className="text-label text-fg-muted mt-0.5 whitespace-nowrap">{t(subtitle)}</p>
+            <h3 className="card-title">{t(title)}</h3>
+            <p className="text-label text-fg-muted mt-0.5">{t(subtitle)}</p>
           </div>
           <span className="text-caption font-bold text-brand bg-brand-soft px-2.5 py-1 rounded-full border border-brand-soft whitespace-nowrap flex-shrink-0">
             {totalTx} {t("Transaksi")}
@@ -129,7 +129,7 @@ export default function PaymentBreakdownChart({
                     style={{ backgroundColor: m.hex }}
                   />
                   <div className="min-w-0">
-                    <div className="text-body-sm font-bold text-fg whitespace-nowrap">{t(m.name)}</div>
+                    <div className="text-body-sm font-bold text-fg sm:whitespace-nowrap">{t(m.name)}</div>
                     <div className="text-caption text-fg-muted whitespace-nowrap tabular-nums">
                       {m.txCount} {t("Transaksi")} ({m.pct}%)
                     </div>
@@ -145,7 +145,7 @@ export default function PaymentBreakdownChart({
         </div>
       </div>
 
-      <div className="pt-3 border-t border-line flex items-center justify-between gap-3 text-caption text-fg-muted whitespace-nowrap">
+      <div className="pt-3 border-t border-line flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-fg-muted">
         <span>{t("Rekonsiliasi Mutasi:")} <strong>{t("Otomatis")}</strong></span>
         <span className="text-success-600 font-bold">{t("● Anti-Struk Palsu AI Aktif")}</span>
       </div>

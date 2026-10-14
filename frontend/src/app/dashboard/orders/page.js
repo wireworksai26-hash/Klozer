@@ -153,7 +153,7 @@ export default function OrdersPage() {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
             {[
               { key: "all", label: t("Semua") },
               { key: "waiting_payment", label: t("Menunggu Bayar") },
@@ -179,7 +179,7 @@ export default function OrdersPage() {
 
       {/* Orders Table */}
       <div className="bg-white rounded-2xl border border-line shadow-soft overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-canvas border-b border-line">

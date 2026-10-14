@@ -81,7 +81,7 @@ function SuperadminView({ institutions, subscriptions }) {
           <h3 className="card-title">{t("Daftar Institusi dan Pemakaian Token AI")}</h3>
           <Link href="/dashboard/institutions" className="text-label font-bold text-brand hover:underline">{t("Kelola Semua →")}</Link>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-soft border-b border-line">
@@ -123,7 +123,7 @@ function RecentOrders({ orders }) {
       {orders.length === 0 ? (
         <div className="p-8 text-center text-fg-muted bg-soft rounded-xl border border-dashed border-line text-body-sm">{t("Belum ada pesanan.")}</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-soft border-b border-line">
@@ -139,7 +139,7 @@ function RecentOrders({ orders }) {
                   <tr key={o.dbId} className="hover:bg-soft/80">
                     <td className="py-3 px-4 font-mono font-bold text-brand whitespace-nowrap">{o.id}</td>
                     <td className="py-3 px-4 font-bold text-fg whitespace-nowrap">{o.customer}</td>
-                    <td className="py-3 px-4 text-fg-muted w-full max-w-0 truncate">
+                    <td className="py-3 px-4 text-fg-muted min-w-[180px] lg:w-full lg:max-w-0 lg:truncate">
                       {o.items[0]?.name || "-"}
                       {o.items.length > 1 && ` (+${o.items.length - 1} ${t("lainnya")})`}
                     </td>
@@ -227,8 +227,8 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl border border-line p-6">
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-line mb-4">
               <div className="min-w-0">
-                <h3 className="card-title whitespace-nowrap">{t("Performa dan Komisi Tim CS")}</h3>
-                <p className="text-label text-fg-muted whitespace-nowrap">{t("Dihitung dari pesanan lunas dan chat yang dibalas")}</p>
+                <h3 className="card-title">{t("Performa dan Komisi Tim CS")}</h3>
+                <p className="text-label text-fg-muted">{t("Dihitung dari pesanan lunas dan chat yang dibalas")}</p>
               </div>
               <Link href="/dashboard/settings?tab=team" className="text-label font-bold text-brand hover:underline whitespace-nowrap flex-shrink-0">{t("Kelola Staf →")}</Link>
             </div>

@@ -77,7 +77,7 @@ export default function DeepDive() {
       <div className="container-page">
         
         {/* Step Indicator Tabs */}
-        <div className="flex items-center gap-4 sm:gap-8 mb-12 border-b border-line pb-4 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-8 gap-y-3 mb-12 border-b border-line pb-4">
           {[
             { step: 1, label: "Langkah 1: Respon Cepat" },
             { step: 2, label: "Langkah 2: Pembayaran QRIS" },

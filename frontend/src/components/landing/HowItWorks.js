@@ -86,7 +86,7 @@ export default function HowItWorks() {
                   <span className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-bold text-label shadow-sm">
                     1
                   </span>
-                  <span className="text-caption font-bold tracking-wider uppercase text-white/60">
+                  <span className="text-caption font-bold tracking-wider uppercase whitespace-nowrap text-white/60">
                     Langkah 1
                   </span>
                 </div>
@@ -99,9 +99,9 @@ export default function HowItWorks() {
               </div>
 
               {/* Card visual footer */}
-              <div className="pt-3 border-t border-white/15 flex items-center justify-between text-caption text-white/70">
-                <span>Respon &lt; 2 detik</span>
-                <span className="text-brand-on-dark font-bold">24 Jam Aktif</span>
+              <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-white/70">
+                <span className="whitespace-nowrap">Respon &lt; 2 detik</span>
+                <span className="text-brand-on-dark font-bold whitespace-nowrap">24 Jam Aktif</span>
               </div>
             </div>
 
@@ -122,7 +122,7 @@ export default function HowItWorks() {
                     <span className="w-7 h-7 rounded-full bg-white text-brand flex items-center justify-center font-bold text-label shadow-sm">
                       2
                     </span>
-                    <span className="text-caption font-bold tracking-wider uppercase text-white/80">
+                    <span className="text-caption font-bold tracking-wider uppercase whitespace-nowrap text-white/80">
                       Langkah 2
                     </span>
                   </div>
@@ -139,9 +139,9 @@ export default function HowItWorks() {
               </div>
 
               {/* Card visual footer */}
-              <div className="pt-3 border-t border-white/20 flex items-center justify-between text-caption text-white/85 font-medium">
-                <span>Semua Bank & e-Wallet</span>
-                <span className="bg-white text-brand px-2 py-0.5 rounded font-bold">QRIS Resmi</span>
+              <div className="pt-3 border-t border-white/20 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-white/85 font-medium">
+                <span className="whitespace-nowrap">Semua Bank & e-Wallet</span>
+                <span className="bg-white text-brand px-2 py-0.5 rounded font-bold whitespace-nowrap">QRIS Resmi</span>
               </div>
             </div>
 
@@ -161,7 +161,7 @@ export default function HowItWorks() {
                   <span className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-bold text-label shadow-sm">
                     3
                   </span>
-                  <span className="text-caption font-bold tracking-wider uppercase text-white/60">
+                  <span className="text-caption font-bold tracking-wider uppercase whitespace-nowrap text-white/60">
                     Langkah 3
                   </span>
                 </div>
@@ -174,9 +174,9 @@ export default function HowItWorks() {
               </div>
 
               {/* Card visual footer */}
-              <div className="pt-3 border-t border-white/15 flex items-center justify-between text-caption text-white/70">
-                <span>Multi-Ekspedisi</span>
-                <span className="text-success-400 font-bold">Auto Pickup</span>
+              <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-white/70">
+                <span className="whitespace-nowrap">Multi-Ekspedisi</span>
+                <span className="text-success-400 font-bold whitespace-nowrap">Auto Pickup</span>
               </div>
             </div>
           </div>

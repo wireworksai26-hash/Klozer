@@ -69,7 +69,7 @@ export default function FinancePage() {
           ))}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-canvas border-b border-line text-label font-bold uppercase text-fg-muted">

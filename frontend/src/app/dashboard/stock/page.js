@@ -72,7 +72,7 @@ export default function SupervisorStockPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-shrink-0 whitespace-nowrap">
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto lg:flex-shrink-0">
           {importToast && (
             <div className="px-4 py-2 bg-success-50 border border-success-300 text-success-800 rounded-xl text-label font-bold flex items-center gap-2 animate-scale-pop shadow-xs">
               <CheckCircleIcon className="w-4 h-4 text-success-600" />
@@ -116,7 +116,7 @@ export default function SupervisorStockPage() {
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
-          <div className="text-fg-subtle text-label font-bold uppercase mb-1">{t("Stok Menipis (&lt;10 Pcs)")}</div>
+          <div className="text-fg-subtle text-label font-bold uppercase mb-1">{t("Stok Menipis (<10 Pcs)")}</div>
           <div className={`text-heading-md font-bold ${lowStockCount > 0 ? "text-warning-600" : "text-fg"}`}>
             {lowStockCount} {t("Produk")}
           </div>
@@ -127,7 +127,7 @@ export default function SupervisorStockPage() {
 
         <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
           <div className="text-fg-subtle text-label font-bold uppercase mb-1">{t("Sinkronisasi AI Chatbot")}</div>
-          <div className="text-heading-md font-bold text-success-700">{t("100% Real-Time")}</div>
+          <div className="text-heading-sm md:text-heading-md font-bold text-success-700 whitespace-nowrap">{t("100% Real-Time")}</div>
           <span className="text-caption font-bold text-success-600">{t("Bot menolak order jika stok 0")}</span>
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function SupervisorStockPage() {
       {/* Stock Levels Table */}
       <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
         <h2 className="card-title mb-4">{t("Level Persediaan Produk Toko")}</h2>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-canvas border-b border-line text-label font-bold uppercase text-fg-muted">
@@ -218,7 +218,7 @@ export default function SupervisorStockPage() {
       {/* Mutations Log */}
       <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
         <h2 className="card-title mb-4">{t("Riwayat Mutasi Keluar/Masuk Barang")}</h2>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-canvas border-b border-line text-label font-bold uppercase text-fg-muted">

@@ -62,9 +62,9 @@ export default function AiSandboxPage() {
       </div>
 
       <div className="bg-white border border-line rounded-2xl flex flex-col h-[520px] overflow-hidden">
-        <div className="px-4 py-3 border-b border-line flex items-center gap-3 bg-soft">
+        <div className="px-4 py-3 border-b border-line flex flex-wrap items-center gap-x-3 gap-y-2 bg-soft">
           <label className="text-label font-bold text-fg-muted" htmlFor="customer-name">{t("Nama pelanggan")}</label>
-          <input id="customer-name" value={customer} onChange={(e) => setCustomer(e.target.value)} maxLength={60} className="bg-white border border-line rounded-lg px-2.5 py-1 text-body-sm outline-none" />
+          <input id="customer-name" value={customer} onChange={(e) => setCustomer(e.target.value)} maxLength={60} className="bg-white border border-line rounded-lg px-2.5 py-1 text-body-sm outline-none min-w-0 flex-1 sm:flex-none" />
           <button type="button" onClick={() => { setMessages([]); setUsed(0); }} className="ml-auto text-caption font-bold text-brand bg-transparent border-none cursor-pointer">{t("Mulai ulang")}</button>
         </div>
 
@@ -88,7 +88,7 @@ export default function AiSandboxPage() {
         </div>
 
         <form onSubmit={send} className="p-3 border-t border-line flex gap-2">
-          <input value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder={t("Ketik pesan pelanggan...")} className="flex-1 bg-canvas border border-line rounded-full px-4 py-2.5 text-body-sm outline-none focus:border-brand" />
+          <input value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder={t("Ketik pesan pelanggan...")} className="flex-1 min-w-0 bg-canvas border border-line rounded-full px-4 py-2.5 text-body-sm outline-none focus:border-brand" />
           <button type="submit" disabled={busy || !text.trim()} className="btn-primary !py-2 !px-5 font-bold disabled:opacity-50">{t("Kirim")}</button>
         </form>
       </div>

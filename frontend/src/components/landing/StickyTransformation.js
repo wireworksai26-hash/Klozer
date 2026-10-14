@@ -132,7 +132,7 @@ export default function StickyTransformation() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-14 items-center">
           
           {/* Left Column / Mobile Top Tabs: Vertical on desktop, horizontal scrollable pills on mobile */}
-          <div className="lg:col-span-4 flex lg:flex-col gap-2 sm:gap-3 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+          <div className="lg:col-span-4 flex flex-wrap lg:flex-col lg:flex-nowrap gap-2 sm:gap-3 pb-2 lg:pb-0">
             {stages.map((stage, idx) => {
               const isActive = activeStage === idx;
               return (

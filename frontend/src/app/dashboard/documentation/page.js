@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import {
   HelpCircleIcon,
@@ -12,6 +12,61 @@ import {
   RadioIcon,
   BotIcon,
 } from "@/components/icons";
+
+/** **bold** and `code` inside one line of guide text. The words themselves are never changed. */
+function Inline({ text }) {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={i} className="font-bold text-fg">{part.slice(2, -2)}</strong>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={i} className="font-mono text-caption bg-sunken border border-line rounded-md px-1.5 py-0.5 text-fg break-all">{part.slice(1, -1)}</code>;
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
+/** Renders the guide markup (### heading, 1. steps, - bullets, blank-line paragraphs) as clean typography. */
+function GuideBody({ source }) {
+  const blocks = [];
+  for (const line of source.trim().split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text) continue;
+    const heading = text.match(/^#{1,6}\s+(.*)$/);
+    const step = text.match(/^(\d+)\.\s+(.*)$/);
+    const bullet = text.match(/^[-*]\s+(.*)$/);
+    const last = blocks[blocks.length - 1];
+    if (heading) blocks.push({ type: "h", text: heading[1].replace(/:\s*$/, "") });
+    else if (step) {
+      if (last?.type === "ol") last.items.push(step[2]);
+      else blocks.push({ type: "ol", items: [step[2]] });
+    } else if (bullet) {
+      // Bulleted lines are numbered too, so every list in the guide reads the same way.
+      if (last?.type === "ol") last.items.push(bullet[1]);
+      else blocks.push({ type: "ol", items: [bullet[1]] });
+    } else blocks.push({ type: "p", text });
+  }
+
+  return (
+    <div className="flex flex-col gap-4 text-body-sm text-fg-muted leading-relaxed">
+      {blocks.map((b, i) => {
+        if (b.type === "h") return <h3 key={i} className="text-body font-bold text-fg">{b.text}</h3>;
+        if (b.type === "p") return <p key={i}><Inline text={b.text} /></p>;
+        const Tag = b.type === "ol" ? "ol" : "ul";
+        return (
+          <Tag key={i} className="flex flex-col gap-2.5 list-none">
+            {b.items.map((item, j) => (
+              <li key={j} className="flex items-start gap-3">
+                {b.type === "ol" ? (
+                  <span className="mt-0.5 w-6 h-6 flex-shrink-0 rounded-full bg-brand-soft text-brand text-caption font-bold flex items-center justify-center tabular-nums">{j + 1}</span>
+                ) : (
+                  <span className="mt-2 w-1.5 h-1.5 flex-shrink-0 rounded-full bg-brand" />
+                )}
+                <span className="min-w-0"><Inline text={item} /></span>
+              </li>
+            ))}
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function SupervisorDocumentationPage() {
   const { t, language } = useDashboard();
@@ -188,9 +243,7 @@ QRIS requires a Midtrans Server Key configured by the admin on the server. For m
             <h2 className="text-subheading font-bold text-fg">{t(current.title)}</h2>
           </div>
 
-          <div className="text-body-sm text-fg-muted leading-relaxed whitespace-pre-line font-medium">
-            {language === "en" ? current.contentEn || current.content : current.content}
-          </div>
+          <GuideBody source={language === "en" ? current.contentEn || current.content : current.content} />
 
           <div className="mt-auto pt-6 border-t border-line flex items-center justify-between text-label text-fg-subtle">
             <span>{t("Butuh bantuan lebih lanjut? Hubungi Dedicated Account Manager Klozer.")}</span>

@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import NotificationCenter from "./NotificationCenter";
 
 /**
@@ -36,8 +37,30 @@ export default function DashboardHeader({
   markNotificationRead,
   markAllNotificationsRead,
 }) {
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  // The profile menu belongs to the page it was opened on: navigating (e.g. via the sidebar drawer)
+  // closes it without an effect. Clicking anywhere outside it, or pressing Esc, closes it too.
+  const pathname = usePathname();
+  const [profileOpenedOn, setProfileOpenedOn] = useState(null);
+  const roleDropdownOpen = profileOpenedOn === pathname;
+  const setRoleDropdownOpen = (open) => setProfileOpenedOn(open ? pathname : null);
+  const profileRef = useRef(null);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  useEffect(() => {
+    if (!roleDropdownOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) setProfileOpenedOn(null);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setProfileOpenedOn(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [roleDropdownOpen]);
 
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
@@ -46,7 +69,10 @@ export default function DashboardHeader({
       <div className="flex items-center gap-3 sm:gap-4">
         {/* Mobile hamburger */}
         <button
-          onClick={onMenuOpen}
+          onClick={() => {
+            setRoleDropdownOpen(false);
+            onMenuOpen();
+          }}
           className="lg:hidden p-2 rounded-lg hover:bg-canvas text-ink border-none cursor-pointer"
           aria-label={t("Buka menu navigasi")}
         >
@@ -72,10 +98,12 @@ export default function DashboardHeader({
 
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Profile Dropdown */}
-        <div className="relative">
+        <div className="relative" ref={profileRef}>
           <button
             type="button"
             onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+            aria-haspopup="menu"
+            aria-expanded={roleDropdownOpen}
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-canvas hover:bg-brand-soft border border-line cursor-pointer transition-all text-label font-bold text-ink"
             title={t("Menu Profil Pengguna")}
           >
@@ -96,7 +124,7 @@ export default function DashboardHeader({
           </button>
 
           {roleDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl p-2.5 shadow-2xl border border-line z-50 animate-scale-pop">
+            <div className="max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[76px] sm:absolute sm:right-0 sm:mt-2 sm:w-64 bg-white rounded-2xl p-2.5 shadow-2xl border border-line z-50 animate-scale-pop">
               <div className="p-3 bg-soft rounded-xl border border-line mb-2">
                 <div className="font-bold text-body-sm text-fg truncate">
                   {currentUser?.name || currentRoleConfig.name}

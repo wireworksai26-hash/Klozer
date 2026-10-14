@@ -60,7 +60,7 @@ export default function ReportsPage() {
           <h1 className="page-title">{t("Laporan dan Analytics")}</h1>
           <p className="text-body-sm text-fg-muted">{t("Performa bisnis")} {name}, {t("dihitung dari pesanan yang sudah dibayar.")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={exportOrders} disabled={!orders.length} className="btn-outline !py-2 !px-4 text-body-sm font-bold disabled:opacity-50">{t("Ekspor Pesanan (CSV)")}</button>
           <button onClick={exportCs} disabled={!summary?.csPerformance?.length} className="btn-outline !py-2 !px-4 text-body-sm font-bold disabled:opacity-50">{t("Ekspor Performa CS")}</button>
         </div>
@@ -132,7 +132,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-line table-scroll">
         <div className="px-6 py-4 border-b border-line font-bold text-ink">{t("Performa Tim CS")}</div>
         <table className="w-full text-left text-body-sm">
           <thead>

@@ -206,7 +206,7 @@ function TeamTab() {
           </div>
           <button onClick={() => setShowAdd(true)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">{t("+ Tambah Anggota Tim")}</button>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-canvas border-b border-line">
@@ -474,7 +474,7 @@ function SettingsContent() {
         <p className="text-body-sm text-fg-muted">{t("Kelola tim, persona AI, profil usaha, dan koneksi WhatsApp.")}</p>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-line pb-2 overflow-x-auto scrollbar-none">
+      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-2">
         {tabs.map(({ key, label: text, icon: Icon }) => (
           <button
             key={key}

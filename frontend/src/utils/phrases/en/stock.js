@@ -7,7 +7,7 @@ const phrases = {
   "+ Catat Mutasi": "+ Record Mutation",
   "Total Unit Persediaan": "Total Inventory Units",
   "Belum ada stok fisik": "No physical stock yet",
-  "Stok Menipis (&lt;10 Pcs)": "Low Stock (&lt;10 Pcs)",
+  "Stok Menipis (<10 Pcs)": "Low Stock (<10 Pcs)",
   "Perlu Restok Segera": "Restock Needed Soon",
   "Semua persediaan aman": "All inventory is safe",
   "Sinkronisasi AI Chatbot": "AI Chatbot Sync",

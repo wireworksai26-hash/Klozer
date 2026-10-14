@@ -249,7 +249,7 @@ export default function LeadsPage() {
       ) : (
         /* TABLE VIEW */
         <div className="bg-white rounded-2xl border border-line shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-canvas border-b border-line">

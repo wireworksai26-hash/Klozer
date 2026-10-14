@@ -141,7 +141,7 @@ export default function SupervisorBomPage() {
               </div>
 
               {/* Materials Table */}
-              <div className="overflow-x-auto">
+              <div className="table-scroll">
                 <table className="w-full text-left text-label">
                   <thead>
                     <tr className="text-fg-subtle border-b border-sunken text-caption uppercase font-bold">

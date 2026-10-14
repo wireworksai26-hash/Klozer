@@ -252,7 +252,7 @@ Login URL: ${window.location.origin}/login`;
 
       {/* Institutions Table */}
       <div className="bg-white rounded-2xl border border-line shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-soft border-b border-line">

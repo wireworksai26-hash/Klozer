@@ -86,8 +86,8 @@ export default function ConversionFunnelChart({
       <div>
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-line">
           <div className="min-w-0">
-            <h3 className="card-title whitespace-nowrap">{t(title)}</h3>
-            <p className="text-label text-fg-muted mt-0.5 whitespace-nowrap">{t(subtitle)}</p>
+            <h3 className="card-title">{t(title)}</h3>
+            <p className="text-label text-fg-muted mt-0.5">{t(subtitle)}</p>
           </div>
           <span className={`text-label font-bold px-2.5 py-1 rounded-full border whitespace-nowrap flex-shrink-0 ${
             closingRate > 0
@@ -107,7 +107,7 @@ export default function ConversionFunnelChart({
                   <span className="w-5 h-5 rounded-full bg-sunken text-fg text-micro flex items-center justify-center font-bold flex-shrink-0">
                     {idx + 1}
                   </span>
-                  <span className="whitespace-nowrap">{t(step.stage)}</span>
+                  <span className="min-w-0 truncate">{t(step.stage)}</span>
                 </span>
                 <span className={`font-bold text-label tabular-nums flex-shrink-0 ${step.textColor}`}>
                   {step.pct}%

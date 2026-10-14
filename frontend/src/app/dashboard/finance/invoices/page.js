@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useDashboard } from "@/context/DashboardContext";
 import {
   PrinterIcon,
@@ -10,6 +11,103 @@ import {
   ReceiptIcon,
 } from "@/components/icons";
 
+const rupiah = (n) => `Rp ${Number(n || 0).toLocaleString("id-ID")}`;
+
+function paymentLabel(order) {
+  if (order?.paymentStatus === "paid") return "LUNAS (PAID)";
+  if (order?.status === "cancelled") return "DIBATALKAN";
+  return "MENUNGGU PEMBAYARAN";
+}
+
+/**
+ * One printable document. It is customer-facing, so it stays in Indonesian and in plain black on white.
+ * "a4" is a full invoice page; the thermal formats are a narrow receipt column.
+ */
+function PrintDocument({ order, instName, format }) {
+  const items = order.items || [];
+  if (format !== "a4") {
+    return (
+      <section className="print-page print-receipt" style={{ width: format === "thermal58" ? "58mm" : "80mm" }}>
+        <div className="print-center print-strong">{instName}</div>
+        <div className="print-center print-small">Transaksi Resmi via WhatsApp</div>
+        <hr />
+        <div className="print-small">No: {order.id}</div>
+        <div className="print-small">Tgl: {order.date || "Hari ini"}</div>
+        <div className="print-small">Pelanggan: {order.customerName}</div>
+        <hr />
+        {items.map((it, i) => (
+          <div key={i} className="print-small">
+            <div>{it.name}</div>
+            <div className="print-row"><span>{it.qty} x {rupiah(it.price)}</span><span>{rupiah((it.price || 0) * (it.qty || 0))}</span></div>
+          </div>
+        ))}
+        {order.shippingFee > 0 && <div className="print-row print-small"><span>Ongkos kirim</span><span>{rupiah(order.shippingFee)}</span></div>}
+        {order.discount > 0 && <div className="print-row print-small"><span>Diskon</span><span>-{rupiah(order.discount)}</span></div>}
+        <hr />
+        <div className="print-row print-strong"><span>TOTAL</span><span>{rupiah(order.total)}</span></div>
+        <div className="print-center print-small">{paymentLabel(order)}</div>
+        <hr />
+        <div className="print-center print-small">Terima kasih sudah berbelanja</div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="print-page print-a4">
+      <div className="print-row print-head">
+        <div>
+          <div className="print-title">{instName}</div>
+          <div className="print-small">WhatsApp Verified Merchant • Transaksi Resmi</div>
+        </div>
+        <div className="print-right">
+          <div className="print-title">INVOICE</div>
+          <div className="print-small">{order.id}</div>
+          <div className="print-small">{order.date || "Hari ini"}</div>
+        </div>
+      </div>
+      <div className="print-row print-block">
+        <div>
+          <div className="print-label">Ditagihkan kepada</div>
+          <div className="print-strong">{order.customerName}</div>
+          <div className="print-small">{order.phone}</div>
+        </div>
+        <div className="print-right">
+          <div className="print-label">Status pembayaran</div>
+          <div className="print-strong">{paymentLabel(order)}</div>
+        </div>
+      </div>
+      <table className="print-table">
+        <thead>
+          <tr><th>Deskripsi Produk</th><th className="print-right">Harga</th><th className="print-right">Qty</th><th className="print-right">Total</th></tr>
+        </thead>
+        <tbody>
+          {items.map((it, i) => (
+            <tr key={i}>
+              <td>{it.name}</td>
+              <td className="print-right">{rupiah(it.price)}</td>
+              <td className="print-right">{it.qty}</td>
+              <td className="print-right">{rupiah((it.price || 0) * (it.qty || 0))}</td>
+            </tr>
+          ))}
+          {order.shippingFee > 0 && <tr><td colSpan={3}>Ongkos kirim</td><td className="print-right">{rupiah(order.shippingFee)}</td></tr>}
+          {order.discount > 0 && <tr><td colSpan={3}>Diskon</td><td className="print-right">-{rupiah(order.discount)}</td></tr>}
+        </tbody>
+      </table>
+      <div className="print-row print-total">
+        <span>TOTAL PEMBAYARAN</span>
+        <span>{rupiah(order.total)}</span>
+      </div>
+    </section>
+  );
+}
+
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
 export default function SupervisorInvoicesPage() {
   const { orders, activeInstitution, currentUser, t } = useDashboard();
   const cleanInstName = currentUser?.institutionName || activeInstitution?.name || "Toko";
@@ -17,16 +115,30 @@ export default function SupervisorInvoicesPage() {
   const [pickedId, setPickedId] = useState(null);
   const selectedOrder = orders.find((o) => o.id === pickedId) || orders[0] || null;
 
-  // Prints the invoice currently previewed (the browser's print dialog also offers "Save as PDF").
+  // Only the print sheet is printed (see the print rules in globals.css): today's orders, one per page,
+  // or the previewed order when nothing was placed today. The print dialog also offers "Save as PDF".
+  const todays = orders.filter((o) => isToday(o.created_at));
+  const printList = todays.length > 0 ? todays : selectedOrder ? [selectedOrder] : [];
+  const canPortal = useSyncExternalStore(() => () => {}, () => true, () => false);
+
   const handlePrint = () => {
-    if (!selectedOrder) return;
+    if (printList.length === 0) return;
     window.print();
   };
 
   return (
     <div className="flex flex-col gap-6">
+      {canPortal &&
+        createPortal(
+          <div className="print-sheet-root" aria-hidden="true">
+            {printList.map((o) => (
+              <PrintDocument key={o.id} order={o} instName={cleanInstName} format={selectedFormat} />
+            ))}
+          </div>,
+          document.body
+        )}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="page-head">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-caption font-bold uppercase tracking-wider bg-brand-soft text-brand px-2.5 py-0.5 rounded-full border border-brand/20 flex items-center gap-1.5">
@@ -69,7 +181,7 @@ export default function SupervisorInvoicesPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Format Selector & List */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-0">
             <div className="bg-white p-5 rounded-2xl border border-line shadow-xs flex flex-col gap-3">
               <span className="text-label font-bold uppercase text-fg-subtle">{t("Pilih Format Dokumen:")}</span>
               <div className="flex flex-col gap-2">
@@ -131,30 +243,30 @@ export default function SupervisorInvoicesPage() {
           </div>
 
           {/* Right: Invoice Preview */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-line shadow-xs flex flex-col justify-between min-h-[500px]">
-            <div>
+          <div className="lg:col-span-2 min-w-0 bg-white p-4 sm:p-8 rounded-2xl border border-line shadow-xs flex flex-col justify-between min-h-[500px]">
+            <div className="min-w-0 w-full">
               {/* Invoice Header */}
-              <div className="flex items-start justify-between pb-6 border-b border-line">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4 pb-6 border-b border-line">
+                <div className="min-w-0">
                   <h2 className="text-subheading font-bold text-fg">{cleanInstName}</h2>
                   <p className="text-label text-fg-muted mt-0.5">WhatsApp Verified Merchant • Transaksi Resmi</p>
                 </div>
 
-                <div className="text-right">
+                <div className="sm:text-right min-w-0">
                   <span className="text-title font-bold font-mono text-brand">INVOICE</span>
-                  <div className="text-label font-mono text-fg-subtle mt-0.5">{selectedOrder?.id}</div>
+                  <div className="text-label font-mono text-fg-subtle mt-0.5 break-all">{selectedOrder?.id}</div>
                   <div className="text-caption text-fg-subtle">{selectedOrder?.date || "Hari ini"}</div>
                 </div>
               </div>
 
               {/* Customer Details */}
-              <div className="py-4 border-b border-line flex justify-between text-body-sm">
-                <div>
+              <div className="py-4 border-b border-line flex flex-wrap justify-between gap-x-6 gap-y-3 text-body-sm">
+                <div className="min-w-0">
                   <span className="text-caption uppercase font-bold text-fg-subtle block">Ditagihkan Kepada:</span>
                   <div className="font-bold text-fg mt-0.5">{selectedOrder?.customerName}</div>
                   <div className="text-fg-muted text-label">{selectedOrder?.phone}</div>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <span className="text-caption uppercase font-bold text-fg-subtle block">Status Pembayaran:</span>
                   <span className="badge badge-success mt-0.5 inline-block">
                     {selectedOrder?.paymentStatus === "paid" ? "LUNAS (PAID)" : selectedOrder?.status === "cancelled" ? "DIBATALKAN" : "MENUNGGU PEMBAYARAN"}
@@ -163,13 +275,13 @@ export default function SupervisorInvoicesPage() {
               </div>
 
               {/* Invoice Items */}
-              <div className="py-4">
-                <table className="w-full text-left text-body-sm">
+              <div className="py-4 table-scroll">
+                <table className="w-full text-left text-body-sm [&_th]:!px-2 [&_td]:!px-2 [&_th]:!whitespace-normal sm:[&_th]:!px-4 sm:[&_td]:!px-4">
                   <thead>
                     <tr className="border-b border-line text-fg-subtle text-caption uppercase">
                       <th className="py-2">Deskripsi Produk</th>
-                      <th className="py-2 text-right">Harga</th>
-                      <th className="py-2 text-right">Qty</th>
+                      <th className="py-2 text-right hidden sm:table-cell">Harga</th>
+                      <th className="py-2 pl-3 text-right">Qty</th>
                       <th className="py-2 text-right">Total</th>
                     </tr>
                   </thead>
@@ -177,20 +289,22 @@ export default function SupervisorInvoicesPage() {
                     {(selectedOrder?.items || []).map((it, idx) => (
                       <tr key={idx}>
                         <td className="py-3 font-semibold text-fg">{it.name}</td>
-                        <td className="py-3 text-right text-fg-muted">Rp {Number(it.price || 0).toLocaleString("id-ID")}</td>
-                        <td className="py-3 text-right text-fg-muted">{it.qty}</td>
-                        <td className="py-3 text-right font-bold text-fg">Rp {Number((it.price || 0) * (it.qty || 0)).toLocaleString("id-ID")}</td>
+                        <td className="py-3 text-right text-fg-muted whitespace-nowrap tabular-nums hidden sm:table-cell">Rp {Number(it.price || 0).toLocaleString("id-ID")}</td>
+                        <td className="py-3 pl-3 text-right text-fg-muted">{it.qty}</td>
+                        <td className="py-3 text-right font-bold text-fg whitespace-nowrap tabular-nums">Rp {Number((it.price || 0) * (it.qty || 0)).toLocaleString("id-ID")}</td>
                       </tr>
                     ))}
                     {selectedOrder?.shippingFee > 0 && (
                       <tr>
-                        <td className="py-3 text-fg-muted" colSpan={3}>Ongkos kirim</td>
+                        <td className="py-3 text-fg-muted" colSpan={2}>Ongkos kirim</td>
+                        <td className="hidden sm:table-cell" />
                         <td className="py-3 text-right text-fg">Rp {Number(selectedOrder.shippingFee).toLocaleString("id-ID")}</td>
                       </tr>
                     )}
                     {selectedOrder?.discount > 0 && (
                       <tr>
-                        <td className="py-3 text-fg-muted" colSpan={3}>Diskon</td>
+                        <td className="py-3 text-fg-muted" colSpan={2}>Diskon</td>
+                        <td className="hidden sm:table-cell" />
                         <td className="py-3 text-right text-fg">-Rp {Number(selectedOrder.discount).toLocaleString("id-ID")}</td>
                       </tr>
                     )}
@@ -200,9 +314,9 @@ export default function SupervisorInvoicesPage() {
             </div>
 
             {/* Invoice Summary Total */}
-            <div className="pt-4 border-t-2 border-fg flex items-center justify-between">
+            <div className="pt-4 border-t-2 border-fg flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
               <span className="font-bold text-body text-fg">TOTAL PEMBAYARAN:</span>
-              <span className="font-bold text-subheading text-brand">
+              <span className="font-bold text-subheading text-brand whitespace-nowrap tabular-nums">
                 Rp {Number(selectedOrder?.total || 0).toLocaleString("id-ID")}
               </span>
             </div>

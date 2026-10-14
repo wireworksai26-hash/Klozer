@@ -67,7 +67,7 @@ export default function SubscriptionsAdminPage() {
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-line overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-line table-scroll">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-canvas border-b border-line text-label font-bold uppercase text-fg-muted">
