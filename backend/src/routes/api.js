@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireRole, requireSuperadmin } from "../middlewares/authMiddleware.js";
 import { tenantContext } from "../middlewares/tenantContext.js";
 import { validate } from "../middlewares/validate.js";
+import { requireFeature } from "../middlewares/featureGate.js";
 import { aiLimiter, loginLimiter, publicAiLimiter, registerLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
 import { asyncHandler } from "../utils/errors.js";
 import * as v from "../validation/schemas.js";
@@ -70,7 +71,7 @@ router.post("/users/:id/reset-password", ...tenant, requireRole(...MANAGERS), va
 router.get("/products", ...tenant, validate({ query: v.listProductsQuery }), h(prodCtrl.getProducts));
 router.post("/products", ...tenant, requireRole(...STOCK), validate({ body: v.createProductBody }), h(prodCtrl.createProduct));
 router.post("/products/bulk", ...tenant, requireRole(...STOCK), validate({ body: v.bulkProductsBody }), h(prodCtrl.bulkUpsertProducts));
-router.post("/products/stock", ...tenant, requireRole(...STOCK), validate({ body: v.stockImportBody }), h(prodCtrl.importStock));
+router.post("/products/stock", ...tenant, requireRole(...STOCK), requireFeature("stockManagement", "Manajemen Stok"), validate({ body: v.stockImportBody }), h(prodCtrl.importStock));
 router.put("/products/:id", ...tenant, requireRole(...STOCK), validate({ params: v.idParams, body: v.updateProductBody }), h(prodCtrl.updateProduct));
 router.delete("/products/:id", ...tenant, requireRole(...STOCK), validate({ params: v.idParams }), h(prodCtrl.deleteProduct));
 
@@ -105,15 +106,15 @@ router.patch("/orders/:id/status", ...tenant, requireRole(...MONEY, "pic_warehou
 router.get("/orders/:id/invoice", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams }), h(orderCtrl.getOrderInvoice));
 
 // ==================== 9. PAYMENTS ====================
-router.post("/payments/qris", ...tenant, requireRole(...MONEY), validate({ body: v.createQrisBody }), h(paymentCtrl.createQrisPayment));
+router.post("/payments/qris", ...tenant, requireRole(...MONEY), requireFeature("qris", "Dynamic QRIS"), validate({ body: v.createQrisBody }), h(paymentCtrl.createQrisPayment));
 router.post("/payments/simulate-settlement", ...tenant, requireRole(...MANAGERS), validate({ body: v.simulateSettlementBody }), h(paymentCtrl.simulateSettlement));
 
 // ==================== 10. SHIPPING & FRAUD ====================
 router.post("/shipping/rates", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ body: v.ratesBody }), h(shippingCtrl.getRates));
 router.post("/shipping/cod-risk-score", ...tenant, requireRole(...MONEY), validate({ body: v.codRiskBody }), h(shippingCtrl.checkCodRisk));
 router.post("/shipping/book", ...tenant, requireRole(...STOCK, "cs", "finance"), validate({ body: v.bookShipmentBody }), h(shippingCtrl.bookShipment));
-router.post("/fraud/verify-receipt", ...tenant, requireRole(...MONEY), validate({ body: v.verifyReceiptBody }), h(fraudCtrl.verifyReceipt));
-router.post("/fraud/reconcile-mutation", ...tenant, requireRole("owner", "supervisor", "finance"), validate({ body: v.reconcileBody }), h(fraudCtrl.reconcileMutation));
+router.post("/fraud/verify-receipt", ...tenant, requireRole(...MONEY), requireFeature("antiFraud", "Anti-Fraud"), validate({ body: v.verifyReceiptBody }), h(fraudCtrl.verifyReceipt));
+router.post("/fraud/reconcile-mutation", ...tenant, requireRole("owner", "supervisor", "finance"), requireFeature("antiFraud", "Anti-Fraud"), validate({ body: v.reconcileBody }), h(fraudCtrl.reconcileMutation));
 
 // ==================== 11. REPORTS ====================
 router.get("/reports/summary", ...tenant, requireRole(...REPORTING), h(reportCtrl.getSummaryReport));
@@ -128,6 +129,9 @@ router.put("/integrations/meta-capi", ...tenant, requireRole(...MANAGERS), valid
 // ==================== 13. PLATFORM (superadmin) & TOKEN METERING ====================
 router.get("/system/metrics", authenticate, requireSuperadmin, h(systemCtrl.getSystemMetrics));
 router.get("/system/integrations", authenticate, requireSuperadmin, h(systemCtrl.getIntegrationStatus));
+router.get("/system/ai-settings", authenticate, requireSuperadmin, h(systemCtrl.getAiSettings));
+router.put("/system/ai-settings", authenticate, requireSuperadmin, validate({ body: v.aiSettingsBody }), h(systemCtrl.updateAiSettings));
+router.post("/system/ai-settings/test", authenticate, requireSuperadmin, aiLimiter, validate({ body: v.aiSettingsTestBody }), h(systemCtrl.testAiSettings));
 router.get("/ai/token-usage", authenticate, requireSuperadmin, validate({ query: v.tokenUsageQuery }), h(tokenCtrl.getTokenUsageSummary));
 router.get("/ai/token-balance", ...tenant, h(tokenCtrl.getTenantTokenBalance));
 

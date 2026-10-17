@@ -1,7 +1,7 @@
 import { queryOne } from "../config/db.js";
 import { config } from "../config/env.js";
 import { badRequest, conflict, notFound } from "../utils/errors.js";
-import { createQrisCharge, handleMidtransNotification, settlePayment } from "../services/midtransService.js";
+import { createQrisCharge, handleIpaymuNotification, settlePayment } from "../services/ipaymuService.js";
 import { audit } from "../services/auditService.js";
 
 /** POST /payments/qris — the charged amount is always the order's stored total. */
@@ -30,12 +30,12 @@ export async function createQrisPayment(req, res) {
 }
 
 /**
- * POST /payments/webhook — Midtrans notification (public, authenticated by signature).
- * Responds 200 once the notification is verified, so Midtrans does not retry
+ * POST /payments/webhook — iPaymu callback (public, authenticated by the X-Signature header).
+ * Responds 200 once the notification is verified, so iPaymu does not retry
  * events we have deliberately ignored.
  */
 export async function paymentWebhookHandler(req, res) {
-  const result = await handleMidtransNotification(req.body || {});
+  const result = await handleIpaymuNotification(req.body || {}, req.get("x-signature"));
   res.json(result);
 }
 

@@ -11,7 +11,7 @@ const phrases = {
   "Konfirmasi Sudah Dibayar": "Confirm as Paid",
   "Menunggu pembayaran": "Awaiting payment",
   "Pembayaran pesanan": "Order payments for",
-  "QRIS terverifikasi otomatis oleh Midtrans; transfer manual dikonfirmasi di sini.": "QRIS is verified automatically by Midtrans; manual transfers are confirmed here.",
+  "QRIS terverifikasi otomatis oleh iPaymu; transfer manual dikonfirmasi di sini.": "QRIS is verified automatically by iPaymu; manual transfers are confirmed here.",
   "{count} pesanan lunas": "{count} paid orders",
   "{count} pesanan belum dibayar": "{count} unpaid orders",
   "Total Pemasukan": "Total Income",

@@ -1,5 +1,6 @@
 // English phrases: institutions
 const phrases = {
+  "Fitur yang aktif": "Active features",
   "Berikan kredensial owner ini kepada pemilik. Password hanya ditampilkan sekali.": "Give these owner credentials to the owner. The password is shown only once.",
   "Salin": "Copy",
   "Selesai": "Done",

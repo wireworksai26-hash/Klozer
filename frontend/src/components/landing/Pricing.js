@@ -2,15 +2,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircleIcon } from "@/components/icons";
+import { formatRupiah, isPromoRunning, planPrice, PROMO, promoUntilText } from "@/utils/plans";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
+  const period = isAnnual ? "annual" : "monthly";
+  const starter = planPrice("Starter", period);
+  const pro = planPrice("Pro", period);
+  const promoOn = isPromoRunning();
 
   const plans = [
     {
       name: "Starter",
       badge: "UKM & Toko Baru",
-      price: isAnnual ? "159.000" : "199.000",
+      price: formatRupiah(starter.final),
+      original: starter.original ? formatRupiah(starter.original) : null,
       period: "/bulan",
       subPeriod: isAnnual ? "Ditagih tahunan (Hemat 20%)" : "Ditagih bulanan",
       desc: "Sangat cocok untuk toko online yang ingin mulai menerima pembayaran QRIS otomatis di WhatsApp.",
@@ -28,7 +34,9 @@ export default function Pricing() {
     {
       name: "Pro",
       badge: "Paling Populer · Rekomendasi",
-      price: isAnnual ? "399.000" : "499.000",
+      price: formatRupiah(pro.final),
+      original: pro.original ? formatRupiah(pro.original) : null,
+      promoPercent: pro.percent,
       period: "/bulan",
       subPeriod: isAnnual ? "Ditagih tahunan (Hemat 20%)" : "Ditagih bulanan",
       desc: "Pilihan terbaik untuk brand & toko yang ingin otomatisasi penuh dengan AI Suara & Proteksi Struk Palsu.",
@@ -79,6 +87,13 @@ export default function Pricing() {
           <p className="section-lead">
             Tidak ada biaya tersembunyi. Anda bisa beralih paket kapan saja sesuai perkembangan bisnis Anda.
           </p>
+
+          {promoOn && (
+            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-2 text-body-sm text-emerald-800">
+              <span className="font-bold">Promo Paket {PROMO.plan}: diskon {PROMO.percent}%</span>
+              {promoUntilText() && <span>{promoUntilText()}</span>}
+            </div>
+          )}
 
           {/* Interactive Monthly / Annual Billing Toggle */}
           <div className="inline-flex items-center gap-3 p-1.5 rounded-full bg-white border border-line shadow-sm mt-6">
@@ -146,6 +161,16 @@ export default function Pricing() {
                 <div className={`flex flex-col py-4 border-y border-dashed mb-6 ${
                   plan.highlight ? "border-white/15" : "border-line"
                 }`}>
+                  {plan.original && (
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`text-body-sm line-through ${plan.highlight ? "text-line-strong" : "text-fg-subtle"}`}>
+                        Rp {plan.original}
+                      </span>
+                      <span className="text-micro font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                        Hemat {plan.promoPercent}%
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-baseline gap-1">
                     {plan.price !== "Kustom" && (
                       <span className={`text-body font-bold ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
@@ -202,6 +227,13 @@ export default function Pricing() {
             </div>
           ))}
         </div>
+
+        <p className="mt-8 text-center text-body-sm text-fg-muted">
+          Sudah memilih paket?{" "}
+          <Link href="/bayar" className="text-brand font-semibold hover:underline">
+            Lihat cara bayar langganan
+          </Link>
+        </p>
 
         {/* Add-on Summary Card */}
         <div className="mt-10 p-5 sm:p-6 rounded-2xl bg-white border border-line max-w-[800px] mx-auto text-center shadow-sm">

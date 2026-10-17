@@ -298,24 +298,8 @@ function markUnavailableItems(config, language) {
   );
 }
 
-/** Routes that exist in the UI but whose backend is not yet wired up. */
-export const UNAVAILABLE_ROUTES = [
-  "/dashboard/labels",
-  "/dashboard/internal-chat",
-  "/dashboard/escalation",
-  "/dashboard/bookings",
-  "/dashboard/blocked-contacts",
-  "/dashboard/blasting",
-  "/dashboard/warehouses",
-  "/dashboard/instagram",
-  "/dashboard/templates",
-  "/dashboard/credits",
-  "/dashboard/pic-roster",
-  "/dashboard/doa-knowledge",
-  "/dashboard/superadmin/transactions",
-  "/dashboard/superadmin/settings",
-  "/dashboard/superadmin/leads",
-  "/dashboard/superadmin/exports",
-  "/dashboard/superadmin/blasting",
-  "/dashboard/superadmin/ai-scenarios",
-];
+/**
+ * Routes shown with a "Segera" badge. Empty now: every page is reachable. Pages that run on sample
+ * data carry a preview notice instead (see PREVIEW_ROUTES in the dashboard layout).
+ */
+export const UNAVAILABLE_ROUTES = [];

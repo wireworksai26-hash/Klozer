@@ -124,26 +124,26 @@ The token is stored encrypted and is never shown again. One WhatsApp number can 
     },
     {
       id: "qris-settle",
-      title: "3. Pembayaran QRIS (Midtrans)",
+      title: "3. Pembayaran QRIS (iPaymu)",
       icon: <QrIcon className="w-4 h-4 text-success-600" />,
       summary: "Menerbitkan QRIS dari chat dan pelunasan otomatis.",
       content: `
 ### Cara kerja QRIS:
 1. Di Live Chat, klik **Terbitkan QRIS**, pilih produk dan jumlah. Klozer membuat pesanan sungguhan (stok berkurang) lalu mengirim tautan QRIS ke pelanggan.
 2. Nominal selalu diambil dari pesanan di server, bukan dari yang diketik.
-3. Setelah pelanggan membayar, Midtrans mengirim notifikasi ke \`${origin}/api/v1/payments/webhook\`. Tanda tangan notifikasi diperiksa, nominal dicocokkan, dan pesanan otomatis menjadi **Lunas**.
-4. Notifikasi ganda diabaikan, jadi komisi CS hanya dihitung sekali.
+3. Setelah pelanggan membayar, iPaymu mengirim callback ke \`${origin}/api/v1/payments/webhook\`. Tanda tangan callback diperiksa, nominal dicocokkan, dan pesanan otomatis menjadi **Lunas**.
+4. Callback ganda diabaikan, jadi komisi CS hanya dihitung sekali.
 
-QRIS membutuhkan Midtrans Server Key yang diatur admin di server. Untuk pembayaran transfer manual, pesanan dikonfirmasi oleh owner, supervisor, atau finance di menu **Keuangan**.
+QRIS membutuhkan VA dan API Key iPaymu yang diatur admin di server. Kode QRIS berlaku 5 menit; jika kedaluwarsa, terbitkan ulang. Untuk pembayaran transfer manual, pesanan dikonfirmasi oleh owner, supervisor, atau finance di menu **Keuangan**.
       `,
       contentEn: `
 ### How QRIS works:
 1. In Live Chat, click **Issue QRIS**, then pick the product and quantity. Klozer creates a real order (stock decreases) and sends the QRIS link to the customer.
 2. The amount is always taken from the order on the server, not from what is typed.
-3. After the customer pays, Midtrans sends a notification to \`${origin}/api/v1/payments/webhook\`. The notification signature is verified, the amount is matched, and the order automatically becomes **Paid**.
-4. Duplicate notifications are ignored, so CS commission is only counted once.
+3. After the customer pays, iPaymu sends a callback to \`${origin}/api/v1/payments/webhook\`. The callback signature is verified, the amount is matched, and the order automatically becomes **Paid**.
+4. Duplicate callbacks are ignored, so CS commission is only counted once.
 
-QRIS requires a Midtrans Server Key configured by the admin on the server. For manual transfer payments, orders are confirmed by the owner, supervisor, or finance in the **Finance** menu.
+QRIS requires an iPaymu VA and API Key configured by the admin on the server. A QRIS code is valid for 5 minutes; issue a new one if it expires. For manual transfer payments, orders are confirmed by the owner, supervisor, or finance in the **Finance** menu.
       `,
     },
     {

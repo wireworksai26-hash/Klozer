@@ -9,7 +9,7 @@ const phrases = {
   "Menghubungkan nomor WhatsApp Business resmi lewat Meta Cloud API.": "Connect your official WhatsApp Business number through the Meta Cloud API.",
   "2. Mengatur Persona AI": "2. Setting the AI Persona",
   "Nama bot, gaya bahasa, dan sapaan pembuka yang dipakai AI saat membalas pelanggan.": "The bot name, tone of voice, and opening greeting the AI uses when replying to customers.",
-  "3. Pembayaran QRIS (Midtrans)": "3. QRIS Payments (Midtrans)",
+  "3. Pembayaran QRIS (iPaymu)": "3. QRIS Payments (iPaymu)",
   "Menerbitkan QRIS dari chat dan pelunasan otomatis.": "Issue QRIS from chat with automatic settlement.",
   "4. Keamanan Akun dan Tim": "4. Account and Team Security",
   "Hak akses staf, password, dan jejak aktivitas.": "Staff access rights, passwords, and activity trail.",

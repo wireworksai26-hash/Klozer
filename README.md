@@ -8,7 +8,7 @@ Platform penjualan lewat WhatsApp untuk bisnis retail, kuliner, fesyen, jasa, da
 - **Live Chat WhatsApp** (Meta Cloud API): pesan masuk tampil realtime (Socket.io), balasan CS dikirim lewat nomor tenant. Tanda tangan webhook diperiksa dan pesan ganda dari retry Meta diabaikan.
 - **Balasan AI**: NVIDIA NIM dengan failover Gemini. AI hanya memakai katalog aktif, stok, rekening terdaftar, dan persona tenant. Kuota token per tenant dicatat. Jika AI tidak tersedia, kuota habis, atau pelanggan mengirim gambar/suara, percakapan diteruskan ke CS dan muncul notifikasi.
 - **Pesanan**: harga dan HPP selalu dihitung server, stok tidak bisa oversell (diuji dengan pembelian paralel), alur status dijaga, pembatalan mengembalikan stok.
-- **QRIS (Midtrans)**: nominal dari pesanan di server, webhook diverifikasi tanda tangan dan nominalnya, notifikasi ganda diproses sekali, komisi CS dihitung sekali.
+- **QRIS (iPaymu)**: nominal dari pesanan di server, webhook diverifikasi tanda tangan dan nominalnya, notifikasi ganda diproses sekali, komisi CS dihitung sekali.
 - **Laporan dan keuangan** dari data nyata, komisi CS, rekening pembayaran, log aktivitas (audit), impor produk dan stok dari Excel.
 - **Keamanan**: password bcrypt, kunci akun setelah gagal berulang, token dicabut seketika saat staf dinonaktifkan atau password diganti, token WhatsApp dienkripsi AES-256-GCM, pembatas laju, header keamanan, konfigurasi production gagal-cepat bila secret lemah.
 
@@ -32,7 +32,7 @@ cd backend  && cp .env.example .env && npm ci && npm run dev    # http://localho
 cd frontend && npm ci && npm run dev                            # http://localhost:3000
 ```
 
-Di mode development, database dibuat otomatis dan secret memakai nilai bawaan lokal. `/api` dan `/socket.io` diteruskan Next ke backend, jadi tidak perlu CORS atau URL API di frontend. Untuk membuat akun superadmin, isi `SUPERADMIN_EMAIL` dan `SUPERADMIN_PASSWORD` di `backend/.env`. `npm run seed` (hanya development) membuat dua tenant demo dengan password `DemoPass123!` (ubah lewat `SEED_PASSWORD`).
+Di mode development, database dibuat otomatis dan secret memakai nilai bawaan lokal. `/api` dan `/socket.io` diteruskan Next ke backend, jadi tidak perlu CORS atau URL API di frontend. Untuk membuat akun superadmin, isi `SUPERADMIN_EMAIL` dan `SUPERADMIN_PASSWORD` di `backend/.env`. `npm run seed` membuat tiga tenant demo (Batik Mahakarya Solo, Geprek Juara, Glowvera Skincare) lengkap dengan staf, katalog, lead, chat, pesanan, pembayaran, dan pengiriman selama 45 hari terakhir. Password semua akun dari `SEED_PASSWORD`, atau dibuat acak dan dicetak sekali di akhir proses. Tambahkan `-- --reset` untuk menghapus dan membangun ulang data demo.
 
 ## Test
 
@@ -60,7 +60,7 @@ Semua di bawah `/api/v1`, kecuali dinyatakan lain, wajib memakai `Authorization:
 | `GET/POST /leads`, `GET /chats/:leadId`, `POST /chats/send` | CRM dan chat |
 | `GET/POST /orders`, `PATCH /orders/:id/status` | pesanan |
 | `POST /payments/qris` | terbitkan QRIS untuk pesanan |
-| `POST /payments/webhook` | notifikasi Midtrans (publik, tanda tangan) |
+| `POST /payments/webhook` | callback iPaymu (publik, header X-Signature) |
 | `GET/POST /webhooks/whatsapp` | webhook Meta (publik, tanda tangan) |
 | `GET /reports/summary`, `GET /audit-logs` | laporan dan jejak aktivitas |
 | `PUT /ai/persona`, `POST /ai/chat` | persona AI dan simulator |

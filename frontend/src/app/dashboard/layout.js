@@ -1,13 +1,23 @@
 "use client";
 import { useState, useEffect, Suspense, useMemo } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+import { FEATURE_LIST, featureForPath } from "@/utils/plans";
 import {
   SidebarNav,
   HeaderTopbar,
   RoleGuard,
   buildRolesConfig,
 } from "@/components/dashboard";
+
+// Modules whose screens are interface previews: they work on sample data held in the page and are
+// not saved to the server yet. A thin notice keeps that visible during client demos.
+const PREVIEW_ROUTES = [
+  "templates", "labels", "label-stats", "blasting", "credits", "blocked-contacts", "internal-chat", "instagram", "escalation",
+  "bookings", "pic-roster", "warehouses", "etalase", "doa-knowledge",
+  "superadmin/ai-scenarios", "superadmin/blasting", "superadmin/exports", "superadmin/leads", "superadmin/transactions",
+].map((p) => `/dashboard/${p}`);
 
 /**
  * DashboardContent
@@ -71,7 +81,26 @@ function DashboardContent({ children }) {
     () => buildRolesConfig({ t, language }),
     [t, language]
   );
-  const currentRoleConfig = rolesConfig[role] || rolesConfig.agent;
+  const baseRoleConfig = rolesConfig[role] || rolesConfig.agent;
+
+  // Pages of a feature that the tenant's package does not include stay out of the menu, and the page
+  // itself explains why when opened directly. The superadmin is never restricted.
+  const modules = activeInstitution?.modules || {};
+  const featureOff = (href) => {
+    const feature = featureForPath(href);
+    return role !== "superadmin" && Boolean(feature) && modules[feature] === false;
+  };
+  const available = (item) => !featureOff(item.href);
+  const currentRoleConfig = {
+    ...baseRoleConfig,
+    pinnedItems: baseRoleConfig.pinnedItems?.filter(available),
+    navItems: baseRoleConfig.navItems?.filter(available),
+    navSections: baseRoleConfig.navSections
+      ?.map((section) => ({ ...section, items: section.items.filter(available) }))
+      .filter((section) => section.items.length > 0),
+  };
+  const lockedFeature = featureOff(pathname) ? FEATURE_LIST.find((f) => f.key === featureForPath(pathname)) : null;
+  const isPreview = PREVIEW_ROUTES.includes(pathname);
 
   return (
     <RoleGuard>
@@ -131,7 +160,27 @@ function DashboardContent({ children }) {
                   </button>
                 </div>
               )}
-              {children}
+              {isPreview && (
+                <div className="mb-5 px-3.5 py-2 rounded-xl border border-warning-200 bg-warning-50 text-warning-800 text-caption font-semibold">
+                  {t("Pratinjau fitur: tampilan ini memakai data contoh dan belum menyimpan ke server.")}
+                </div>
+              )}
+              {lockedFeature ? (
+                <div className="max-w-[560px] mx-auto text-center bg-white border border-line rounded-2xl p-10 mt-6">
+                  <span className="inline-block text-caption font-bold uppercase tracking-wider text-warning-800 bg-warning-50 border border-warning-200 px-3 py-1 rounded-full mb-4">
+                    {t("Tidak termasuk paket Anda")}
+                  </span>
+                  <h1 className="page-title mb-2">{lockedFeature.label}</h1>
+                  <p className="text-body-sm text-fg-muted leading-relaxed">
+                    {t("Fitur ini belum aktif di paket langganan toko Anda. Hubungi admin Klozer untuk mengaktifkannya atau menaikkan paket.")}
+                  </p>
+                  <Link href="/dashboard" className="btn-primary inline-block mt-6 !py-2 !px-5 font-bold no-underline">
+                    {t("Kembali ke Dashboard")}
+                  </Link>
+                </div>
+              ) : (
+                children
+              )}
             </div>
           </main>
         </div>

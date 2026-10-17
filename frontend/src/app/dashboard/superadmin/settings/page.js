@@ -1,5 +1,12 @@
-import ComingSoon from "@/components/common/ComingSoon";
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function SuperadminSettingsPage() {
-  return <ComingSoon title="Pengaturan Platform" description="Kunci dan rahasia platform diatur di environment server. Status integrasi ada di Pengaturan > Integrasi Platform." />;
+// Platform settings (AI keys and integration status) live in Settings > Integrasi Platform.
+export default function PlatformSettingsRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/dashboard/settings?tab=ai-admin");
+  }, [router]);
+  return <div className="p-8 text-center text-fg-muted">Mengalihkan ke Pengaturan...</div>;
 }

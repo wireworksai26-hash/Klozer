@@ -114,9 +114,10 @@ export const config = {
     graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
   },
 
-  midtrans: {
-    serverKey: process.env.MIDTRANS_SERVER_KEY || "",
-    isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
+  ipaymu: {
+    va: process.env.IPAYMU_VA || "",
+    apiKey: process.env.IPAYMU_API_KEY || "",
+    isProduction: process.env.IPAYMU_IS_PRODUCTION === "true",
   },
 
   ai: {

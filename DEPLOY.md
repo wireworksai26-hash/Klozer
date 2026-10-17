@@ -38,7 +38,7 @@ Server menolak start di production jika secret kosong, terlalu pendek, memakai n
 
 > **Simpan `DB_ENCRYPTION_KEY` terpisah dari database.** Token WhatsApp tenant dienkripsi dengan kunci ini. Jika hilang, token tidak bisa dibaca lagi dan tenant harus memasukkannya ulang.
 
-Integrasi opsional (kosongkan jika belum dipakai): `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, `MIDTRANS_SERVER_KEY`, `NVIDIA_API_KEY` / `GEMINI_API_KEY`, `SMTP_*`. Tanpa kunci AI, percakapan diteruskan ke CS manusia. Tanpa Midtrans, QRIS tidak tersedia (tidak ada QR palsu).
+Integrasi opsional (kosongkan jika belum dipakai): `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, `IPAYMU_VA` / `IPAYMU_API_KEY`, `NVIDIA_API_KEY` / `GEMINI_API_KEY`, `SMTP_*`. Tanpa kunci AI, percakapan diteruskan ke CS manusia. Tanpa iPaymu, QRIS tidak tersedia (tidak ada QR palsu).
 
 ## 4. Jalankan
 
@@ -57,7 +57,7 @@ Buka `https://DOMAIN`, login sebagai superadmin, lalu buat tenant di menu **Inst
 | Layanan | URL yang didaftarkan |
 |---|---|
 | Meta WhatsApp webhook | `https://DOMAIN/api/v1/webhooks/whatsapp` (verify token = `META_WEBHOOK_VERIFY_TOKEN`, aktifkan field `messages`) |
-| Midtrans notification URL | `https://DOMAIN/api/v1/payments/webhook` |
+| iPaymu callback (notify) URL | `https://DOMAIN/api/v1/payments/webhook` |
 
 Nomor WhatsApp dan access token tiap tenant diisi oleh owner di **Pengaturan > Profil Usaha dan WhatsApp**. Status integrasi platform terlihat di **Pengaturan > Integrasi Platform** (superadmin).
 
@@ -109,3 +109,19 @@ Test backend memerlukan MySQL (default `127.0.0.1:3307`, password `testroot`, at
 docker run -d --name klozer_test_mysql -p 3307:3306 -e MYSQL_ROOT_PASSWORD=testroot mysql:8.0
 cd backend && npm test
 ```
+
+
+## Data demo untuk presentasi ke klien
+
+Seeder membuat tiga bisnis fiktif lengkap dengan data 45 hari terakhir. Di server (NODE_ENV=production) seeder menolak berjalan kecuali Anda sengaja mengizinkannya:
+
+```bash
+docker compose exec -e ALLOW_DEMO_SEED=true -e SEED_PASSWORD='password-demo-anda' backend node src/database/seeds.js
+# bangun ulang dari awal (hanya menghapus tenant demo, bukan tenant lain):
+docker compose exec -e ALLOW_DEMO_SEED=true -e SEED_PASSWORD='password-demo-anda' backend node src/database/seeds.js --reset
+```
+
+- Tanpa `SEED_PASSWORD`, password dibuat acak dan dicetak sekali di akhir proses.
+- Akun demo ada di domain `.demo` (mis. `owner@batikmahakarya.demo`). Daftar lengkap dicetak setelah seeding.
+- Data demo ikut masuk ke database yang sama dengan data asli. Hapus dengan perintah `--reset` atau hapus tenantnya dari menu Instansi Tenant (superadmin) setelah demo.
+- Tidak ada channel WhatsApp yang terhubung ke tenant demo, jadi tidak ada pesan yang dikirim ke nomor palsunya.

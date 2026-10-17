@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { FEATURE_LIST, featuresForTier } from "@/utils/plans";
 import {
   BuildingIcon,
   CrownIcon,
@@ -48,22 +49,7 @@ export default function InstitutionsPage() {
     tier: "Pro Plan",
     quotaMax: 50000,
     language: "id", // "id" | "en"
-    modules: {
-      personaAi: true,
-      autoLabel: true,
-      printReceipt: true,
-      baileys: false,
-      instagram: true,
-      csBlast: true,
-      publicBooking: false,
-      stockManagement: true,
-      picFeature: true,
-      qris: true,
-      voiceAi: true,
-      antiFraud: true,
-      metaCapi: true,
-      multiCs: true,
-    },
+    modules: featuresForTier("Pro Plan"),
   });
 
   const handleOpenAdd = () => {
@@ -76,22 +62,7 @@ export default function InstitutionsPage() {
       tier: "Pro Plan",
       quotaMax: 50000,
       language: "id",
-      modules: {
-        personaAi: true,
-        autoLabel: true,
-        printReceipt: true,
-        baileys: false,
-        instagram: true,
-        csBlast: true,
-        publicBooking: false,
-        stockManagement: true,
-        picFeature: true,
-        qris: true,
-        voiceAi: true,
-        antiFraud: true,
-        metaCapi: true,
-        multiCs: true,
-      },
+      modules: featuresForTier("Pro Plan"),
     });
     setResetFeedback(null);
     setShowAddModal(true);
@@ -396,7 +367,7 @@ Login URL: ${window.location.origin}/login`;
                   </label>
                   <select
                     value={formData.tier}
-                    onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, tier: e.target.value, ...(editingInst ? {} : { modules: featuresForTier(e.target.value) }) })}
                     className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium"
                   >
                     <option value="Starter">{t("Starter (10.000 Pesan)")}</option>
@@ -554,26 +525,21 @@ Login URL: ${window.location.origin}/login`;
 
               {/* Feature Toggles */}
               <div className="pt-2">
-                <label className="font-bold text-fg block mb-2">
-                  {t("Hak Akses Modul Fitur:")}
-                </label>
-                <div className="grid grid-cols-2 gap-2 bg-soft p-3.5 rounded-xl border border-line max-h-[180px] overflow-y-auto">
-                  {[
-                    { key: "personaAi", label: t("Persona AI CS") },
-                    { key: "autoLabel", label: t("Auto-Label AI") },
-                    { key: "printReceipt", label: t("Cetak Nota / Invoice") },
-                    { key: "baileys", label: "Baileys WhatsApp" },
-                    { key: "instagram", label: "Instagram Direct DM" },
-                    { key: "csBlast", label: "CS Broadcast Blast" },
-                    { key: "publicBooking", label: "Public Booking / Form" },
-                    { key: "stockManagement", label: "Stock Management" },
-                    { key: "picFeature", label: "PIC Round Robin" },
-                    { key: "qris", label: "Dynamic QRIS In-Chat" },
-                    { key: "voiceAi", label: "Voice Note AI (Whisper)" },
-                    { key: "antiFraud", label: t("Anti-Fraud Struk Forensics") },
-                    { key: "metaCapi", label: "Meta Ads CAPI Tracking" },
-                    { key: "multiCs", label: "Multi-CS Department" },
-                  ].map((m) => (
+                <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                  <label className="font-bold text-fg">
+                    {t("Fitur yang aktif")} ({FEATURE_LIST.filter((m) => formData.modules?.[m.key]).length} dari {FEATURE_LIST.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, modules: featuresForTier(formData.tier) })}
+                    className="px-3 py-1.5 text-caption font-bold rounded-lg bg-brand-soft text-brand border-none cursor-pointer"
+                  >
+                    Terapkan fitur paket {formData.tier}
+                  </button>
+                </div>
+                <p className="text-caption text-fg-muted mb-2">Centang atau hilangkan per fitur sesuai paket yang dibeli klien. Menu dan akses fitur yang dimatikan langsung hilang untuk toko tersebut.</p>
+                <div className="grid grid-cols-2 gap-2 bg-soft p-3.5 rounded-xl border border-line max-h-[260px] overflow-y-auto">
+                  {FEATURE_LIST.map((m) => (
                     <label
                       key={m.key}
                       className="flex items-center gap-2 cursor-pointer text-label font-medium text-fg"

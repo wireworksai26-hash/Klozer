@@ -1,5 +1,8 @@
 // English phrases: shell
 const phrases = {
+  "Pratinjau fitur: tampilan ini memakai data contoh dan belum menyimpan ke server.": "Feature preview: this screen uses sample data and does not save to the server yet.",
+  "Tidak termasuk paket Anda": "Not included in your plan",
+  "Fitur ini belum aktif di paket langganan toko Anda. Hubungi admin Klozer untuk mengaktifkannya atau menaikkan paket.": "This feature is not active on your store's plan. Contact the Klozer admin to enable it or upgrade your plan.",
   "Cari order ID, nomor WA, lead...": "Search order ID, WA number, lead...",
   "Buka menu navigasi": "Open navigation menu",
   "Menu Profil Pengguna": "User profile menu",

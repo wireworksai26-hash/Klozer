@@ -6,6 +6,13 @@ import { XIcon } from "@/components/icons";
 
 const input = "w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand";
 const EMPTY = { bank_code: "BCA", account_number: "", account_holder: "", branch_office: "", transfer_instruction: "" };
+// GoPay Merchant has no payment API for individuals, so it is a manual destination: the customer pays,
+// sends the proof in chat, and staff confirm it in Keuangan after checking the GoPay Merchant app.
+const GOPAY_PRESET = {
+  ...EMPTY,
+  bank_code: "GOPAY",
+  transfer_instruction: "Bayar lewat GoPay ke nomor/QRIS ini, lalu kirim bukti pembayaran ke chat ini. Pesanan diproses setelah pembayaran kami konfirmasi.",
+};
 
 export default function BankAccountsPage() {
   const { notify, isManager, t } = useDashboard();
@@ -71,9 +78,14 @@ export default function BankAccountsPage() {
           <p className="text-body-sm text-fg-muted">{t("Rekening aktif di sini boleh disebutkan AI kepada pelanggan untuk transfer manual. AI tidak akan menyebut rekening yang tidak terdaftar.")}</p>
         </div>
         {isManager && (
-          <button onClick={() => setForm(EMPTY)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">
-            {t("+ Tambah Rekening")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setForm(GOPAY_PRESET)} className="btn-outline !py-2 !px-4 text-body-sm font-bold">
+              + GoPay Merchant
+            </button>
+            <button onClick={() => setForm(EMPTY)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">
+              {t("+ Tambah Rekening")}
+            </button>
+          </div>
         )}
       </div>
 

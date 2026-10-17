@@ -296,6 +296,14 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                     </>
                   )}
                 </button>
+
+                <p className="text-label text-fg-subtle text-center mt-3 leading-relaxed">
+                  Dengan membuat akun, Anda menyetujui{" "}
+                  <Link href="/syarat-ketentuan" target="_blank" className="text-brand hover:underline">Syarat dan Ketentuan</Link>{" "}
+                  serta{" "}
+                  <Link href="/kebijakan-privasi" target="_blank" className="text-brand hover:underline">Kebijakan Privasi</Link>{" "}
+                  Klozer.
+                </p>
               </form>
 
               <div className="mt-6 text-center text-body-sm text-fg-muted">
