@@ -24,7 +24,7 @@ export default function SupervisorLabelStatsPage() {
     ? [
         {
           label: "Pelanggan VIP",
-          color: "bg-amber-500",
+          color: "bg-warning-500",
           totalRevenue: 68500000,
           sharePercent: "42.8%",
           orderCount: 84,
@@ -32,7 +32,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "Repeat Buyer",
-          color: "bg-emerald-500",
+          color: "bg-success-500",
           totalRevenue: 48200000,
           sharePercent: "30.1%",
           orderCount: 112,
@@ -40,7 +40,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "B2B / Grosir Seragam",
-          color: "bg-purple-600",
+          color: "bg-accent-600",
           totalRevenue: 28900000,
           sharePercent: "18.0%",
           orderCount: 8,
@@ -48,7 +48,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "New Lead (First Buyer)",
-          color: "bg-blue-500",
+          color: "bg-brand",
           totalRevenue: 14500000,
           sharePercent: "9.1%",
           orderCount: 45,
@@ -58,7 +58,7 @@ export default function SupervisorLabelStatsPage() {
     : [
         {
           label: "Pelanggan VIP",
-          color: "bg-amber-500",
+          color: "bg-warning-500",
           totalRevenue: 0,
           sharePercent: "0%",
           orderCount: 0,
@@ -66,7 +66,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "Repeat Buyer",
-          color: "bg-emerald-500",
+          color: "bg-success-500",
           totalRevenue: 0,
           sharePercent: "0%",
           orderCount: 0,
@@ -74,7 +74,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "B2B / Grosir",
-          color: "bg-purple-600",
+          color: "bg-accent-600",
           totalRevenue: 0,
           sharePercent: "0%",
           orderCount: 0,
@@ -82,7 +82,7 @@ export default function SupervisorLabelStatsPage() {
         },
         {
           label: "New Lead (First Buyer)",
-          color: "bg-blue-500",
+          color: "bg-brand",
           totalRevenue: totalRev,
           sharePercent: totalRev > 0 ? "100%" : "0%",
           orderCount: paidOrders.length,
@@ -98,26 +98,26 @@ export default function SupervisorLabelStatsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-accent-100 text-accent-800 px-2.5 py-0.5 rounded-full border border-accent-200 flex items-center gap-1.5">
               <BarChartIcon className="w-3.5 h-3.5" />
               <span>Analitik Segmentasi Penjualan</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Statistik Pendapatan per Segmen Label
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Distribusi kontribusi omzet penjualan atau donasi berdasarkan tag segmen pelanggan (VIP, Repeat, B2B, New Buyer).
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-white border border-[#ede8e2] rounded-xl p-1 shadow-xs self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 bg-white border border-line rounded-xl p-1 shadow-xs self-start sm:self-auto">
           {["minggu-ini", "bulan-ini", "tahun-ini"].map((tab) => (
             <button
               key={tab}
               onClick={() => setTimeRange(tab)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold border-none cursor-pointer capitalize transition-all ${
-                timeRange === tab ? "bg-[#2545ff] text-white" : "bg-transparent text-[#8f95a8] hover:text-[#1e2640]"
+              className={`px-3 py-1.5 rounded-lg text-caption font-bold border-none cursor-pointer capitalize transition-all ${
+                timeRange === tab ? "bg-brand text-white" : "bg-transparent text-fg-subtle hover:text-fg"
               }`}
             >
               {tab.replace("-", " ")}
@@ -127,18 +127,18 @@ export default function SupervisorLabelStatsPage() {
       </div>
 
       {/* Progress Bars Overview */}
-      <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
+      <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[17px] font-extrabold text-[#1e2640]">Pangsa Omzet per Segmen Label</h2>
-          <span className="text-[13px] font-bold text-[#2545ff]">
+          <h2 className="text-body font-bold text-fg">Pangsa Omzet per Segmen Label</h2>
+          <span className="text-label font-bold text-brand">
             Total Omzet: Rp {overallRev.toLocaleString("id-ID")}
           </span>
         </div>
 
         {/* Stacked Bar */}
-        <div className="h-4 w-full bg-[#f5f4f2] rounded-full overflow-hidden flex gap-0.5 mb-6">
+        <div className="h-4 w-full bg-sunken rounded-full overflow-hidden flex gap-0.5 mb-6">
           {overallRev === 0 ? (
-            <div className="w-full h-full bg-[#ede8e2]" />
+            <div className="w-full h-full bg-line" />
           ) : (
             labelData.map((d) => (
               <div
@@ -152,29 +152,29 @@ export default function SupervisorLabelStatsPage() {
         </div>
 
         {/* Legend Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-[#ede8e2]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-line">
           {labelData.map((d) => (
             <div key={d.label} className="flex flex-col">
               <div className="flex items-center gap-2 mb-1">
                 <span className={`w-2.5 h-2.5 rounded-full ${d.color}`} />
-                <span className="text-[12.5px] font-bold text-[#1e2640]">{d.label}</span>
+                <span className="text-caption font-bold text-fg">{d.label}</span>
               </div>
-              <div className="text-[18px] font-extrabold text-[#1e2640]">
+              <div className="text-title font-bold text-fg">
                 Rp {d.totalRevenue > 0 ? (d.totalRevenue / 1000000).toFixed(1) + " Jt" : "0"}
               </div>
-              <span className="text-[11.5px] font-semibold text-[#8f95a8]">{d.sharePercent} Total Omzet</span>
+              <span className="text-micro font-semibold text-fg-subtle">{d.sharePercent} Total Omzet</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Table Breakdown */}
-      <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
-        <h2 className="text-[17px] font-extrabold text-[#1e2640] mb-4">Rincian Performa per Tag Label</h2>
+      <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
+        <h2 className="text-body font-bold text-fg mb-4">Rincian Performa per Tag Label</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[13.5px]">
+          <table className="w-full text-left border-collapse text-label">
             <thead>
-              <tr className="bg-[#f9f8f6] border-b border-[#ede8e2] text-[12px] font-bold uppercase text-[#64748b]">
+              <tr className="bg-canvas border-b border-line text-caption font-bold uppercase text-fg-muted">
                 <th className="py-3 px-4">Nama Segmen Tag</th>
                 <th className="py-3 px-4">Total Omzet Tercipta</th>
                 <th className="py-3 px-4">Persentase Kontribusi</th>
@@ -182,27 +182,27 @@ export default function SupervisorLabelStatsPage() {
                 <th className="py-3 px-4">Rata-Rata Keranjang (AOV)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ede8e2]">
+            <tbody className="divide-y divide-line">
               {labelData.map((d) => (
-                <tr key={d.label} className="hover:bg-[#fcfbf9] transition-colors">
+                <tr key={d.label} className="hover:bg-soft transition-colors">
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-2">
                       <span className={`w-2.5 h-2.5 rounded-full ${d.color}`} />
-                      <span className="font-bold text-[#1e2640]">{d.label}</span>
+                      <span className="font-bold text-fg">{d.label}</span>
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="font-extrabold text-[#1e2640]">
+                    <span className="font-bold text-fg">
                       Rp {Number(d.totalRevenue || 0).toLocaleString("id-ID")}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="font-bold text-[#2545ff]">{d.sharePercent}</span>
+                    <span className="font-bold text-brand">{d.sharePercent}</span>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="font-bold text-[#1e2640]">{d.orderCount} Transaksi</span>
+                    <span className="font-bold text-fg">{d.orderCount} Transaksi</span>
                   </td>
-                  <td className="py-3.5 px-4 text-[#5a6380] font-semibold">{d.avgBasket}</td>
+                  <td className="py-3.5 px-4 text-fg-muted font-semibold">{d.avgBasket}</td>
                 </tr>
               ))}
             </tbody>

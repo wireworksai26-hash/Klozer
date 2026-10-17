@@ -89,7 +89,7 @@ export default function Pricing() {
           </p>
 
           {promoOn && (
-            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-2 text-body-sm text-emerald-800">
+            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-success-50 border border-success-200 px-4 py-2 text-body-sm text-success-800">
               <span className="font-bold">Promo Paket {PROMO.plan}: diskon {PROMO.percent}%</span>
               {promoUntilText() && <span>{promoUntilText()}</span>}
             </div>
@@ -166,7 +166,7 @@ export default function Pricing() {
                       <span className={`text-body-sm line-through ${plan.highlight ? "text-line-strong" : "text-fg-subtle"}`}>
                         Rp {plan.original}
                       </span>
-                      <span className="text-micro font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                      <span className="text-micro font-bold bg-success-500 text-white px-2 py-0.5 rounded-full">
                         Hemat {plan.promoPercent}%
                       </span>
                     </div>

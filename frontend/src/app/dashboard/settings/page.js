@@ -56,7 +56,7 @@ function ApiKeyField({ providerKey, settings, value, onChange, onClear, clearReq
       <div className="flex items-center justify-between mt-1.5 gap-3">
         <span className="text-caption text-fg-muted">{p.hint}</span>
         {info.source === "database" && (
-          <label className="text-caption text-rose-700 flex items-center gap-1.5 cursor-pointer">
+          <label className="text-caption text-danger-700 flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" checked={clearRequested} onChange={(e) => onClear(e.target.checked)} />
             Hapus key tersimpan
           </label>
@@ -150,7 +150,7 @@ function AiKeysCard({ onSaved }) {
         <button type="button" disabled={testing === p || !settings[p].configured} onClick={() => test(p)} className="btn-outline !py-2 !px-4 text-body-sm font-bold disabled:opacity-50">
           {testing === p ? "Menguji..." : "Uji koneksi"}
         </button>
-        {results[p] && <span className={`text-caption font-semibold ${results[p].ok ? "text-emerald-700" : "text-rose-700"}`}>{results[p].text}</span>}
+        {results[p] && <span className={`text-caption font-semibold ${results[p].ok ? "text-success-700" : "text-danger-700"}`}>{results[p].text}</span>}
         {!settings[p].configured && <span className="text-caption text-fg-muted">Simpan key dulu untuk bisa diuji.</span>}
       </div>
     </div>

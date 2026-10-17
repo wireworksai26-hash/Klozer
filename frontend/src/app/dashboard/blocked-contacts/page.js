@@ -65,15 +65,15 @@ export default function SupervisorBlockedContactsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full border border-rose-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-danger-100 text-danger-800 px-2.5 py-0.5 rounded-full border border-danger-200 flex items-center gap-1.5">
               <BanIcon className="w-3.5 h-3.5" />
               <span>Anti-Fraud & Blacklist Filter</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Blacklist & Nomor Diblokir
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Daftar nomor WhatsApp yang diblokir oleh supervisor atau terdeteksi bot spam / bukti transfer palsu.
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function SupervisorBlockedContactsPage() {
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="btn-primary !bg-rose-600 hover:!bg-rose-700 !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !bg-danger-600 hover:!bg-danger-700 !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <BanIcon className="w-4 h-4" />
           <span>+ Blokir Nomor Baru</span>
@@ -90,34 +90,34 @@ export default function SupervisorBlockedContactsPage() {
 
       {/* Dynamic Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Total Nomor Terblokir</div>
-          <div className="text-[28px] font-extrabold text-rose-700">{blockedList.length} Nomor</div>
-          <span className={`text-[11.5px] font-bold ${blockedList.length > 0 ? "text-rose-600" : "text-[#8f95a8]"}`}>
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="text-fg-subtle text-caption font-bold uppercase mb-1">Total Nomor Terblokir</div>
+          <div className="text-heading-md font-bold text-danger-700">{blockedList.length} Nomor</div>
+          <span className={`text-micro font-bold ${blockedList.length > 0 ? "text-danger-600" : "text-fg-subtle"}`}>
             {blockedList.length > 0 ? "Otomatis di-reject bot" : "Belum ada nomor di-blacklist"}
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Deteksi AI Anti-Fraud</div>
-          <div className="text-[28px] font-extrabold text-emerald-700">Aktif (100%)</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Scan OCR Struk & Nomor COD</span>
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="text-fg-subtle text-caption font-bold uppercase mb-1">Deteksi AI Anti-Fraud</div>
+          <div className="text-heading-md font-bold text-success-700">Aktif (100%)</div>
+          <span className="text-micro font-bold text-success-600">Scan OCR Struk & Nomor COD</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="text-[#8f95a8] text-[12px] font-bold uppercase mb-1">Efisiensi CS</div>
-          <div className="text-[28px] font-extrabold text-[#2545ff]">Bebas Spam</div>
-          <span className="text-[11.5px] font-bold text-[#2545ff]">CS fokus melayani pembeli riil</span>
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="text-fg-subtle text-caption font-bold uppercase mb-1">Efisiensi CS</div>
+          <div className="text-heading-md font-bold text-brand">Bebas Spam</div>
+          <span className="text-micro font-bold text-brand">CS fokus melayani pembeli riil</span>
         </div>
       </div>
 
       {/* Blocked List Table */}
-      <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
-        <h2 className="text-[17px] font-extrabold text-[#1e2640] mb-4">Daftar Nomor Blacklist</h2>
+      <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
+        <h2 className="text-body font-bold text-fg mb-4">Daftar Nomor Blacklist</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[13.5px]">
+          <table className="w-full text-left border-collapse text-label">
             <thead>
-              <tr className="bg-[#f9f8f6] border-b border-[#ede8e2] text-[12px] font-bold uppercase text-[#64748b]">
+              <tr className="bg-canvas border-b border-line text-caption font-bold uppercase text-fg-muted">
                 <th className="py-3 px-4">Nomor WhatsApp</th>
                 <th className="py-3 px-4">Nama / Label</th>
                 <th className="py-3 px-4">Alasan Pemblokiran</th>
@@ -125,16 +125,16 @@ export default function SupervisorBlockedContactsPage() {
                 <th className="py-3 px-4 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ede8e2]">
+            <tbody className="divide-y divide-line">
               {blockedList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-[#64748b]">
+                  <td colSpan={5} className="py-10 text-center text-fg-muted">
                     <div className="flex flex-col items-center justify-center max-w-[340px] mx-auto">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                        <ShieldCheckIcon className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-xl bg-success-50 text-success-600 flex items-center justify-center mb-2">
+                        <ShieldCheckIcon className="w-5 h-5 text-success-600" />
                       </div>
-                      <div className="font-extrabold text-[#0c1754] text-[14px]">Tidak Ada Nomor di Blacklist</div>
-                      <p className="text-[12px] text-[#64748b] mt-1">
+                      <div className="font-bold text-ink text-body-sm">Tidak Ada Nomor di Blacklist</div>
+                      <p className="text-caption text-fg-muted mt-1">
                         Nomor kontak yang terindikasi spam atau penipuan dapat ditambahkan ke daftar blacklist toko.
                       </p>
                     </div>
@@ -142,28 +142,28 @@ export default function SupervisorBlockedContactsPage() {
                 </tr>
               ) : (
                 blockedList.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#fcfbf9] transition-colors">
+                  <tr key={b.id} className="hover:bg-soft transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-[#1e2640] text-[13.5px]">{b.phone}</span>
+                      <span className="font-mono font-bold text-fg text-label">{b.phone}</span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-semibold text-[#1e2640] text-[13px]">{b.name}</span>
+                      <span className="font-semibold text-fg text-label">{b.name}</span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-bold bg-danger-50 text-danger-700 border border-danger-100">
                         <AlertTriangleIcon className="w-3 h-3" />
                         <span>{b.reason}</span>
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="text-[12.5px] font-bold text-[#1e2640]">{b.blockedAt}</div>
-                      <div className="text-[11px] text-[#8f95a8]">Oleh: {b.blockedBy}</div>
+                      <div className="text-caption font-bold text-fg">{b.blockedAt}</div>
+                      <div className="text-micro text-fg-subtle">Oleh: {b.blockedBy}</div>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
                         onClick={() => handleUnblock(b.id)}
-                        className="px-3 py-1.5 text-[11.5px] font-bold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                        className="px-3 py-1.5 text-micro font-bold rounded-lg border border-success-300 bg-success-50 text-success-700 hover:bg-success-100 cursor-pointer"
                       >
                         Buka Blokir (Unblock)
                       </button>
@@ -178,21 +178,21 @@ export default function SupervisorBlockedContactsPage() {
 
       {/* Modal: Add Blocked Contact */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-[#ede8e2] animate-scale-pop">
-            <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-4">
-              <h3 className="text-[17px] font-extrabold text-rose-700">Blokir Nomor WhatsApp Baru</h3>
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="text-body font-bold text-danger-700">Blokir Nomor WhatsApp Baru</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-sunken text-fg-subtle hover:text-fg flex items-center justify-center border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="flex flex-col gap-4 text-[13px]">
+            <form onSubmit={handleAddSubmit} className="flex flex-col gap-4 text-label">
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                <label className="block text-caption font-bold text-fg mb-1">
                   Nomor WhatsApp (dengan kode negara) *
                 </label>
                 <input
@@ -201,12 +201,12 @@ export default function SupervisorBlockedContactsPage() {
                   placeholder="Contoh: +62 812-3456-7890"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] font-mono text-[13.5px] outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line font-mono text-label outline-none focus:border-danger-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                <label className="block text-caption font-bold text-fg mb-1">
                   Label / Nama Pemilik Nomor
                 </label>
                 <input
@@ -214,18 +214,18 @@ export default function SupervisorBlockedContactsPage() {
                   placeholder="Contoh: Akun Fake Order"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-danger-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                <label className="block text-caption font-bold text-fg mb-1">
                   Alasan Pemblokiran *
                 </label>
                 <select
                   value={newReason}
                   onChange={(e) => setNewReason(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13px] outline-none focus:border-rose-500 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-danger-500 bg-white"
                 >
                   <option value="Spam / Promosi Tak Dikenal">Spam / Promosi Tak Dikenal</option>
                   <option value="Penipuan Bukti Transfer Palsu">Penipuan Bukti Transfer Palsu</option>
@@ -239,13 +239,13 @@ export default function SupervisorBlockedContactsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 text-[13px] font-bold text-[#5a6380] bg-[#f5f4f2] hover:bg-[#ede8e2] rounded-xl border-none cursor-pointer"
+                  className="flex-1 py-2.5 text-label font-bold text-fg-muted bg-sunken hover:bg-line rounded-xl border-none cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 text-[13px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl border-none cursor-pointer"
+                  className="flex-1 py-2.5 text-label font-bold text-white bg-danger-600 hover:bg-danger-700 rounded-xl border-none cursor-pointer"
                 >
                   Simpan ke Blacklist
                 </button>

@@ -86,33 +86,33 @@ export default function SupervisorInternalChatPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-accent-100 text-accent-800 px-2.5 py-0.5 rounded-full border border-accent-200 flex items-center gap-1.5">
               <UsersIcon className="w-3.5 h-3.5" />
               <span>Komunikasi Internal Tim</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Ruang Obrolan Internal Staf (Internal Chat)
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Saluran komunikasi internal antar staf CS, Supervisor, dan Finance untuk approval diskon dan briefing harian ({cleanInstName}).
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="px-3 py-1.5 bg-success-50 border border-success-200 text-success-800 rounded-xl text-caption font-bold flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
             <span>{onlineMembers.length} Staf Terhubung</span>
           </span>
         </div>
       </div>
 
       {/* Chat Container */}
-      <div className="bg-white rounded-2xl border border-[#ede8e2] shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-4 min-h-[580px]">
+      <div className="bg-white rounded-2xl border border-line shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-4 min-h-[580px]">
         {/* Left: Channels & Staff list */}
-        <div className="md:col-span-1 border-r border-[#ede8e2] bg-[#fcfbf9] flex flex-col justify-between">
+        <div className="md:col-span-1 border-r border-line bg-soft flex flex-col justify-between">
           <div className="p-3.5">
-            <span className="text-[11px] font-bold uppercase text-[#8f95a8] block mb-2 px-2">
+            <span className="text-micro font-bold uppercase text-fg-subtle block mb-2 px-2">
               Saluran Channel
             </span>
             <div className="flex flex-col gap-1">
@@ -121,15 +121,15 @@ export default function SupervisorInternalChatPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setActiveChannel(c.id)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-[13px] font-bold flex items-center justify-between transition-all cursor-pointer border-none ${
+                  className={`w-full text-left px-3 py-2 rounded-xl text-label font-bold flex items-center justify-between transition-all cursor-pointer border-none ${
                     activeChannel === c.id
-                      ? "bg-[#2545ff] text-white shadow-xs"
-                      : "bg-transparent text-[#5a6380] hover:bg-[#f5f4f2] hover:text-[#1e2640]"
+                      ? "bg-brand text-white shadow-xs"
+                      : "bg-transparent text-fg-muted hover:bg-sunken hover:text-fg"
                   }`}
                 >
                   <span className="truncate">{c.name}</span>
                   {c.unread > 0 && activeChannel !== c.id && (
-                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-500 text-white">
+                    <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-danger-500 text-white">
                       {c.unread}
                     </span>
                   )}
@@ -137,15 +137,15 @@ export default function SupervisorInternalChatPage() {
               ))}
             </div>
 
-            <span className="text-[11px] font-bold uppercase text-[#8f95a8] block mt-5 mb-2 px-2">
+            <span className="text-micro font-bold uppercase text-fg-subtle block mt-5 mb-2 px-2">
               Anggota Tim ({onlineMembers.length})
             </span>
-            <div className="flex flex-col gap-2 px-2 text-[12.5px]">
+            <div className="flex flex-col gap-2 px-2 text-caption">
               {onlineMembers.map((m, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="font-bold text-[#1e2640] truncate">{m.name}</span>
-                  <span className="text-[10px] text-[#8f95a8]">({m.role})</span>
+                  <span className="w-2 h-2 rounded-full bg-success-500" />
+                  <span className="font-bold text-fg truncate">{m.name}</span>
+                  <span className="text-micro text-fg-subtle">({m.role})</span>
                 </div>
               ))}
             </div>
@@ -155,34 +155,34 @@ export default function SupervisorInternalChatPage() {
         {/* Right: Message Stream */}
         <div className="md:col-span-3 flex flex-col justify-between bg-white">
           {/* Channel Header */}
-          <div className="p-4 border-b border-[#ede8e2] bg-[#fcfbf9] flex items-center justify-between">
+          <div className="p-4 border-b border-line bg-soft flex items-center justify-between">
             <div>
-              <div className="font-extrabold text-[15px] text-[#1e2640]">{currentChannelObj?.name}</div>
-              <div className="text-[12px] text-[#64748b]">{currentChannelObj?.desc}</div>
+              <div className="font-bold text-body-sm text-fg">{currentChannelObj?.name}</div>
+              <div className="text-caption text-fg-muted">{currentChannelObj?.desc}</div>
             </div>
           </div>
 
           {/* Messages */}
           <div className="p-4 flex flex-col gap-3.5 overflow-y-auto max-h-[440px]">
             {currentMessages.length === 0 ? (
-              <div className="py-12 text-center text-[#8f95a8] text-[13px]">
+              <div className="py-12 text-center text-fg-subtle text-label">
                 Belum ada pesan di channel ini. Mulai percakapan pertama untuk koordinasi tim.
               </div>
             ) : (
               currentMessages.map((m) => (
                 <div key={m.id} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#eaebf8] text-[#2545ff] font-extrabold text-[12px] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-soft text-brand font-bold text-caption flex items-center justify-center shrink-0">
                     {m.avatar}
                   </div>
                   <div className="flex flex-col gap-0.5 max-w-[85%]">
                     <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-[#1e2640] text-[13px]">{m.sender}</span>
-                      <span className="text-[10.5px] px-1.5 py-0.2 rounded bg-[#f0e9e1] text-[#64748b] font-bold">
+                      <span className="font-bold text-fg text-label">{m.sender}</span>
+                      <span className="text-micro px-1.5 py-0.2 rounded bg-line text-fg-muted font-bold">
                         {m.role}
                       </span>
-                      <span className="text-[10.5px] text-[#8f95a8]">{m.time}</span>
+                      <span className="text-micro text-fg-subtle">{m.time}</span>
                     </div>
-                    <div className="text-[13px] text-[#1e2640] bg-[#f9f8f6] p-2.5 rounded-2xl rounded-tl-xs border border-[#ede8e2] leading-relaxed">
+                    <div className="text-label text-fg bg-canvas p-2.5 rounded-2xl rounded-tl-xs border border-line leading-relaxed">
                       {m.text}
                     </div>
                   </div>
@@ -192,15 +192,15 @@ export default function SupervisorInternalChatPage() {
           </div>
 
           {/* Chat Input */}
-          <form onSubmit={handleSend} className="p-3.5 border-t border-[#ede8e2] bg-[#fcfbf9] flex items-center gap-2">
+          <form onSubmit={handleSend} className="p-3.5 border-t border-line bg-soft flex items-center gap-2">
             <input
               type="text"
               placeholder={`Kirim pesan ke ${currentChannelObj?.name}...`}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              className="flex-1 px-4 py-2.5 bg-white border border-[#ede8e2] rounded-xl text-[13px] text-[#1e2640] outline-none focus:border-[#2545ff]"
+              className="flex-1 px-4 py-2.5 bg-white border border-line rounded-xl text-label text-fg outline-none focus:border-brand"
             />
-            <button type="submit" className="btn-primary !py-2.5 !px-5 text-[13px] font-bold">
+            <button type="submit" className="btn-primary !py-2.5 !px-5 text-label font-bold">
               Kirim
             </button>
           </form>

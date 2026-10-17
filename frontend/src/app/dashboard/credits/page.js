@@ -52,15 +52,15 @@ export default function CsCreditsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-success-100 text-success-800 px-2.5 py-0.5 rounded-full border border-success-200 flex items-center gap-1.5">
               <CreditCardIcon className="w-3.5 h-3.5" />
               <span>Saldo & Kuota WhatsApp</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Kredit & Kuota Pesan Broadcast
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Pantau sisa kuota pengiriman pesan massal WhatsApp dan lakukan top-up saldo instan via QRIS.
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function CsCreditsPage() {
         <button
           type="button"
           onClick={() => setShowTopupModal(true)}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <CreditCardIcon className="w-4 h-4" />
           <span>+ Top Up Kredit Pesan</span>
@@ -77,34 +77,34 @@ export default function CsCreditsPage() {
 
       {/* Balance Card */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-[#0c1754] to-[#2545ff] p-6 rounded-2xl text-white shadow-md flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-ink to-brand p-6 rounded-2xl text-white shadow-md flex flex-col justify-between">
           <div>
-            <span className="text-white/80 text-[12px] font-bold uppercase tracking-wider block mb-1">
+            <span className="text-white/80 text-caption font-bold uppercase tracking-wider block mb-1">
               Sisa Kuota Broadcast CS
             </span>
-            <div className="text-[34px] font-extrabold font-mono">1,450 <span className="text-[16px] font-sans font-normal text-white/80">Pesan</span></div>
+            <div className="text-heading font-bold font-mono">1,450 <span className="text-body font-sans font-normal text-white/80">Pesan</span></div>
           </div>
-          <div className="mt-4 pt-3 border-t border-white/20 text-[12px] text-white/90">
+          <div className="mt-4 pt-3 border-t border-white/20 text-caption text-white/90">
             Estimasi Nilai Saldo: <span className="font-bold">Rp 217,500</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col justify-between">
-          <span className="text-[12px] font-bold text-[#8f95a8] uppercase">Terkirim Bulan Ini</span>
-          <div className="text-[28px] font-extrabold text-[#1e2640] my-1">420 Pesan</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">99.2% Berhasil Sampai</span>
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs flex flex-col justify-between">
+          <span className="text-caption font-bold text-fg-subtle uppercase">Terkirim Bulan Ini</span>
+          <div className="text-heading-md font-bold text-fg my-1">420 Pesan</div>
+          <span className="text-micro font-bold text-success-600">99.2% Berhasil Sampai</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col justify-between">
-          <span className="text-[12px] font-bold text-[#8f95a8] uppercase">Status Akun WhatsApp</span>
-          <div className="text-[28px] font-extrabold text-emerald-700 my-1">Tier High Quality</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Anti-Banned Safe Rate Limiter Aktif</span>
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs flex flex-col justify-between">
+          <span className="text-caption font-bold text-fg-subtle uppercase">Status Akun WhatsApp</span>
+          <div className="text-heading-md font-bold text-success-700 my-1">Tier High Quality</div>
+          <span className="text-micro font-bold text-success-600">Anti-Banned Safe Rate Limiter Aktif</span>
         </div>
       </div>
 
       {/* History Table */}
-      <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
-        <h2 className="text-[17px] font-extrabold text-[#1e2640] mb-4">Riwayat Mutasi Kredit Kuota</h2>
+      <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
+        <h2 className="text-body font-bold text-fg mb-4">Riwayat Mutasi Kredit Kuota</h2>
         <div className="table-wrapper">
           <table>
             <thead>
@@ -118,14 +118,14 @@ export default function CsCreditsPage() {
             </thead>
             <tbody>
               {history.map((h) => (
-                <tr key={h.id} className="hover:bg-[#fcfbf9] transition-colors">
+                <tr key={h.id} className="hover:bg-soft transition-colors">
                   <td>
-                    <div className="font-bold text-[#1e2640] text-[13px]">{h.id}</div>
-                    <div className="text-[11px] text-[#8f95a8]">{h.date}</div>
+                    <div className="font-bold text-fg text-label">{h.id}</div>
+                    <div className="text-micro text-fg-subtle">{h.date}</div>
                   </td>
                   <td>
                     <span
-                      className={`badge text-[10.5px] font-extrabold ${
+                      className={`badge text-micro font-bold ${
                         h.type === "TOPUP" ? "badge-success" : "badge-lavender"
                       }`}
                     >
@@ -133,19 +133,19 @@ export default function CsCreditsPage() {
                     </span>
                   </td>
                   <td>
-                    <span className="text-[13px] font-semibold text-[#1e2640]">{h.desc}</span>
+                    <span className="text-label font-semibold text-fg">{h.desc}</span>
                   </td>
                   <td>
                     <span
-                      className={`font-extrabold text-[13.5px] font-mono ${
-                        h.qty > 0 ? "text-emerald-600" : "text-rose-600"
+                      className={`font-bold text-label font-mono ${
+                        h.qty > 0 ? "text-success-600" : "text-danger-600"
                       }`}
                     >
                       {h.qty > 0 ? `+${h.qty}` : h.qty} Pesan
                     </span>
                   </td>
                   <td>
-                    <span className="font-bold text-[#1e2640] text-[13px]">{h.balance} Pesan</span>
+                    <span className="font-bold text-fg text-label">{h.balance} Pesan</span>
                   </td>
                 </tr>
               ))}
@@ -156,13 +156,13 @@ export default function CsCreditsPage() {
 
       {/* Modal: Top Up */}
       {showTopupModal && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[500px] p-6 shadow-2xl border border-[#ede8e2] animate-scale-pop">
-            <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-4">
-              <h3 className="text-[17px] font-extrabold text-[#1e2640]">Top-Up Kuota Pesan Broadcast</h3>
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[500px] p-6 shadow-2xl border border-line animate-scale-pop">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="text-body font-bold text-fg">Top-Up Kuota Pesan Broadcast</h3>
               <button
                 onClick={() => setShowTopupModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-sunken text-fg-subtle hover:text-fg flex items-center justify-center border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
@@ -175,8 +175,8 @@ export default function CsCreditsPage() {
                   onClick={() => setSelectedPackage(pkg.id)}
                   className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                     selectedPackage === pkg.id
-                      ? "border-[#2545ff] bg-[#edeffe]"
-                      : "border-[#ede8e2] bg-white hover:bg-[#fcfbf9]"
+                      ? "border-brand bg-brand-soft"
+                      : "border-line bg-white hover:bg-soft"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -185,32 +185,32 @@ export default function CsCreditsPage() {
                       name="credit-pkg"
                       checked={selectedPackage === pkg.id}
                       onChange={() => setSelectedPackage(pkg.id)}
-                      className="accent-[#2545ff]"
+                      className="accent-brand"
                     />
                     <div>
-                      <div className="font-extrabold text-[14px] text-[#1e2640] flex items-center gap-2">
+                      <div className="font-bold text-body-sm text-fg flex items-center gap-2">
                         <span>{pkg.name}</span>
-                        {pkg.bestValue && <span className="badge badge-success text-[10px]">Terlaris</span>}
+                        {pkg.bestValue && <span className="badge badge-success text-micro">Terlaris</span>}
                       </div>
-                      <div className="text-[12px] text-[#5a6380]">{pkg.messages} Kuota Pesan WhatsApp</div>
+                      <div className="text-caption text-fg-muted">{pkg.messages} Kuota Pesan WhatsApp</div>
                     </div>
                   </div>
-                  <div className="font-extrabold text-[15px] text-[#2545ff]">
+                  <div className="font-bold text-body-sm text-brand">
                     Rp {pkg.price.toLocaleString("id-ID")}
                   </div>
                 </label>
               ))}
 
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[12px] text-emerald-900 flex items-center gap-2 mt-2">
-                <QrIcon className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+              <div className="p-3 bg-success-50 rounded-xl border border-success-200 text-caption text-success-900 flex items-center gap-2 mt-2">
+                <QrIcon className="w-4 h-4 text-success-700 flex-shrink-0" />
                 <span>Pembayaran instan via QRIS (BCA, GoPay, OVO, ShopeePay). Saldo masuk otomatis &lt; 5 detik.</span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#ede8e2] mt-2">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
                 <button
                   type="button"
                   onClick={() => setShowTopupModal(false)}
-                  className="btn-outline !py-2 !px-4 text-[13px]"
+                  className="btn-outline !py-2 !px-4 text-label"
                 >
                   Batal
                 </button>
@@ -218,7 +218,7 @@ export default function CsCreditsPage() {
                   type="button"
                   onClick={handleTopupSubmit}
                   disabled={isProcessing}
-                  className="btn-primary !py-2 !px-5 text-[13px] font-bold"
+                  className="btn-primary !py-2 !px-5 text-label font-bold"
                 >
                   {isProcessing ? "Memproses QRIS..." : "Bayar via QRIS"}
                 </button>

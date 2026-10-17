@@ -97,15 +97,15 @@ export default function SuperadminAiScenariosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-accent-100 text-accent-800 px-2.5 py-0.5 rounded-full border border-accent-200 flex items-center gap-1.5">
               <CrownIcon className="w-3.5 h-3.5" />
               <span>Superadmin AI Quality & Safety</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Skenario Automated Test Suite AI
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Suite uji otomatis untuk mendeteksi halusinasi, kepatuhan batas tawar-menawar, mitigasi phishing rekening, dan ketahanan NLP.
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function SuperadminAiScenariosPage() {
           type="button"
           onClick={handleRunAll}
           disabled={isRunningAll}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           {isRunningAll ? (
             <>
@@ -132,40 +132,40 @@ export default function SuperadminAiScenariosPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Overall Safety Score</span>
-            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+            <CheckCircleIcon className="w-4 h-4 text-success-600" />
           </div>
-          <div className="text-[28px] font-extrabold text-emerald-700 mt-2">98.6%</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">5/5 Skenario Lolos Uji</span>
+          <div className="text-heading-md font-bold text-success-700 mt-2">98.6%</div>
+          <span className="text-micro font-bold text-success-600">5/5 Skenario Lolos Uji</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Halusinasi Terdeteksi</span>
-            <BotIcon className="w-4 h-4 text-[#2545ff]" />
+            <BotIcon className="w-4 h-4 text-brand" />
           </div>
-          <div className="text-[28px] font-extrabold text-[#1e2640] mt-2">0 Kasus</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">RAG Vector Verification Aktif</span>
+          <div className="text-heading-md font-bold text-fg mt-2">0 Kasus</div>
+          <span className="text-micro font-bold text-success-600">RAG Vector Verification Aktif</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Rata-rata Latensi AI</span>
-            <ZapIcon className="w-4 h-4 text-amber-500" />
+            <ZapIcon className="w-4 h-4 text-warning-500" />
           </div>
-          <div className="text-[28px] font-extrabold text-[#1e2640] mt-2">1.32s</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">NVIDIA NIM Ultra-Fast</span>
+          <div className="text-heading-md font-bold text-fg mt-2">1.32s</div>
+          <span className="text-micro font-bold text-success-600">NVIDIA NIM Ultra-Fast</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Security Guardrails</span>
-            <SparklesIcon className="w-4 h-4 text-purple-600" />
+            <SparklesIcon className="w-4 h-4 text-accent-600" />
           </div>
-          <div className="text-[28px] font-extrabold text-purple-700 mt-2">L1 + L2</div>
-          <span className="text-[11.5px] font-bold text-purple-600">Anti Phishing & Prompt Injection</span>
+          <div className="text-heading-md font-bold text-accent-700 mt-2">L1 + L2</div>
+          <span className="text-micro font-bold text-accent-600">Anti Phishing & Prompt Injection</span>
         </div>
       </div>
 
@@ -174,46 +174,46 @@ export default function SuperadminAiScenariosPage() {
         {scenarios.map((scn, idx) => (
           <div
             key={scn.id}
-            className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs hover:border-[#2545ff] transition-all"
+            className="bg-white p-5 rounded-2xl border border-line shadow-xs hover:border-brand transition-all"
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#ede8e2]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-line">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[12px]">
+                <div className="w-8 h-8 rounded-xl bg-accent-100 text-accent-700 flex items-center justify-center font-bold text-caption">
                   0{idx + 1}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-[15.5px] font-extrabold text-[#1e2640]">{scn.title}</h2>
-                    <span className="badge badge-lavender text-[10.5px]">{scn.category}</span>
+                    <h2 className="text-body-sm font-bold text-fg">{scn.title}</h2>
+                    <span className="badge badge-lavender text-micro">{scn.category}</span>
                   </div>
-                  <p className="text-[12px] text-[#64748b] mt-0.5">{scn.description}</p>
+                  <p className="text-caption text-fg-muted mt-0.5">{scn.description}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 self-end md:self-auto">
-                <span className="badge badge-success text-[11px] flex items-center gap-1">
+                <span className="badge badge-success text-micro flex items-center gap-1">
                   <CheckCircleIcon className="w-3.5 h-3.5" />
                   <span>Score: {scn.score} (PASSED)</span>
                 </span>
-                <span className="text-[11.5px] text-[#8f95a8] font-mono">{scn.latency}</span>
+                <span className="text-micro text-fg-subtle font-mono">{scn.latency}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-[13px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-label">
               {/* Input Prompt */}
-              <div className="p-3.5 rounded-xl bg-[#f5f4f2] border border-[#ede8e2]">
-                <span className="text-[11px] font-bold uppercase text-[#8f95a8] block mb-1">
+              <div className="p-3.5 rounded-xl bg-sunken border border-line">
+                <span className="text-micro font-bold uppercase text-fg-subtle block mb-1">
                   Uji Input Prompt (Simulasi Calon Pembeli):
                 </span>
-                <p className="font-semibold text-[#1e2640] italic">&ldquo;{scn.inputPrompt}&rdquo;</p>
+                <p className="font-semibold text-fg italic">&ldquo;{scn.inputPrompt}&rdquo;</p>
               </div>
 
               {/* Actual AI Response */}
-              <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-100">
-                <span className="text-[11px] font-bold uppercase text-purple-700 block mb-1">
+              <div className="p-3.5 rounded-xl bg-accent-50/50 border border-accent-100">
+                <span className="text-micro font-bold uppercase text-accent-700 block mb-1">
                   Respon Output AI CS (NVIDIA NIM):
                 </span>
-                <p className="text-[#1e2640] font-medium leading-relaxed">&ldquo;{scn.actualResponse}&rdquo;</p>
+                <p className="text-fg font-medium leading-relaxed">&ldquo;{scn.actualResponse}&rdquo;</p>
               </div>
             </div>
           </div>

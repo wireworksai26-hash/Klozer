@@ -88,7 +88,7 @@ export default function PayPage() {
                   <td className="px-4 py-3 font-semibold text-fg">
                     {name}
                     {monthly.original && (
-                      <span className="ml-2 text-micro font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full align-middle">Promo {monthly.percent}%</span>
+                      <span className="ml-2 text-micro font-bold bg-success-500 text-white px-2 py-0.5 rounded-full align-middle">Promo {monthly.percent}%</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -106,7 +106,7 @@ export default function PayPage() {
         </table>
       </div>
       {isPromoRunning() && (
-        <p className="text-body-sm text-emerald-700 font-semibold mb-3">
+        <p className="text-body-sm text-success-700 font-semibold mb-3">
           Promo diskon {PROMO.percent}% untuk Paket {PROMO.plan} sedang berlaku{promoUntilText() ? ` ${promoUntilText()}` : ""}. Bayar sesuai harga setelah diskon.
         </p>
       )}

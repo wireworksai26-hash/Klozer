@@ -102,15 +102,15 @@ export default function SuperadminTransactionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-accent-100 text-accent-800 px-2.5 py-0.5 rounded-full border border-accent-200 flex items-center gap-1.5">
               <CrownIcon className="w-3.5 h-3.5" />
               <span>Superadmin Keuangan Global</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Rekapitulasi Transaksi Lintas Instansi
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Pusat audit settlement pembayaran QRIS, Virtual Account, dan COD seluruh tenant platform Klozer.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function SuperadminTransactionsPage() {
         <button
           type="button"
           onClick={() => alert("Mengunduh Rekap Transaksi ke Excel/CSV...")}
-          className="btn-primary !py-2.5 !px-4 text-[13px] font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="btn-primary !py-2.5 !px-4 text-label font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <DownloadIcon className="w-4 h-4" />
           <span>Export Rekap Excel</span>
@@ -127,52 +127,52 @@ export default function SuperadminTransactionsPage() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Platform GMV (Gross)</span>
-            <DollarSignIcon className="w-4 h-4 text-emerald-600" />
+            <DollarSignIcon className="w-4 h-4 text-success-600" />
           </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">Rp 1.48 Miliar</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Bulan Berjalan (+18.4%)</span>
+          <div className="text-heading-md font-bold text-fg mt-2">Rp 1.48 Miliar</div>
+          <span className="text-micro font-bold text-success-600">Bulan Berjalan (+18.4%)</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Fee Platform Klozer</span>
-            <CrownIcon className="w-4 h-4 text-purple-600" />
+            <CrownIcon className="w-4 h-4 text-accent-600" />
           </div>
-          <div className="text-[26px] font-extrabold text-purple-700 mt-2">Rp 28.7 Jt</div>
-          <span className="text-[11.5px] font-bold text-purple-600">MDR & VA Settlement Fee</span>
+          <div className="text-heading-md font-bold text-accent-700 mt-2">Rp 28.7 Jt</div>
+          <span className="text-micro font-bold text-accent-600">MDR & VA Settlement Fee</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Transaksi QRIS Dinamis</span>
-            <QrIcon className="w-4 h-4 text-[#2545ff]" />
+            <QrIcon className="w-4 h-4 text-brand" />
           </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">68.2%</div>
-          <span className="text-[11.5px] font-bold text-[#2545ff]">Metode Pembayaran Terfavorit</span>
+          <div className="text-heading-md font-bold text-fg mt-2">68.2%</div>
+          <span className="text-micro font-bold text-brand">Metode Pembayaran Terfavorit</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Settlement Success Rate</span>
-            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+            <CheckCircleIcon className="w-4 h-4 text-success-600" />
           </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">99.8%</div>
-          <span className="text-[11.5px] font-bold text-emerald-600">Automated Webhook Match</span>
+          <div className="text-heading-md font-bold text-fg mt-2">99.8%</div>
+          <span className="text-micro font-bold text-success-600">Automated Webhook Match</span>
         </div>
       </div>
 
       {/* Filter */}
-      <div className="bg-white p-4 rounded-2xl border border-[#ede8e2] flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
+      <div className="bg-white p-4 rounded-2xl border border-line flex flex-col md:flex-row items-center justify-between gap-3 shadow-xs">
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3 py-1.5">
-            <BuildingIcon className="w-3.5 h-3.5 text-[#8f95a8]" />
+          <div className="flex items-center gap-1.5 bg-sunken border border-line rounded-xl px-3 py-1.5">
+            <BuildingIcon className="w-3.5 h-3.5 text-fg-subtle" />
             <select
               value={selectedInst}
               onChange={(e) => setSelectedInst(e.target.value)}
-              className="bg-transparent text-[12.5px] font-bold text-[#1e2640] outline-none cursor-pointer"
+              className="bg-transparent text-caption font-bold text-fg outline-none cursor-pointer"
             >
               <option value="all">Semua Tenant Instansi</option>
               {institutions.map((inst) => (
@@ -183,12 +183,12 @@ export default function SuperadminTransactionsPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3 py-1.5">
-            <span className="text-[11px] font-bold uppercase text-[#8f95a8]">Metode:</span>
+          <div className="flex items-center gap-1.5 bg-sunken border border-line rounded-xl px-3 py-1.5">
+            <span className="text-micro font-bold uppercase text-fg-subtle">Metode:</span>
             <select
               value={selectedPayment}
               onChange={(e) => setSelectedPayment(e.target.value)}
-              className="bg-transparent text-[12.5px] font-bold text-[#1e2640] outline-none cursor-pointer"
+              className="bg-transparent text-caption font-bold text-fg outline-none cursor-pointer"
             >
               <option value="all">Semua Metode Bayar</option>
               <option value="QRIS">QRIS Dinamis</option>
@@ -198,8 +198,8 @@ export default function SuperadminTransactionsPage() {
           </div>
         </div>
 
-        <div className="text-[12.5px] font-bold text-[#8f95a8]">
-          Total Transaksi: <span className="text-[#2545ff]">{filteredTrx.length}</span>
+        <div className="text-caption font-bold text-fg-subtle">
+          Total Transaksi: <span className="text-brand">{filteredTrx.length}</span>
         </div>
       </div>
 
@@ -219,44 +219,44 @@ export default function SuperadminTransactionsPage() {
           </thead>
           <tbody>
             {filteredTrx.map((trx) => (
-              <tr key={trx.id} className="hover:bg-[#fcfbf9] transition-colors">
+              <tr key={trx.id} className="hover:bg-soft transition-colors">
                 <td>
-                  <div className="font-bold text-[#1e2640] text-[13.5px]">{trx.id}</div>
-                  <div className="text-[11.5px] text-[#8f95a8] font-mono">{trx.orderNumber}</div>
-                  <div className="text-[10.5px] text-[#8f95a8]">{trx.time}</div>
+                  <div className="font-bold text-fg text-label">{trx.id}</div>
+                  <div className="text-micro text-fg-subtle font-mono">{trx.orderNumber}</div>
+                  <div className="text-micro text-fg-subtle">{trx.time}</div>
                 </td>
                 <td>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[12px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-caption font-bold bg-accent-50 text-accent-700 border border-accent-100">
                     <BuildingIcon className="w-3 h-3" />
                     <span>{trx.institutionName}</span>
                   </span>
                 </td>
                 <td>
-                  <div className="font-bold text-[#1e2640] text-[13px]">{trx.customer}</div>
-                  <div className="text-[11.5px] text-[#5a6380]">{trx.items}</div>
+                  <div className="font-bold text-fg text-label">{trx.customer}</div>
+                  <div className="text-micro text-fg-muted">{trx.items}</div>
                 </td>
                 <td>
-                  <div className="text-[12.5px] font-semibold text-[#1e2640]">{trx.paymentMethod}</div>
+                  <div className="text-caption font-semibold text-fg">{trx.paymentMethod}</div>
                 </td>
                 <td>
-                  <div className="font-extrabold text-[#1e2640] text-[13.5px]">
+                  <div className="font-bold text-fg text-label">
                     Rp {trx.grossAmount.toLocaleString("id-ID")}
                   </div>
                 </td>
                 <td>
-                  <div className="font-bold text-purple-700 text-[12.5px]">
+                  <div className="font-bold text-accent-700 text-caption">
                     Rp {trx.platformFee.toLocaleString("id-ID")}
                   </div>
                 </td>
                 <td>
                   {trx.status === "settled" && (
-                    <span className="badge badge-success text-[11px] flex items-center gap-1">
+                    <span className="badge badge-success text-micro flex items-center gap-1">
                       <CheckCircleIcon className="w-3 h-3" />
                       <span>Settled</span>
                     </span>
                   )}
                   {trx.status === "in_escrow" && (
-                    <span className="badge badge-warning text-[11px] flex items-center gap-1">
+                    <span className="badge badge-warning text-micro flex items-center gap-1">
                       <ShieldCheckIcon className="w-3 h-3" />
                       <span>Escrow Kurir</span>
                     </span>

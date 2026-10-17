@@ -73,15 +73,15 @@ export default function SupervisorBlastingPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-[#2545ff] px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-brand-soft text-brand px-2.5 py-0.5 rounded-full border border-brand-soft flex items-center gap-1.5">
               <RadioIcon className="w-3.5 h-3.5" />
               <span>Smart WhatsApp Broadcast</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Broadcast & Auto-Campaign
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Kirim pesan promosi massal yang dipersonalisasi berdasarkan label pembeli via WhatsApp Cloud API resmi (Anti-Banned).
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function SupervisorBlastingPage() {
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <RadioIcon className="w-4 h-4" />
           <span>+ Buat Kampanye Broadcast</span>
@@ -98,54 +98,54 @@ export default function SupervisorBlastingPage() {
 
       {/* Dynamic Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Pesan Terkirim</span>
-            <MessageSquareIcon className="w-4 h-4 text-[#2545ff]" />
+            <MessageSquareIcon className="w-4 h-4 text-brand" />
           </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">{totalSent}</div>
-          <span className={`text-[11.5px] font-bold ${totalSent > 0 ? "text-emerald-600" : "text-[#8f95a8]"}`}>
+          <div className="text-heading-md font-bold text-fg mt-2">{totalSent}</div>
+          <span className={`text-micro font-bold ${totalSent > 0 ? "text-success-600" : "text-fg-subtle"}`}>
             {totalSent > 0 ? "100% Terkirim" : "Belum ada kampanye"}
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Open & Read Rate</span>
-            <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+            <CheckCircleIcon className="w-4 h-4 text-success-600" />
           </div>
-          <div className="text-[26px] font-extrabold text-[#1e2640] mt-2">
+          <div className="text-heading-md font-bold text-fg mt-2">
             {campaigns.length > 0 ? "86.2%" : "0%"}
           </div>
-          <span className="text-[11.5px] font-bold text-emerald-600">WhatsApp Cloud API</span>
+          <span className="text-micro font-bold text-success-600">WhatsApp Cloud API</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Balasan Chat Masuk</span>
-            <SparklesIcon className="w-4 h-4 text-purple-600" />
+            <SparklesIcon className="w-4 h-4 text-accent-600" />
           </div>
-          <div className="text-[26px] font-extrabold text-purple-700 mt-2">{totalReplies} Percakapan</div>
-          <span className="text-[11.5px] font-bold text-purple-600">Ditangani Bot AI CS</span>
+          <div className="text-heading-md font-bold text-accent-700 mt-2">{totalReplies} Percakapan</div>
+          <span className="text-micro font-bold text-accent-600">Ditangani Bot AI CS</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-[#ede8e2] shadow-xs">
-          <div className="flex items-center justify-between text-[#8f95a8] text-[12px] font-bold uppercase">
+        <div className="bg-white p-5 rounded-2xl border border-line shadow-xs">
+          <div className="flex items-center justify-between text-fg-subtle text-caption font-bold uppercase">
             <span>Status Akun WhatsApp</span>
-            <ClockIcon className="w-4 h-4 text-emerald-500" />
+            <ClockIcon className="w-4 h-4 text-success-500" />
           </div>
-          <div className="text-[26px] font-extrabold text-emerald-600 mt-2">Official Tier</div>
-          <span className="text-[11.5px] font-bold text-[#2545ff]">Meta Verified Business</span>
+          <div className="text-heading-md font-bold text-success-600 mt-2">Official Tier</div>
+          <span className="text-micro font-bold text-brand">Meta Verified Business</span>
         </div>
       </div>
 
       {/* Campaigns Table */}
-      <div className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs">
-        <h2 className="text-[17px] font-extrabold text-[#1e2640] mb-4">Daftar Riwayat & Jadwal Broadcast</h2>
+      <div className="bg-white p-6 rounded-2xl border border-line shadow-xs">
+        <h2 className="text-body font-bold text-fg mb-4">Daftar Riwayat & Jadwal Broadcast</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[13.5px]">
+          <table className="w-full text-left border-collapse text-label">
             <thead>
-              <tr className="bg-[#f9f8f6] border-b border-[#ede8e2] text-[12px] font-bold uppercase text-[#64748b]">
+              <tr className="bg-canvas border-b border-line text-caption font-bold uppercase text-fg-muted">
                 <th className="py-3 px-4">Judul Kampanye</th>
                 <th className="py-3 px-4">Segmen Target</th>
                 <th className="py-3 px-4">Terkirim / Target</th>
@@ -153,16 +153,16 @@ export default function SupervisorBlastingPage() {
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ede8e2]">
+            <tbody className="divide-y divide-line">
               {campaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-[#64748b]">
+                  <td colSpan={5} className="py-10 text-center text-fg-muted">
                     <div className="flex flex-col items-center justify-center max-w-[340px] mx-auto">
-                      <div className="w-10 h-10 rounded-xl bg-[#eaebf8] text-[#2545ff] flex items-center justify-center mb-2">
-                        <RadioIcon className="w-5 h-5 text-[#2545ff]" />
+                      <div className="w-10 h-10 rounded-xl bg-brand-soft text-brand flex items-center justify-center mb-2">
+                        <RadioIcon className="w-5 h-5 text-brand" />
                       </div>
-                      <div className="font-extrabold text-[#0c1754] text-[14px]">Belum Ada Kampanye Broadcast</div>
-                      <p className="text-[12px] text-[#64748b] mt-1">
+                      <div className="font-bold text-ink text-body-sm">Belum Ada Kampanye Broadcast</div>
+                      <p className="text-caption text-fg-muted mt-1">
                         Buat pesan broadcast promosi pertama Anda untuk menyapa pelanggan dan meningkatkan penjualan.
                       </p>
                     </div>
@@ -170,33 +170,33 @@ export default function SupervisorBlastingPage() {
                 </tr>
               ) : (
                 campaigns.map((c) => (
-                  <tr key={c.id} className="hover:bg-[#fcfbf9] transition-colors">
+                  <tr key={c.id} className="hover:bg-soft transition-colors">
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-[#1e2640] text-[13.5px]">{c.title}</div>
-                      <div className="text-[11.5px] text-[#8f95a8]">{c.date}</div>
+                      <div className="font-bold text-fg text-label">{c.title}</div>
+                      <div className="text-micro text-fg-subtle">{c.date}</div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-blue-50 text-[#2545ff] border border-blue-100">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-caption font-bold bg-brand-soft text-brand border border-brand-soft">
                         <TagIcon className="w-3 h-3" />
                         <span>{c.targetSegment}</span>
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-[#1e2640] text-[13px]">
+                      <div className="font-bold text-fg text-label">
                         {c.sentCount} / {c.targetCount}
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-purple-700 text-[13px]">{c.replyCount} Balasan</div>
+                      <div className="font-bold text-accent-700 text-label">{c.replyCount} Balasan</div>
                     </td>
                     <td className="py-3.5 px-4">
                       {c.status === "completed" && (
-                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                        <span className="text-micro font-bold text-success-700 bg-success-50 px-2.5 py-0.5 rounded-full">
                           Selesai
                         </span>
                       )}
                       {c.status === "running" && (
-                        <span className="text-[11px] font-bold text-[#2545ff] bg-[#eaebf8] px-2.5 py-0.5 rounded-full">
+                        <span className="text-micro font-bold text-brand bg-brand-soft px-2.5 py-0.5 rounded-full">
                           Sedang Berjalan
                         </span>
                       )}
@@ -211,21 +211,21 @@ export default function SupervisorBlastingPage() {
 
       {/* Modal: Create Broadcast */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[520px] p-6 shadow-2xl border border-[#ede8e2] animate-scale-pop">
-            <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-4">
-              <h3 className="text-[17px] font-extrabold text-[#1e2640]">Buat Kampanye WhatsApp Broadcast</h3>
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[520px] p-6 shadow-2xl border border-line animate-scale-pop">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="text-body font-bold text-fg">Buat Kampanye WhatsApp Broadcast</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-sunken text-fg-subtle hover:text-fg flex items-center justify-center border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 text-[13px]">
+            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 text-label">
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                <label className="block text-caption font-bold text-fg mb-1">
                   Nama / Judul Kampanye *
                 </label>
                 <input
@@ -234,12 +234,12 @@ export default function SupervisorBlastingPage() {
                   placeholder="Contoh: Promo Diskon Hari Kemerdekaan"
                   value={campaignTitle}
                   onChange={(e) => setCampaignTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-[#2545ff]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">
+                <label className="block text-caption font-bold text-fg mb-1">
                   Pesan Siaran (Broadcast Template) *
                 </label>
                 <textarea
@@ -247,7 +247,7 @@ export default function SupervisorBlastingPage() {
                   required
                   value={messageTemplate}
                   onChange={(e) => setMessageTemplate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13px] outline-none focus:border-[#2545ff] font-sans leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-brand font-sans leading-relaxed"
                 />
               </div>
 
@@ -255,11 +255,11 @@ export default function SupervisorBlastingPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-2.5 text-[13px] font-bold text-[#5a6380] bg-[#f5f4f2] hover:bg-[#ede8e2] rounded-xl border-none cursor-pointer"
+                  className="flex-1 py-2.5 text-label font-bold text-fg-muted bg-sunken hover:bg-line rounded-xl border-none cursor-pointer"
                 >
                   Batal
                 </button>
-                <button type="submit" className="flex-1 btn-primary !py-2.5 text-[13px] font-bold">
+                <button type="submit" className="flex-1 btn-primary !py-2.5 text-label font-bold">
                   Kirim Broadcast Sekarang
                 </button>
               </div>

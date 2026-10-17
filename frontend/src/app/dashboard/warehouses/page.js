@@ -62,15 +62,15 @@ export default function SupervisorWarehousesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-[#2545ff] px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-brand-soft text-brand px-2.5 py-0.5 rounded-full border border-brand-soft flex items-center gap-1.5">
               <WarehouseIcon className="w-3.5 h-3.5" />
               <span>Multi-Warehouse & Hub Distribusi</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Master Gudang & Lokasi Stok
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Kelola titik asal pengiriman paket, integrasi multi-gudang, dan alokasi stok per cabang wilayah.
           </p>
         </div>
@@ -78,7 +78,7 @@ export default function SupervisorWarehousesPage() {
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <WarehouseIcon className="w-4 h-4" />
           <span>+ Tambah Gudang / Hub</span>
@@ -88,28 +88,28 @@ export default function SupervisorWarehousesPage() {
       {/* Warehouse Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {warehouses.map((wh) => (
-          <div key={wh.id} className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col justify-between gap-4">
+          <div key={wh.id} className="bg-white p-6 rounded-2xl border border-line shadow-xs flex flex-col justify-between gap-4">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-3">
+              <div className="flex items-center justify-between pb-3 border-b border-line mb-3">
                 <div className="flex items-center gap-2">
-                  <WarehouseIcon className="w-4 h-4 text-[#2545ff]" />
-                  <span className="font-extrabold text-[15px] text-[#1e2640]">{wh.name}</span>
+                  <WarehouseIcon className="w-4 h-4 text-brand" />
+                  <span className="font-bold text-body-sm text-fg">{wh.name}</span>
                 </div>
-                <span className="badge badge-success text-[11px]">Aktif</span>
+                <span className="badge badge-success text-micro">Aktif</span>
               </div>
 
-              <div className="flex flex-col gap-1.5 text-[12.5px]">
-                <div className="text-[#5a6380]">{wh.address}</div>
-                <div className="font-bold text-[#1e2640]">{wh.city}</div>
-                <div className="text-[11.5px] text-[#8f95a8] mt-1">
+              <div className="flex flex-col gap-1.5 text-caption">
+                <div className="text-fg-muted">{wh.address}</div>
+                <div className="font-bold text-fg">{wh.city}</div>
+                <div className="text-micro text-fg-subtle mt-1">
                   Penanggungjawab (PIC): <strong>{wh.pic}</strong>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#ede8e2] flex items-center justify-between text-[12px]">
-              <span className="text-[#8f95a8]">Produk Terdaftar:</span>
-              <span className="font-bold text-[#2545ff]">{wh.skuCount} SKU</span>
+            <div className="pt-3 border-t border-line flex items-center justify-between text-caption">
+              <span className="text-fg-subtle">Produk Terdaftar:</span>
+              <span className="font-bold text-brand">{wh.skuCount} SKU</span>
             </div>
           </div>
         ))}
@@ -117,48 +117,48 @@ export default function SupervisorWarehousesPage() {
 
       {/* Modal: Add Warehouse */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-[#0c1754]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-[#ede8e2] animate-scale-pop">
-            <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2] mb-4">
-              <h3 className="text-[17px] font-extrabold text-[#1e2640]">Tambah Gudang / Hub Cabang</h3>
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-line animate-scale-pop">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <h3 className="text-body font-bold text-fg">Tambah Gudang / Hub Cabang</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-7 h-7 rounded-full bg-[#f5f4f2] text-[#8f95a8] hover:text-[#1e2640] flex items-center justify-center border-none cursor-pointer"
+                className="w-7 h-7 rounded-full bg-sunken text-fg-subtle hover:text-fg flex items-center justify-center border-none cursor-pointer"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="flex flex-col gap-3.5 text-[13px]">
+            <form onSubmit={handleAddSubmit} className="flex flex-col gap-3.5 text-label">
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">Nama Gudang / Hub *</label>
+                <label className="block text-caption font-bold text-fg mb-1">Nama Gudang / Hub *</label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Hub Cabang Jakarta Barat"
                   value={whName}
                   onChange={(e) => setWhName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-[#2545ff]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">Kota / Wilayah</label>
+                <label className="block text-caption font-bold text-fg mb-1">Kota / Wilayah</label>
                 <input
                   type="text"
                   value={whCity}
                   onChange={(e) => setWhCity(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-[#2545ff]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#1e2640] mb-1">Nama PIC Penanggungjawab</label>
+                <label className="block text-caption font-bold text-fg mb-1">Nama PIC Penanggungjawab</label>
                 <input
                   type="text"
                   value={whPic}
                   onChange={(e) => setWhPic(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#ede8e2] text-[13.5px] outline-none focus:border-[#2545ff]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-line text-label outline-none focus:border-brand"
                 />
               </div>
 
@@ -166,11 +166,11 @@ export default function SupervisorWarehousesPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 text-[13px] font-bold text-[#5a6380] bg-[#f5f4f2] hover:bg-[#ede8e2] rounded-xl border-none cursor-pointer"
+                  className="flex-1 py-2.5 text-label font-bold text-fg-muted bg-sunken hover:bg-line rounded-xl border-none cursor-pointer"
                 >
                   Batal
                 </button>
-                <button type="submit" className="flex-1 btn-primary !py-2.5 text-[13px] font-bold">
+                <button type="submit" className="flex-1 btn-primary !py-2.5 text-label font-bold">
                   Simpan Gudang
                 </button>
               </div>

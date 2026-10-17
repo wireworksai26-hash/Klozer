@@ -53,15 +53,15 @@ export default function SupervisorDoaKnowledgePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-success-100 text-success-800 px-2.5 py-0.5 rounded-full border border-success-200 flex items-center gap-1.5">
               <BookOpenIcon className="w-3.5 h-3.5" />
               <span>Basis Pengetahuan Doa (Mode NGO & Sosial)</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Basis Doa & Teks Apresiasi Donatur
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Daftar doa harian yang dibacakan bot AI (melalui teks & voice note otomatis) saat donatur menyalurkan ZISWAF.
           </p>
         </div>
@@ -69,15 +69,15 @@ export default function SupervisorDoaKnowledgePage() {
         <button
           type="button"
           onClick={() => alert("Tambah Doa Baru...")}
-          className="btn-primary !py-2.5 !px-5 text-[13.5px] font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+          className="btn-primary !py-2.5 !px-5 text-label font-bold flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <span>+ Tambah Doa Baru</span>
         </button>
       </div>
 
       {/* Info Banner */}
-      <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex items-center gap-3 text-purple-900 text-[13px]">
-        <SparklesIcon className="w-5 h-5 text-purple-600 flex-shrink-0" />
+      <div className="p-4 bg-accent-50 border border-accent-200 rounded-2xl flex items-center gap-3 text-accent-900 text-label">
+        <SparklesIcon className="w-5 h-5 text-accent-600 flex-shrink-0" />
         <div>
           <span className="font-bold block">Voice Note AI Otomatis untuk Donatur:</span>
           <span>Setiap donasi terverifikasi, AI dapat langsung mengirimkan voice note pembacaan doa yang dipersonalisasi dengan nama donatur.</span>
@@ -87,29 +87,29 @@ export default function SupervisorDoaKnowledgePage() {
       {/* Prayers Cards */}
       <div className="flex flex-col gap-4">
         {prayers.map((p) => (
-          <div key={p.id} className="bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#ede8e2]">
-              <span className="badge badge-lavender text-[12px] font-bold">
+          <div key={p.id} className="bg-white p-6 rounded-2xl border border-line shadow-xs flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line">
+              <span className="badge badge-lavender text-caption font-bold">
                 {p.category}
               </span>
               <button
                 type="button"
                 onClick={() => handleTestAudio(p.id)}
                 disabled={isPlayingAudio === p.id}
-                className="px-3.5 py-1.5 rounded-xl bg-[#edeffe] text-[#2545ff] hover:bg-[#2545ff] hover:text-white text-[12px] font-bold flex items-center gap-1.5 transition-all border-none cursor-pointer self-start sm:self-auto"
+                className="px-3.5 py-1.5 rounded-xl bg-brand-soft text-brand hover:bg-brand hover:text-white text-caption font-bold flex items-center gap-1.5 transition-all border-none cursor-pointer self-start sm:self-auto"
               >
                 <MicIcon className="w-4 h-4" />
                 <span>{isPlayingAudio === p.id ? "Memutar Audio..." : `Tes Suara AI (${p.voiceAudioPreview})`}</span>
               </button>
             </div>
 
-            <div className="text-right text-[22px] font-serif leading-loose text-[#1e2640] py-2">
+            <div className="text-right text-subheading font-serif leading-loose text-fg py-2">
               {p.arabicText}
             </div>
 
-            <div className="p-3.5 bg-[#fcfbf9] rounded-xl border border-[#ede8e2] flex flex-col gap-1 text-[13px]">
-              <span className="font-bold text-[#1e2640] italic">{p.latinText}</span>
-              <span className="text-[#5a6380] mt-1">{p.translation}</span>
+            <div className="p-3.5 bg-soft rounded-xl border border-line flex flex-col gap-1 text-label">
+              <span className="font-bold text-fg italic">{p.latinText}</span>
+              <span className="text-fg-muted mt-1">{p.translation}</span>
             </div>
           </div>
         ))}

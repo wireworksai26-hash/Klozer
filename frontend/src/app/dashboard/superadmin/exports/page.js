@@ -83,15 +83,15 @@ export default function SuperadminExportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1.5">
+            <span className="text-micro font-bold uppercase tracking-wider bg-accent-100 text-accent-800 px-2.5 py-0.5 rounded-full border border-accent-200 flex items-center gap-1.5">
               <CrownIcon className="w-3.5 h-3.5" />
               <span>Superadmin Keuangan & Audit</span>
             </span>
           </div>
-          <h1 className="text-[26px] font-extrabold text-[#0c1754] tracking-tight">
+          <h1 className="text-heading-md font-bold text-ink tracking-tight">
             Pusat Ekspor Data Platform
           </h1>
-          <p className="text-[13.5px] text-[#64748b]">
+          <p className="text-label text-fg-muted">
             Ekspor dataset transaksi, leads WhatsApp, konsumsi token LLM, dan kampanye broadcast ke format Excel (.xlsx) atau CSV.
           </p>
         </div>
@@ -99,15 +99,15 @@ export default function SuperadminExportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Export Form */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-[#ede8e2]">
-            <DownloadIcon className="w-5 h-5 text-[#2545ff]" />
-            <h2 className="text-[17px] font-extrabold text-[#1e2640]">Buat Ekspor Baru</h2>
+        <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-line shadow-xs flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-line">
+            <DownloadIcon className="w-5 h-5 text-brand" />
+            <h2 className="text-body font-bold text-fg">Buat Ekspor Baru</h2>
           </div>
 
           <form onSubmit={handleTriggerExport} className="flex flex-col gap-4">
             <div>
-              <label className="text-[12px] font-bold uppercase text-[#8f95a8] block mb-1.5">
+              <label className="text-caption font-bold uppercase text-fg-subtle block mb-1.5">
                 Pilih Modul Data:
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -116,12 +116,12 @@ export default function SuperadminExportsPage() {
                   onClick={() => setSelectedModule("leads")}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
                     selectedModule === "leads"
-                      ? "border-[#2545ff] bg-[#edeffe] text-[#2545ff]"
-                      : "border-[#ede8e2] bg-[#fcfbf9] text-[#5a6380]"
+                      ? "border-brand bg-brand-soft text-brand"
+                      : "border-line bg-soft text-fg-muted"
                   }`}
                 >
                   <UsersIcon className="w-4 h-4" />
-                  <span className="text-[12.5px] font-bold">Leads Kontak</span>
+                  <span className="text-caption font-bold">Leads Kontak</span>
                 </button>
 
                 <button
@@ -129,12 +129,12 @@ export default function SuperadminExportsPage() {
                   onClick={() => setSelectedModule("finance")}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
                     selectedModule === "finance"
-                      ? "border-[#2545ff] bg-[#edeffe] text-[#2545ff]"
-                      : "border-[#ede8e2] bg-[#fcfbf9] text-[#5a6380]"
+                      ? "border-brand bg-brand-soft text-brand"
+                      : "border-line bg-soft text-fg-muted"
                   }`}
                 >
                   <DollarSignIcon className="w-4 h-4" />
-                  <span className="text-[12.5px] font-bold">Transaksi & Fee</span>
+                  <span className="text-caption font-bold">Transaksi & Fee</span>
                 </button>
 
                 <button
@@ -142,12 +142,12 @@ export default function SuperadminExportsPage() {
                   onClick={() => setSelectedModule("tokens")}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
                     selectedModule === "tokens"
-                      ? "border-[#2545ff] bg-[#edeffe] text-[#2545ff]"
-                      : "border-[#ede8e2] bg-[#fcfbf9] text-[#5a6380]"
+                      ? "border-brand bg-brand-soft text-brand"
+                      : "border-line bg-soft text-fg-muted"
                   }`}
                 >
                   <CpuIcon className="w-4 h-4" />
-                  <span className="text-[12.5px] font-bold">Token AI LLM</span>
+                  <span className="text-caption font-bold">Token AI LLM</span>
                 </button>
 
                 <button
@@ -155,24 +155,24 @@ export default function SuperadminExportsPage() {
                   onClick={() => setSelectedModule("blasting")}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
                     selectedModule === "blasting"
-                      ? "border-[#2545ff] bg-[#edeffe] text-[#2545ff]"
-                      : "border-[#ede8e2] bg-[#fcfbf9] text-[#5a6380]"
+                      ? "border-brand bg-brand-soft text-brand"
+                      : "border-line bg-soft text-fg-muted"
                   }`}
                 >
                   <RadioIcon className="w-4 h-4" />
-                  <span className="text-[12.5px] font-bold">Broadcast Blasting</span>
+                  <span className="text-caption font-bold">Broadcast Blasting</span>
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="text-[12px] font-bold uppercase text-[#8f95a8] block mb-1.5">
+              <label className="text-caption font-bold uppercase text-fg-subtle block mb-1.5">
                 Cakupan Tenant:
               </label>
               <select
                 value={selectedTenant}
                 onChange={(e) => setSelectedTenant(e.target.value)}
-                className="w-full text-[13px] font-medium bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3.5 py-2.5 text-[#1e2640] outline-none"
+                className="w-full text-label font-medium bg-sunken border border-line rounded-xl px-3.5 py-2.5 text-fg outline-none"
               >
                 <option value="all">Semua Tenant (Universal Platform)</option>
                 {institutions.map((inst) => (
@@ -184,13 +184,13 @@ export default function SuperadminExportsPage() {
             </div>
 
             <div>
-              <label className="text-[12px] font-bold uppercase text-[#8f95a8] block mb-1.5">
+              <label className="text-caption font-bold uppercase text-fg-subtle block mb-1.5">
                 Rentang Tanggal:
               </label>
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="w-full text-[13px] font-medium bg-[#f5f4f2] border border-[#ede8e2] rounded-xl px-3.5 py-2.5 text-[#1e2640] outline-none"
+                className="w-full text-label font-medium bg-sunken border border-line rounded-xl px-3.5 py-2.5 text-fg outline-none"
               >
                 <option value="7d">7 Hari Terakhir</option>
                 <option value="30d">30 Hari Terakhir (Bulan Ini)</option>
@@ -200,11 +200,11 @@ export default function SuperadminExportsPage() {
             </div>
 
             <div>
-              <label className="text-[12px] font-bold uppercase text-[#8f95a8] block mb-1.5">
+              <label className="text-caption font-bold uppercase text-fg-subtle block mb-1.5">
                 Format File:
               </label>
               <div className="flex gap-2">
-                <label className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-[#ede8e2] cursor-pointer bg-[#fcfbf9] text-[13px] font-bold text-[#1e2640]">
+                <label className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-line cursor-pointer bg-soft text-label font-bold text-fg">
                   <input
                     type="radio"
                     name="format"
@@ -213,7 +213,7 @@ export default function SuperadminExportsPage() {
                   />
                   <span>Excel (.xlsx)</span>
                 </label>
-                <label className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-[#ede8e2] cursor-pointer bg-[#fcfbf9] text-[13px] font-bold text-[#1e2640]">
+                <label className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-line cursor-pointer bg-soft text-label font-bold text-fg">
                   <input
                     type="radio"
                     name="format"
@@ -226,8 +226,8 @@ export default function SuperadminExportsPage() {
             </div>
 
             {exportSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[12.5px] font-bold flex items-center gap-2">
-                <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
+              <div className="p-3 bg-success-50 border border-success-200 text-success-800 rounded-xl text-caption font-bold flex items-center gap-2">
+                <CheckCircleIcon className="w-4 h-4 text-success-600" />
                 <span>File siap diunduh di tabel riwayat!</span>
               </div>
             )}
@@ -235,7 +235,7 @@ export default function SuperadminExportsPage() {
             <button
               type="submit"
               disabled={isExporting}
-              className="btn-primary !w-full !py-3 text-[13.5px] font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="btn-primary !w-full !py-3 text-label font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               {isExporting ? (
                 <>
@@ -253,13 +253,13 @@ export default function SuperadminExportsPage() {
         </div>
 
         {/* Export History */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#ede8e2] shadow-xs flex flex-col gap-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#ede8e2]">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-line shadow-xs flex flex-col gap-4">
+          <div className="flex items-center justify-between pb-3 border-b border-line">
             <div>
-              <h2 className="text-[17px] font-extrabold text-[#1e2640]">Riwayat Unduhan File</h2>
-              <p className="text-[12px] text-[#64748b]">Tersimpan di secure storage selama 14 hari.</p>
+              <h2 className="text-body font-bold text-fg">Riwayat Unduhan File</h2>
+              <p className="text-caption text-fg-muted">Tersimpan di secure storage selama 14 hari.</p>
             </div>
-            <span className="text-[12px] font-bold text-[#2545ff]">{history.length} File Tersedia</span>
+            <span className="text-caption font-bold text-brand">{history.length} File Tersedia</span>
           </div>
 
           <div className="table-wrapper">
@@ -275,26 +275,26 @@ export default function SuperadminExportsPage() {
               </thead>
               <tbody>
                 {history.map((h) => (
-                  <tr key={h.id} className="hover:bg-[#fcfbf9] transition-colors">
+                  <tr key={h.id} className="hover:bg-soft transition-colors">
                     <td>
-                      <div className="font-bold text-[#1e2640] text-[13px]">{h.name}</div>
-                      <div className="text-[11.5px] text-[#2545ff] font-semibold">{h.module}</div>
+                      <div className="font-bold text-fg text-label">{h.name}</div>
+                      <div className="text-micro text-brand font-semibold">{h.module}</div>
                     </td>
                     <td>
-                      <span className="text-[12.5px] text-[#5a6380]">{h.tenant}</span>
+                      <span className="text-caption text-fg-muted">{h.tenant}</span>
                     </td>
                     <td>
-                      <div className="text-[12.5px] font-bold text-[#1e2640]">{h.records}</div>
-                      <div className="text-[11px] text-[#8f95a8]">{h.size}</div>
+                      <div className="text-caption font-bold text-fg">{h.records}</div>
+                      <div className="text-micro text-fg-subtle">{h.size}</div>
                     </td>
                     <td>
-                      <span className="text-[11.5px] text-[#5a6380]">{h.date}</span>
+                      <span className="text-micro text-fg-muted">{h.date}</span>
                     </td>
                     <td>
                       <button
                         type="button"
                         onClick={() => alert(`Mengunduh file: ${h.name}`)}
-                        className="px-3 py-1.5 text-[11.5px] font-bold rounded-lg border border-[#2545ff] bg-blue-50 text-[#2545ff] hover:bg-blue-100 flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 text-micro font-bold rounded-lg border border-brand bg-brand-soft text-brand hover:bg-brand-soft flex items-center gap-1.5 cursor-pointer"
                       >
                         <DownloadIcon className="w-3.5 h-3.5" />
                         <span>Download</span>
