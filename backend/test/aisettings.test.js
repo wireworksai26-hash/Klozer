@@ -74,5 +74,6 @@ describe("AI settings (superadmin)", () => {
     const bad = await api().post("/api/v1/system/ai-settings/test").set(bearer(sa.token)).send({ provider: "nvidia" });
     assert.equal(bad.body.ok, false);
     assert.ok(!JSON.stringify(bad.body).includes(KEY));
+    assert.match(bad.body.message, /HTTP 401/);
   });
 });

@@ -182,7 +182,20 @@ export async function getInstitutionRagContext(institutionId) {
  * @param {Object} params { systemPrompt, userMessage }
  * @returns {Promise<string|null>} Generated text
  */
-export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600 }) {
+/** Fill `report` (when given) with the provider's HTTP status and error text, with the key scrubbed out. */
+async function captureProviderError(response, report, apiKey) {
+  if (!report) return;
+  report.status = response.status;
+  try {
+    const body = await response.json();
+    const text = String(body?.error?.message ?? body?.error ?? body?.detail ?? body?.message ?? "");
+    report.message = text.split(apiKey).join("[key]").slice(0, 240);
+  } catch {
+    report.message = "";
+  }
+}
+
+export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null }) {
   const ai = await getEffectiveAi();
   const apiKey = ai.nvidiaKey;
   const model = ai.nvidiaModel || "meta/llama-3.3-70b-instruct";
@@ -207,6 +220,7 @@ export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature 
 
     if (!response.ok) {
       logger.warn({ status: response.status, provider: "nvidia" }, "AI provider returned an error");
+      await captureProviderError(response, report, apiKey);
       return null;
     }
 
@@ -224,6 +238,7 @@ export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature 
     };
   } catch (err) {
     logger.warn({ err: err.message, provider: "nvidia" }, "AI provider request failed");
+    if (report) report.message = err.name === "TimeoutError" ? "Waktu habis (tidak ada jawaban dalam 25 detik)." : "Tidak dapat terhubung ke penyedia.";
     return null;
   }
 }
@@ -232,7 +247,7 @@ export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature 
  * Call Google Gemini API.
  * @returns {Promise<{text: string, model: string, usage: Object, latencyMs: number}|null>}
  */
-export async function callGeminiApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600 }) {
+export async function callGeminiApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null }) {
   const ai = await getEffectiveAi();
   const apiKey = ai.geminiApiKey;
   const model = ai.geminiModel;
@@ -254,6 +269,7 @@ export async function callGeminiApi({ systemPrompt, userMessage, temperature = c
 
     if (!response.ok) {
       logger.warn({ status: response.status, provider: "gemini" }, "AI provider returned an error");
+      await captureProviderError(response, report, apiKey);
       return null;
     }
 
@@ -271,257 +287,19 @@ export async function callGeminiApi({ systemPrompt, userMessage, temperature = c
     };
   } catch (err) {
     logger.warn({ err: err.message, provider: "gemini" }, "AI provider request failed");
+    if (report) report.message = err.name === "TimeoutError" ? "Waktu habis (tidak ada jawaban dalam 25 detik)." : "Tidak dapat terhubung ke penyedia.";
     return null;
   }
 }
 
-/** Small round trip used by the superadmin "uji koneksi" button. Never returns the key or the raw provider error. */
+/** Small round trip used by the superadmin "uji koneksi" button. Returns the provider's reason on failure, never the key. */
 export async function testAiProvider(provider) {
   const call = provider === "gemini" ? callGeminiApi : callNvidiaNimApi;
-  const result = await call({ systemPrompt: "Balas hanya dengan kata: OK", userMessage: "Tes koneksi" });
-  if (!result) return { ok: false, message: "Penyedia menolak permintaan atau tidak dapat dihubungi. Periksa API key dan nama model." };
+  const report = {};
+  const result = await call({ systemPrompt: "Balas hanya dengan kata: OK", userMessage: "Tes koneksi", report });
+  if (!result) {
+    const reason = [report.status ? `HTTP ${report.status}` : null, report.message].filter(Boolean).join(": ");
+    return { ok: false, message: reason ? `Gagal: ${reason}` : "Penyedia menolak permintaan, atau jawabannya kosong. Periksa API key dan nama model." };
+  }
   return { ok: true, model: result.model, latencyMs: result.latencyMs, message: "Koneksi berhasil." };
-}
-
-/** Try the configured primary provider first, then the other one. */
-async function callBestProvider(args) {
-  const { provider } = await getEffectiveAi();
-  const order = provider === "gemini" ? [callGeminiApi, callNvidiaNimApi] : [callNvidiaNimApi, callGeminiApi];
-  for (const call of order) {
-    const result = await call(args);
-    if (result) return result;
-  }
-  return null;
-}
-
-/**
- * Generate AI Customer Service Response with Gemini & Strict Guardrails
- * @param {Object} params { institutionId, customerName, customerPhone, messageText, history }
- * @returns {Promise<Object>}
- */
-/**
- * Generate AI Customer Service Response with NVIDIA NIM / Gemini & Strict Guardrails
- * @param {Object} params { institutionId, customerName, customerPhone, messageText, history, customProducts, promos, institutionName, sector, address, hours }
- * @returns {Promise<Object>}
- */
-export async function generateAiCsResponse({
-  institutionId,
-  customerName = "Kakak",
-  messageText = "",
-  history = [],
-  customProducts = null,
-  promos = null,
-  institutionName = null,
-  sector = null,
-  address = null,
-  hours = null,
-}) {
-  // 1. Evaluate Guardrails on User Input
-  const guardrailCheck = AiGuardrails.evaluate(messageText);
-  if (!guardrailCheck.isSafe || guardrailCheck.needsEscalation) {
-    return {
-      success: true,
-      intent: guardrailCheck.needsEscalation ? "human_escalation" : "guardrail_blocked",
-      replyText: guardrailCheck.safeReply,
-      needsEscalation: guardrailCheck.needsEscalation,
-      guardrailViolation: guardrailCheck.violationType,
-      modelUsed: "guardrail",
-    };
-  }
-
-  // 2. Fetch Multi-Tenant RAG Ground Truth Context
-  const baseContext = await getInstitutionRagContext(institutionId);
-  const instName = institutionName || baseContext.institutionName || "Toko Kami";
-  const instSector = sector || baseContext.sector || "Bisnis";
-  const instAddress = address || baseContext.address || "Belum diatur";
-  const instHours = hours || "Belum diatur";
-
-  // Ground truth only: caller-supplied sandbox catalog, otherwise this tenant's own products.
-  const activeProducts = customProducts && customProducts.length > 0 ? customProducts : baseContext.catalog || [];
-
-  const catalogList = activeProducts
-    .map(
-      (p, idx) =>
-        `${idx + 1}. ${p.name} — Harga: Rp ${(p.price || 0).toLocaleString("id-ID")} | Stok: ${p.stock || 0} unit${p.category ? ` | Kategori: ${p.category}` : ""}${p.description ? ` | Info: ${p.description}` : ""}`
-    )
-    .join("\n");
-
-  const describeVoucher = (v) =>
-    `Kode ${v.code}: ${v.discount_type === "percentage" ? `${Number(v.discount_value)}%` : v.discount_type === "free_shipping" ? "gratis ongkir" : `Rp ${Number(v.discount_value).toLocaleString("id-ID")}`}${Number(v.min_spend_idr) > 0 ? ` (min. belanja Rp ${Number(v.min_spend_idr).toLocaleString("id-ID")})` : ""}`;
-  const promoItems =
-    promos && promos.length > 0
-      ? promos.map((pr) => (typeof pr === "string" ? pr : pr.title || pr.description)).filter(Boolean)
-      : (baseContext.vouchers || []).map(describeVoucher);
-  const promoList = promoItems.length > 0 ? promoItems.map((p, i) => `${i + 1}. ${p}`).join("\n") : "Tidak ada promo aktif saat ini. JANGAN menawarkan atau menjanjikan diskon apa pun.";
-
-  const bankHolder = instName || "Toko Kami";
-  const accounts = baseContext.paymentAccounts || [];
-  const bankList = accounts.length > 0
-    ? accounts.map((b) => `- Bank ${b.bank}: ${b.accountNumber} a.n. ${b.holder || bankHolder}`).join("\n")
-    : "Belum ada rekening transfer terdaftar. JANGAN menyebut nomor rekening; arahkan pelanggan ke Dynamic QRIS atau minta mereka menunggu admin.";
-  const bankTransferSummary = accounts.length > 0
-    ? accounts.map((b) => `Bank ${b.bank}: ${b.accountNumber} a.n. ${b.holder || bankHolder}`).join(", ")
-    : "(rekening transfer belum tersedia)";
-
-  // Greet by first name only when the WhatsApp profile name is a real one (not "Pelanggan" or an emoji).
-  const customerFirstName = friendlyFirstName(customerName);
-
-  // Determine if this is the initial turn (no previous AI responses yet)
-  const hasPreviousAiReplies =
-    Array.isArray(history) &&
-    history.some(
-      (h) =>
-        h.sender === "ai" ||
-        h.sender === "assistant" ||
-        h.role === "assistant" ||
-        h.role === "ai" ||
-        h.sender_type === "ai_cs" ||
-        h.sender_type === "assistant"
-    );
-  const isInitialTurn = !hasPreviousAiReplies;
-
-  // 3. Build the system prompt: casual WhatsApp voice on top, tenant data as the only source of facts.
-  // Tenant-configured persona (bot name, tone, greeting) is plain text, length-limited by validation.
-  const systemPrompt = buildCsSystemPrompt({
-    instName,
-    instSector,
-    persona: baseContext.persona || {},
-    isInitialTurn,
-    customerFirstName,
-    catalogList,
-    promoList,
-    bankList,
-    bankTransferSummary,
-    instAddress,
-    instHours,
-  });
-
-  // 4. Build Multi-Turn History in User Prompt
-  let formattedHistory = "";
-  if (Array.isArray(history) && history.length > 0) {
-    const recent = history.slice(-6);
-    formattedHistory = recent
-      .map((h) => {
-        const isUser = h.sender === "user" || h.sender === "customer" || h.role === "user";
-        const sender = isUser ? CUSTOMER_LABEL : ADMIN_LABEL;
-        const text = h.text || h.content || "";
-        return `${sender}: ${text}`;
-      })
-      .filter((line) => !line.endsWith(": "))
-      .join("\n");
-  }
-
-  const finalUserMessage = buildCsUserMessage({ formattedHistory, isInitialTurn, customerFirstName, messageText });
-
-  // 5. Generate with the configured provider (primary, then the other as failover)
-  const result = await callBestProvider({ systemPrompt, userMessage: finalUserMessage });
-
-  if (result) {
-    return {
-      success: true,
-      intent: "ai_generated",
-      replyText: formatChatReply(result.text),
-      needsEscalation: false,
-      modelUsed: result.model,
-      usage: result.usage,
-      latencyMs: result.latencyMs,
-      institutionContext: { name: instName, sector: instSector },
-    };
-  }
-
-  // No provider available. Never improvise prices, discounts or bank accounts:
-  // hand the conversation to a human instead.
-  return {
-    success: true,
-    intent: "llm_unavailable",
-    replyText: null,
-    needsEscalation: true,
-    modelUsed: null,
-    usage: { promptTokens: 0, completionTokens: 0 },
-    institutionContext: { name: instName, sector: instSector },
-  };
-}
-
-/**
- * Clean up raw markdown asterisks and format text for natural WhatsApp chat bubbles
- * @param {string} text 
- * @returns {string} Clean text
- */
-export function cleanChatFormatting(text = "") {
-  if (!text) return "";
-  return text
-    // Replace double asterisks **text** with clean text
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    // Replace single asterisk *text* with clean text
-    .replace(/\*([^*\n]+)\*/g, "$1")
-    // Ensure clean newlines before numbered items
-    .replace(/([^\n])\s+(\d+\.\s+)/g, "$1\n\n$2")
-    // Ensure clean newlines before bullet items
-    .replace(/([^\n])\s+([•-]\s+)/g, "$1\n$2")
-    // Trim extra blank lines
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-/**
- * Specialized Landing Page Tanya AI Knowledge Resolver
- * @param {string} question 
- * @returns {Promise<Object>}
- */
-export async function generateLandingAiResponse(question = "") {
-  // Evaluate Guardrails first
-  const guardrailCheck = AiGuardrails.evaluate(question);
-  if (!guardrailCheck.isSafe) {
-    return {
-      success: true,
-      answer: cleanChatFormatting(guardrailCheck.safeReply),
-      guardrailViolation: guardrailCheck.violationType,
-      modelUsed: "guardrail",
-    };
-  }
-
-  const systemPrompt = `
-Kamu adalah Asisten AI Resmi dari "Klozer" — Platform AI Conversational Commerce & Smart CRM WhatsApp untuk Bisnis & NGO di Indonesia.
-
-Fitur & Keunggulan Klozer:
-- In-Chat Dynamic QRIS: Biaya transaksi hanya Rp 750 flat per transaksi lunas, settlement instan tanpa pindah aplikasi.
-- AI Voice Note Engine: Mendengarkan & membalas pesan suara WhatsApp berbahasa Indonesia dan logat lokal secara natural.
-- Deep Fraud Detection: Deteksi struk palsu editan m-banking (BCA, Mandiri, BRI, BNI) menggunakan OCR & ELA, serta rekonsiliasi mutasi bank otomatis.
-- Proactive Follow-Up: Follow-up otomatis keranjang tertinggal & 30 hari repeat order dengan anti-spam limit.
-- Anti-RTS COD Protection: Skor risiko COD (0-100) dan multi-ekspedisi (J&T, SiCepat, JNE, SAP).
-- Meta Ads Offline CAPI: Tracking closing purchase WhatsApp untuk mengukur ROAS iklan riil.
-- Kemudahan & Keamanan: Menggunakan WhatsApp Cloud API resmi Meta, aman dari risiko blokir nomor, dan bisa diakses via HP maupun laptop.
-
-ATURAN FORMAT WAJIB (FORMATTING RULES):
-1. JANGAN gunakan tanda bintang ganda (**) atau tanda bintang tunggal (*) sama sekali dalam jawabanmu. Tuliskan teks biasa yang bersih, elegan, dan nyaman dibaca.
-2. JANGAN menulis paragraf panjang padat atau daftar bernomor berjejer rapat. Buat jawaban ringkas (maksimal 2-3 paragraf pendek) dengan baris baru antar poin agar rapi di layar chat.
-3. Tone: santai, hangat, dan to the point seperti admin yang ngobrol di WhatsApp. Pakai bahasa sehari-hari yang sopan (sapa "kak"), hindari bahasa kaku atau terlalu formal. Fakta, harga, dan fitur tetap harus akurat sesuai daftar di atas.
-`.trim();
-
-  const result = await callBestProvider({ systemPrompt, userMessage: question, temperature: LANDING_TEMPERATURE, maxTokens: 500 });
-  if (result) {
-    return { success: true, answer: cleanChatFormatting(result.text), modelUsed: result.model, usage: result.usage };
-  }
-
-  // Smart Knowledge Fallback
-  const q = question.toLowerCase();
-  let answer = "Klozer adalah platform AI Conversational Commerce dan Smart CRM yang mengubah WhatsApp bisnis Anda menjadi mesin penjualan otomatis 24 jam nonstop.";
-
-  if (q.includes("qris") || q.includes("biaya") || q.includes("tarif")) {
-    answer = "Biaya transaksi Dynamic QRIS di Klozer sangat hemat, hanya Rp 750 flat per transaksi sukses tanpa biaya bulanan tersembunyi. Pelanggan bisa langsung bayar dan scan QRIS di dalam chat WhatsApp.";
-  } else if (q.includes("blokir") || q.includes("banned") || q.includes("aman")) {
-    answer = "Sangat aman. Klozer menggunakan WhatsApp Cloud API resmi dari Meta dengan proteksi anti-banned dan jeda pengiriman cerdas.";
-  } else if (q.includes("voice") || q.includes("suara") || q.includes("vn")) {
-    answer = "AI Voice Note Klozer mengenali pesan suara bahasa Indonesia dengan berbagai logat daerah, lalu otomatis mentranskripsi dan memproses pesanan ke kasir.";
-  } else if (q.includes("hp") || q.includes("ponsel") || q.includes("mobile") || q.includes("android")) {
-    answer = "Tentu bisa. Dashboard dan live chat Klozer 100% responsif dan berjalan lancar di browser HP Android, iPhone, tablet, maupun laptop.";
-  } else if (q.includes("struk") || q.includes("fraud") || q.includes("palsu")) {
-    answer = "Fitur Fraud Detection Klozer memindai struk transfer dengan OCR dan Error Level Analysis untuk mendeteksi editan font m-banking, serta mencocokkan mutasi bank secara otomatis.";
-  }
-
-  return {
-    success: true,
-    answer: cleanChatFormatting(answer),
-    modelUsed: "static_knowledge_base",
-  };
 }
