@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { CheckCircleIcon, AlertTriangleIcon, PackageIcon, XIcon, ReceiptIcon } from "@/components/icons";
 import ThermalPrintModal from "@/components/common/ThermalPrintModal";
+import PaymentProofsModal from "@/components/common/PaymentProofsModal";
 import { formatDateId } from "@/utils/mappers.mjs";
 
 export default function OrdersPage() {
@@ -13,6 +14,7 @@ export default function OrdersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedThermalOrder, setSelectedThermalOrder] = useState(null);
+  const [proofOrder, setProofOrder] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Form State for Manual Order Creation
@@ -114,7 +116,7 @@ export default function OrdersPage() {
       o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.phone.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = statusFilter === "all" || o.status === statusFilter;
+    const matchStatus = statusFilter === "all" || (statusFilter === "review" ? o.reviewStatus === "pending" : o.status === statusFilter);
     return matchSearch && matchStatus;
   });
 
@@ -157,6 +159,7 @@ export default function OrdersPage() {
             {[
               { key: "all", label: t("Semua") },
               { key: "waiting_payment", label: t("Menunggu Bayar") },
+              { key: "review", label: `${t("Perlu dicek")} (${orders.filter((o) => o.reviewStatus === "pending").length})` },
               { key: "paid", label: t("Lunas") },
               { key: "processing", label: t("Diproses") },
               { key: "shipped", label: t("Dikirim") },
@@ -245,6 +248,15 @@ export default function OrdersPage() {
 
                     <td className="py-4 px-4 whitespace-nowrap">
                       {getStatusBadge(o.status)}
+                      {o.reviewStatus === "pending" && o.status === "waiting_payment" && (
+                        <button
+                          type="button"
+                          onClick={() => setProofOrder(o)}
+                          className="block mt-1 px-2 py-0.5 rounded-full text-caption font-bold bg-warning-50 text-warning-800 border border-warning-200 cursor-pointer"
+                        >
+                          {t("Bukti bayar perlu dicek")}
+                        </button>
+                      )}
                     </td>
 
                     <td className="py-4 px-4 whitespace-nowrap">
@@ -571,6 +583,7 @@ export default function OrdersPage() {
       )}
 
       {/* Thermal Print Modal */}
+      {proofOrder && <PaymentProofsModal order={proofOrder} onClose={() => setProofOrder(null)} />}
       <ThermalPrintModal
         isOpen={Boolean(selectedThermalOrder)}
         onClose={() => setSelectedThermalOrder(null)}

@@ -123,9 +123,14 @@ export const config = {
   ai: {
     provider: process.env.AI_PROVIDER || "nvidia",
     geminiApiKey: process.env.GEMINI_API_KEY || "",
-    geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite",
+    geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+    // Tried when the primary model of the same provider fails (quota, retired model, overload).
+    geminiFallbackModel: process.env.GEMINI_FALLBACK_MODEL || "gemini-3.1-flash-lite",
     nvidiaKey: process.env.NVIDIA_API_KEY || "",
     nvidiaModel: process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct",
+    nvidiaFallbackModel: process.env.NVIDIA_FALLBACK_MODEL || "meta/llama-3.1-8b-instruct",
+    // Reads payment-proof images when NVIDIA is the provider (Gemini reads them with its normal model).
+    nvidiaVisionModel: process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
     openaiKey: process.env.OPENAI_API_KEY || "",
     // Creativity of customer-service replies. 0.65 sounds like a person; lower is more literal, higher drifts.
     temperature: readTemperature("AI_TEMPERATURE", 0.65),

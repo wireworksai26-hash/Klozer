@@ -380,7 +380,9 @@ const apiKeyField = z
 export const aiSettingsBody = z.object({
   provider: z.enum(["nvidia", "gemini"]).optional(),
   nvidiaModel: optionalText(120),
+  nvidiaFallbackModel: optionalText(120),
   geminiModel: optionalText(120),
+  geminiFallbackModel: optionalText(120),
   nvidiaKey: z.preprocess((v) => (v === "" ? undefined : v), apiKeyField),
   geminiApiKey: z.preprocess((v) => (v === "" ? undefined : v), apiKeyField),
   clearNvidiaKey: boolField.optional(),
@@ -388,3 +390,9 @@ export const aiSettingsBody = z.object({
 });
 
 export const aiSettingsTestBody = z.object({ provider: z.enum(["nvidia", "gemini"]) });
+
+// ---------- payment proof simulator ----------
+export const analyzeProofBody = z.object({
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]).optional(),
+  imageBase64: z.string().min(100, "berkas kosong").max(7_500_000, "berkas terlalu besar (maksimal 5 MB)").regex(/^[A-Za-z0-9+/=\s]+$/, "bukan data base64 yang valid"),
+});

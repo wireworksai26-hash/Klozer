@@ -195,10 +195,10 @@ async function captureProviderError(response, report, apiKey) {
   }
 }
 
-export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null }) {
+export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null, model: modelOverride = null }) {
   const ai = await getEffectiveAi();
   const apiKey = ai.nvidiaKey;
-  const model = ai.nvidiaModel || "meta/llama-3.3-70b-instruct";
+  const model = modelOverride || ai.nvidiaModel || "meta/llama-3.3-70b-instruct";
   if (!apiKey) return null;
 
   const started = Date.now();
@@ -247,10 +247,10 @@ export async function callNvidiaNimApi({ systemPrompt, userMessage, temperature 
  * Call Google Gemini API.
  * @returns {Promise<{text: string, model: string, usage: Object, latencyMs: number}|null>}
  */
-export async function callGeminiApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null }) {
+export async function callGeminiApi({ systemPrompt, userMessage, temperature = config.ai.temperature, maxTokens = 600, report = null, model: modelOverride = null }) {
   const ai = await getEffectiveAi();
   const apiKey = ai.geminiApiKey;
-  const model = ai.geminiModel;
+  const model = modelOverride || ai.geminiModel;
   if (!apiKey) return null;
 
   const started = Date.now();
@@ -292,25 +292,153 @@ export async function callGeminiApi({ systemPrompt, userMessage, temperature = c
   }
 }
 
-/** Small round trip used by the superadmin "uji koneksi" button. Returns the provider's reason on failure, never the key. */
-export async function testAiProvider(provider) {
-  const call = provider === "gemini" ? callGeminiApi : callNvidiaNimApi;
-  const report = {};
-  const result = await call({ systemPrompt: "Balas hanya dengan kata: OK", userMessage: "Tes koneksi", report });
-  if (!result) {
-    const reason = [report.status ? `HTTP ${report.status}` : null, report.message].filter(Boolean).join(": ");
-    return { ok: false, message: reason ? `Gagal: ${reason}` : "Penyedia menolak permintaan, atau jawabannya kosong. Periksa API key dan nama model." };
+/** Providers in the order they are tried, each with its primary model and then its fallback model. */
+async function buildAttempts() {
+  const ai = await getEffectiveAi();
+  const plan = {
+    gemini: { call: callGeminiApi, models: [ai.geminiModel, ai.geminiFallbackModel] },
+    nvidia: { call: callNvidiaNimApi, models: [ai.nvidiaModel, ai.nvidiaFallbackModel] },
+  };
+  const order = ai.provider === "gemini" ? ["gemini", "nvidia"] : ["nvidia", "gemini"];
+  const attempts = [];
+  for (const provider of order) {
+    const models = [...new Set(plan[provider].models.filter(Boolean))];
+    models.forEach((model, index) => attempts.push({ provider, model, call: plan[provider].call, isFallbackModel: index > 0 }));
   }
-  return { ok: true, model: result.model, latencyMs: result.latencyMs, message: "Koneksi berhasil." };
+  return attempts;
 }
 
-/** Try the configured primary provider first, then the other one. */
+/**
+ * Try the primary provider's model, then that provider's fallback model, then the other provider
+ * (same order). The first answer wins; `fallbackUsed` tells the caller it was not the first choice.
+ */
+export async function callWithFallback(args) {
+  const attempts = await buildAttempts();
+  for (const [index, attempt] of attempts.entries()) {
+    const result = await attempt.call({ ...args, model: attempt.model });
+    if (result) return { ...result, provider: attempt.provider, fallbackUsed: index > 0 };
+  }
+  return null;
+}
+
 async function callBestProvider(args) {
-  const { provider } = await getEffectiveAi();
-  const order = provider === "gemini" ? [callGeminiApi, callNvidiaNimApi] : [callNvidiaNimApi, callGeminiApi];
-  for (const call of order) {
-    const result = await call(args);
-    if (result) return result;
+  return callWithFallback(args);
+}
+
+/** The tiny prompt used by the "uji koneksi" button. */
+const PING = { systemPrompt: "Balas hanya dengan kata: OK", userMessage: "Tes koneksi" };
+
+/**
+ * Connection test for one provider: its primary model and its fallback model, each on its own, so the
+ * superadmin sees which one is the problem. Returns the provider's reason on failure, never the key.
+ */
+export async function testAiProvider(provider) {
+  const ai = await getEffectiveAi();
+  const call = provider === "gemini" ? callGeminiApi : callNvidiaNimApi;
+  const models = provider === "gemini" ? [ai.geminiModel, ai.geminiFallbackModel] : [ai.nvidiaModel, ai.nvidiaFallbackModel];
+  const results = [];
+  for (const [index, model] of [...new Set(models.filter(Boolean))].entries()) {
+    const report = {};
+    const result = await call({ ...PING, model, report });
+    if (result) {
+      results.push({ model, role: index === 0 ? "utama" : "cadangan", ok: true, latencyMs: result.latencyMs });
+    } else {
+      const reason = [report.status ? `HTTP ${report.status}` : null, report.message].filter(Boolean).join(": ");
+      results.push({ model, role: index === 0 ? "utama" : "cadangan", ok: false, message: reason || "Ditolak atau jawabannya kosong." });
+    }
+  }
+  const ok = results.length > 0 && results.some((r) => r.ok);
+  return {
+    ok,
+    results,
+    message: ok ? "Koneksi berhasil." : results[0]?.message ? `Gagal: ${results[0].message}` : "Penyedia belum dikonfigurasi (API key belum diisi).",
+  };
+}
+
+/**
+ * Read an image or PDF with a vision-capable model and return what it says, as text.
+ * Gemini takes the file inline; NVIDIA takes images only (data URL). Same provider/model order as chat.
+ * @returns {Promise<{text: string, model: string, provider: string, usage: object, latencyMs: number, fallbackUsed: boolean}|null>}
+ */
+export async function callVisionModel({ systemPrompt, userText, file, maxTokens = 700 }) {
+  const ai = await getEffectiveAi();
+  const base64 = file.buffer.toString("base64");
+  const isImage = file.mimeType.startsWith("image/");
+  const attempts = await buildAttempts();
+  let tried = 0;
+
+  for (const attempt of attempts) {
+    const started = Date.now();
+    try {
+      if (attempt.provider === "gemini") {
+        if (!ai.geminiApiKey) continue;
+        tried++;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(attempt.model)}:generateContent`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": ai.geminiApiKey },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ inline_data: { mime_type: file.mimeType, data: base64 } }, { text: userText }] }],
+            generationConfig: { temperature: 0, maxOutputTokens: maxTokens, responseMimeType: "application/json" },
+          }),
+          signal: AbortSignal.timeout(40000),
+        });
+        if (!response.ok) {
+          logger.warn({ status: response.status, provider: "gemini", model: attempt.model }, "Vision request returned an error");
+          continue;
+        }
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+        return {
+          text,
+          model: attempt.model,
+          provider: "gemini",
+          usage: { promptTokens: data?.usageMetadata?.promptTokenCount ?? null, completionTokens: data?.usageMetadata?.candidatesTokenCount ?? null },
+          latencyMs: Date.now() - started,
+          fallbackUsed: tried > 1,
+        };
+      }
+
+      // NVIDIA: images only, and its own vision model instead of the chat model.
+      if (!ai.nvidiaKey || !isImage) continue;
+      tried++;
+      const visionModels = [...new Set([ai.nvidiaVisionModel].filter(Boolean))];
+      for (const model of visionModels) {
+        const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${ai.nvidiaKey}` },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: [{ type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${file.mimeType};base64,${base64}` } }] },
+            ],
+            temperature: 0,
+            max_tokens: maxTokens,
+          }),
+          signal: AbortSignal.timeout(40000),
+        });
+        if (!response.ok) {
+          logger.warn({ status: response.status, provider: "nvidia", model }, "Vision request returned an error");
+          continue;
+        }
+        const data = await response.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (!text) continue;
+        return {
+          text,
+          model,
+          provider: "nvidia",
+          usage: { promptTokens: data?.usage?.prompt_tokens ?? null, completionTokens: data?.usage?.completion_tokens ?? null },
+          latencyMs: Date.now() - started,
+          fallbackUsed: tried > 1,
+        };
+      }
+    } catch (err) {
+      logger.warn({ err: err.message, provider: attempt.provider }, "Vision request failed");
+    }
   }
   return null;
 }
@@ -444,6 +572,8 @@ export async function generateAiCsResponse({
       replyText: formatChatReply(result.text),
       needsEscalation: false,
       modelUsed: result.model,
+      provider: result.provider,
+      fallbackUsed: result.fallbackUsed,
       usage: result.usage,
       latencyMs: result.latencyMs,
       institutionContext: { name: instName, sector: instSector },

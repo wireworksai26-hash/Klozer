@@ -134,6 +134,7 @@ export function orderFromApi(o) {
     grossProfit: num(o.gross_profit),
     paymentMethod: PAYMENT_LABELS[o.payment_method] || o.payment_method,
     status: o.status,
+    reviewStatus: o.review_status || "not_required",
     paymentStatus: PAID_STATUSES.includes(o.status) ? "paid" : o.status === "cancelled" ? "cancelled" : "unpaid",
     cs: o.cs_name || "-",
     csDbId: o.cs_user_id || null,

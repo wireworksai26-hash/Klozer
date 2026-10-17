@@ -55,6 +55,10 @@ export function createApp() {
     })
   );
 
+  // The payment-proof simulator uploads a photo as base64 (up to 5 MB of file), which is more than the default limit.
+  // Registered first so the larger limit applies to this one path only.
+  app.use("/api/v1/ai/analyze-proof", express.json({ limit: "8mb" }));
+
   // The raw body is needed to verify webhook signatures byte-for-byte.
   app.use(
     express.json({

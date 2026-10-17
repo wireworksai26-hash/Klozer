@@ -6,6 +6,7 @@ import { normalizePhone } from "../utils/helpers.js";
 import { parseJsonColumn } from "../utils/jsonColumn.js";
 import { emitToTenant } from "../realtime.js";
 import { generateAiCsResponse } from "./aiBrainService.js";
+import { MAX_PROOF_BYTES, PROOF_MIME_TYPES, handleCustomerPaymentProof } from "./paymentProofService.js";
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "./tokenService.js";
 
 const HUMAN_TAKEOVER_MINUTES = 10;
@@ -63,6 +64,42 @@ export async function markWhatsAppMessageRead({ institutionId, messageId }) {
   }
 }
 
+// Meta serves media from its own hosts only; anything else is refused before a token is sent to it.
+const MEDIA_HOST = /(^|\.)(facebook\.com|fbcdn\.net|whatsapp\.net|fbsbx\.com)$/i;
+
+/**
+ * Download a media file a customer sent (two calls: the media id gives a short-lived URL, the URL gives the bytes).
+ * Returns { buffer, mimeType } or null when the file is missing, too large or not a supported type.
+ */
+export async function downloadWhatsAppMedia({ institutionId, mediaId }) {
+  const channel = await getChannel(institutionId);
+  if (!channel || !mediaId) return null;
+  const auth = { Authorization: `Bearer ${channel.accessToken}` };
+
+  const metaRes = await fetch(`https://graph.facebook.com/${config.meta.graphVersion}/${encodeURIComponent(mediaId)}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+  if (!metaRes.ok) return null;
+  const meta = await metaRes.json().catch(() => ({}));
+  const mimeType = String(meta.mime_type || "").split(";")[0].trim().toLowerCase();
+  if (!PROOF_MIME_TYPES.has(mimeType) || !meta.url) return null;
+  if (Number(meta.file_size) > MAX_PROOF_BYTES) return null;
+
+  let host;
+  try {
+    const url = new URL(meta.url);
+    if (url.protocol !== "https:") return null;
+    host = url.hostname;
+  } catch {
+    return null;
+  }
+  if (!MEDIA_HOST.test(host)) return null;
+
+  const fileRes = await fetch(meta.url, { headers: auth, signal: AbortSignal.timeout(30000) });
+  if (!fileRes.ok) return null;
+  const buffer = Buffer.from(await fileRes.arrayBuffer());
+  if (buffer.length === 0 || buffer.length > MAX_PROOF_BYTES) return null;
+  return { buffer, mimeType };
+}
+
 export async function sendWhatsAppMessage({ institutionId, to, text }) {
   const cleanTo = normalizePhone(to);
   if (!cleanTo || !text) return { success: false, error: "Nomor tujuan dan teks wajib diisi." };
@@ -109,7 +146,64 @@ async function upsertLead(institutionId, phone, name) {
   return result.insertId;
 }
 
-export async function processInboundMessage({ institutionId, fromPhone, customerName = "Pelanggan", text = "", messageId = null, messageType = "text" }) {
+/**
+ * A customer sent a photo or PDF. If the AI is on and no human is already handling the chat, read it as a payment
+ * proof and answer with the fixed "thank you" text; the case goes to the dashboard for a person unless it could be
+ * verified safely. Otherwise it is only flagged for a person.
+ */
+async function handlePaymentProofMessage({ institutionId, leadId, phone, messageId, mediaId }) {
+  const flagForHuman = (reason) => {
+    emitToTenant(institutionId, "chat:needs_human", { leadId, reason });
+    return { success: true, leadId, replied: false, reason };
+  };
+
+  const inst = await queryOne("SELECT features_json FROM institutions WHERE id = ? AND is_active = 1", [institutionId]);
+  if (!inst || parseJsonColumn(inst.features_json).personaAi === false) return flagForHuman("non_text_message");
+
+  const humanActive = await queryOne(
+    `SELECT id FROM chat_messages
+      WHERE lead_id = ? AND sender_type = 'cs' AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE) LIMIT 1`,
+    [leadId, HUMAN_TAKEOVER_MINUTES]
+  );
+  if (humanActive) return flagForHuman("non_text_message");
+
+  try {
+    await assertTokenQuota(institutionId);
+  } catch {
+    return flagForHuman("token_quota_exhausted");
+  }
+
+  let file = null;
+  try {
+    file = await downloadWhatsAppMedia({ institutionId, mediaId });
+  } catch (err) {
+    logger.warn({ err: err.message, institutionId }, "Could not download the customer's media");
+  }
+
+  const result = await handleCustomerPaymentProof({ institutionId, leadId, mediaId, messageId, file });
+
+  if (!isTest) await sleep(calculateHumanPacingDelay(result.replyText));
+  const sent = await sendWhatsAppMessage({ institutionId, to: phone, text: result.replyText });
+  await query(
+    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error)
+     VALUES (?, ?, ?, 'ai_agent', 'text', ?, ?, ?, ?, ?)`,
+    [
+      institutionId,
+      leadId,
+      sent.messageId ?? null,
+      result.replyText,
+      (result.usage?.promptTokens ?? 0) + (result.usage?.completionTokens ?? 0),
+      result.modelUsed ?? null,
+      sent.success ? 1 : 0,
+      sent.success ? null : String(sent.error).slice(0, 250),
+    ]
+  );
+  emitToTenant(institutionId, "chat:message", { leadId, direction: "outbound", text: result.replyText, sender: "ai_agent" });
+
+  return { success: true, leadId, replied: true, delivered: sent.success, intent: `payment_proof_${result.outcome}`, outcome: result.outcome, reasons: result.reasons };
+}
+
+export async function processInboundMessage({ institutionId, fromPhone, customerName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null }) {
   const phone = normalizePhone(fromPhone);
   if (!phone) return { success: false, reason: "invalid_phone" };
 
@@ -137,8 +231,11 @@ export async function processInboundMessage({ institutionId, fromPhone, customer
   emitToTenant(institutionId, "chat:message", { leadId, direction: "inbound", text, messageType });
   if (messageId) markWhatsAppMessageRead({ institutionId, messageId }).catch(() => {});
 
-  // Media / non-text: a human should look at it.
+  // Media / non-text. A photo or PDF may be a payment proof: read it. Anything else (voice notes, ...) goes to a person.
   if (messageType !== "text" || !text.trim()) {
+    if ((messageType === "image" || messageType === "document_receipt") && mediaId) {
+      return handlePaymentProofMessage({ institutionId, leadId, phone, messageId, mediaId });
+    }
     emitToTenant(institutionId, "chat:needs_human", { leadId, reason: "non_text_message" });
     return { success: true, leadId, replied: false, reason: "non_text" };
   }

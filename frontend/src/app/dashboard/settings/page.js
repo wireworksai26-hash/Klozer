@@ -26,8 +26,8 @@ function StatusPill({ ok, yes, no }) {
 }
 
 const PROVIDERS = {
-  nvidia: { name: "NVIDIA NIM", hint: "Dapatkan key di build.nvidia.com", modelHint: "meta/llama-3.3-70b-instruct" },
-  gemini: { name: "Google Gemini", hint: "Dapatkan key di aistudio.google.com", modelHint: "gemini-2.5-flash-lite" },
+  nvidia: { name: "NVIDIA NIM", hint: "Dapatkan key di build.nvidia.com", modelHint: "meta/llama-3.3-70b-instruct", fallbackHint: "meta/llama-3.1-8b-instruct" },
+  gemini: { name: "Google Gemini", hint: "Dapatkan key di aistudio.google.com", modelHint: "gemini-3.5-flash-lite", fallbackHint: "gemini-3.1-flash-lite" },
 };
 const SOURCE_TEXT = { database: "disimpan dari dashboard", environment: "dari environment server", none: "belum diatur" };
 
@@ -69,14 +69,14 @@ function ApiKeyField({ providerKey, settings, value, onChange, onClear, clearReq
 function AiKeysCard({ onSaved }) {
   const { notify } = useDashboard();
   const [settings, setSettings] = useState(null);
-  const [form, setForm] = useState({ provider: "nvidia", nvidiaModel: "", geminiModel: "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
+  const [form, setForm] = useState({ provider: "nvidia", nvidiaModel: "", nvidiaFallbackModel: "", geminiModel: "", geminiFallbackModel: "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState("");
   const [results, setResults] = useState({});
 
   const apply = (data) => {
     setSettings(data);
-    setForm({ provider: data.provider, nvidiaModel: data.nvidia.model || "", geminiModel: data.gemini.model || "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
+    setForm({ provider: data.provider, nvidiaModel: data.nvidia.model || "", nvidiaFallbackModel: data.nvidia.fallbackModel || "", geminiModel: data.gemini.model || "", geminiFallbackModel: data.gemini.fallbackModel || "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
   };
 
   useEffect(() => {
@@ -112,10 +112,7 @@ function AiKeysCard({ onSaved }) {
     setTesting(provider);
     try {
       const res = await api.post("/system/ai-settings/test", { provider });
-      setResults((r) => ({
-        ...r,
-        [provider]: res.ok ? { ok: true, text: `Terhubung (${res.model}, ${res.latencyMs} ms)` } : { ok: false, text: res.message },
-      }));
+      setResults((r) => ({ ...r, [provider]: { ok: res.ok, lines: res.results || [], text: res.message } }));
     } catch (err) {
       setResults((r) => ({ ...r, [provider]: { ok: false, text: err.message } }));
     } finally {
@@ -125,6 +122,7 @@ function AiKeysCard({ onSaved }) {
 
   const fallback = form.provider === "nvidia" ? "gemini" : "nvidia";
   const modelKey = (p) => (p === "nvidia" ? "nvidiaModel" : "geminiModel");
+  const fallbackKey = (p) => (p === "nvidia" ? "nvidiaFallbackModel" : "geminiFallbackModel");
   const keyKey = (p) => (p === "nvidia" ? "nvidiaKey" : "geminiApiKey");
   const clearKey = (p) => (p === "nvidia" ? "clearNvidiaKey" : "clearGeminiKey");
 
@@ -142,15 +140,31 @@ function AiKeysCard({ onSaved }) {
         clearRequested={form[clearKey(p)]}
         onClear={(v) => setForm({ ...form, [clearKey(p)]: v })}
       />
-      <div>
-        <label className={label}>Model</label>
-        <input className={`${input} font-mono`} value={form[modelKey(p)]} placeholder={PROVIDERS[p].modelHint} onChange={(e) => setForm({ ...form, [modelKey(p)]: e.target.value })} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className={label}>Model utama</label>
+          <input className={`${input} font-mono`} value={form[modelKey(p)]} placeholder={PROVIDERS[p].modelHint} onChange={(e) => setForm({ ...form, [modelKey(p)]: e.target.value })} />
+        </div>
+        <div>
+          <label className={label}>Model cadangan</label>
+          <input className={`${input} font-mono`} value={form[fallbackKey(p)]} placeholder={PROVIDERS[p].fallbackHint} onChange={(e) => setForm({ ...form, [fallbackKey(p)]: e.target.value })} />
+        </div>
       </div>
+      <p className="text-caption text-fg-muted -mt-1">Model cadangan dicoba otomatis bila model utama gagal (kuota habis, model dihentikan, atau sedang gangguan).</p>
       <div className="flex items-center gap-3 flex-wrap">
         <button type="button" disabled={testing === p || !settings[p].configured} onClick={() => test(p)} className="btn-outline !py-2 !px-4 text-body-sm font-bold disabled:opacity-50">
           {testing === p ? "Menguji..." : "Uji koneksi"}
         </button>
-        {results[p] && <span className={`text-caption font-semibold ${results[p].ok ? "text-success-700" : "text-danger-700"}`}>{results[p].text}</span>}
+        {results[p] && (
+          <div className="flex flex-col gap-0.5 w-full">
+            {results[p].lines.length === 0 && <span className="text-caption font-semibold text-danger-700">{results[p].text}</span>}
+            {results[p].lines.map((r) => (
+              <span key={r.model} className={`text-caption font-semibold ${r.ok ? "text-success-700" : "text-danger-700"}`}>
+                {r.ok ? "OK" : "Gagal"} · model {r.role} <span className="font-mono">{r.model}</span>{r.ok ? ` (${r.latencyMs} ms)` : `: ${r.message}`}
+              </span>
+            ))}
+          </div>
+        )}
         {!settings[p].configured && <span className="text-caption text-fg-muted">Simpan key dulu untuk bisa diuji.</span>}
       </div>
     </div>

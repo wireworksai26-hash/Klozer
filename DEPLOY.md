@@ -125,3 +125,13 @@ docker compose exec -e ALLOW_DEMO_SEED=true -e SEED_PASSWORD='password-demo-anda
 - Akun demo ada di domain `.demo` (mis. `owner@batikmahakarya.demo`). Daftar lengkap dicetak setelah seeding.
 - Data demo ikut masuk ke database yang sama dengan data asli. Hapus dengan perintah `--reset` atau hapus tenantnya dari menu Instansi Tenant (superadmin) setelah demo.
 - Tidak ada channel WhatsApp yang terhubung ke tenant demo, jadi tidak ada pesan yang dikirim ke nomor palsunya.
+
+## AI membaca bukti pembayaran
+
+Saat pelanggan mengirim foto atau PDF di WhatsApp, AI membacanya (nominal, bank, waktu, rekening tujuan) lalu membalas dengan kalimat tetap: terima kasih, dicek manual, atau terverifikasi.
+
+- Pesanan **hanya** dilunasi otomatis bila nominal, rekening tujuan, dan tanggal cocok, keyakinan AI tinggi, **dan** ada mutasi bank masuk (belum direkonsiliasi) dengan nominal yang sama, serta fitur Anti-Fraud aktif di paket tenant. Selain itu pelanggan tetap diberi ucapan terima kasih, pesanan diberi tanda **Perlu dicek** di menu Pesanan, dan chatnya diberi label **Cek Pembayaran** di CRM.
+- Butuh: nomor WhatsApp tenant terhubung (token dipakai untuk mengunduh berkas), dan API key AI yang bisa membaca gambar: Gemini (membaca foto dan PDF) atau NVIDIA dengan model vision (`NVIDIA_VISION_MODEL`, hanya foto).
+- Berkas tidak disimpan di server. Dashboard mengambilnya dari WhatsApp saat dibuka (Meta menyimpan media sekitar 30 hari).
+- Uji tanpa pelanggan sungguhan: **Test CS AI → Bukti bayar** (tidak mengubah pesanan dan tidak mengirim pesan).
+- Model cadangan per penyedia diatur di **Pengaturan → Integrasi Platform** (atau `GEMINI_FALLBACK_MODEL` / `NVIDIA_FALLBACK_MODEL`).

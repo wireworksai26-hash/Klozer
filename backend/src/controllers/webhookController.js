@@ -29,6 +29,7 @@ function extractMessages(body) {
           id: msg.id,
           type: msg.type,
           text: msg.type === "text" ? msg.text?.body || "" : "",
+          mediaId: msg.image?.id || msg.document?.id || null,
         });
       }
     }
@@ -70,7 +71,8 @@ export async function handleWhatsAppInbound(req, res) {
         customerName: msg.name,
         text: msg.text,
         messageId: msg.id,
-        messageType: msg.type === "text" ? "text" : msg.type === "audio" ? "voice_note" : msg.type === "image" ? "image" : "text",
+        messageType: msg.type === "text" ? "text" : msg.type === "audio" ? "voice_note" : msg.type === "image" ? "image" : msg.type === "document" ? "document_receipt" : "text",
+        mediaId: msg.mediaId,
       });
     })().catch((err) => logger.error({ err: err.message, messageId: msg.id }, "Inbound WhatsApp processing failed"));
   }

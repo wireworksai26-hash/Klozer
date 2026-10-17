@@ -39,12 +39,16 @@ export async function getEffectiveAi() {
     logger.warn({ err: err.message }, "Pengaturan AI di database tidak terbaca, memakai environment");
   }
   const { ai } = config;
+  const v = stored.values;
   const value = {
-    provider: providerOf(stored.values.provider ?? ai.provider),
+    provider: providerOf(v.provider ?? ai.provider),
     nvidiaKey: stored.secrets.nvidiaKey || ai.nvidiaKey,
-    nvidiaModel: stored.values.nvidiaModel || ai.nvidiaModel,
+    nvidiaModel: v.nvidiaModel || ai.nvidiaModel,
+    nvidiaFallbackModel: v.nvidiaFallbackModel || ai.nvidiaFallbackModel,
+    nvidiaVisionModel: v.nvidiaVisionModel || ai.nvidiaVisionModel,
     geminiApiKey: stored.secrets.geminiApiKey || ai.geminiApiKey,
-    geminiModel: stored.values.geminiModel || ai.geminiModel,
+    geminiModel: v.geminiModel || ai.geminiModel,
+    geminiFallbackModel: v.geminiFallbackModel || ai.geminiFallbackModel,
     sources: {
       nvidia: stored.secrets.nvidiaKey ? "database" : ai.nvidiaKey ? "environment" : "none",
       gemini: stored.secrets.geminiApiKey ? "database" : ai.geminiApiKey ? "environment" : "none",
@@ -65,8 +69,8 @@ export async function getAiSettingsPublic() {
   const s = await getEffectiveAi();
   return {
     provider: s.provider,
-    nvidia: { configured: Boolean(s.nvidiaKey), source: s.sources.nvidia, hint: hint(s.nvidiaKey), model: s.nvidiaModel },
-    gemini: { configured: Boolean(s.geminiApiKey), source: s.sources.gemini, hint: hint(s.geminiApiKey), model: s.geminiModel },
+    nvidia: { configured: Boolean(s.nvidiaKey), source: s.sources.nvidia, hint: hint(s.nvidiaKey), model: s.nvidiaModel, fallbackModel: s.nvidiaFallbackModel },
+    gemini: { configured: Boolean(s.geminiApiKey), source: s.sources.gemini, hint: hint(s.geminiApiKey), model: s.geminiModel, fallbackModel: s.geminiFallbackModel },
   };
 }
 
@@ -80,8 +84,9 @@ export async function saveAiSettings(input, userId) {
   const secrets = { ...stored.secrets };
 
   if (input.provider) values.provider = providerOf(input.provider);
-  if (input.nvidiaModel) values.nvidiaModel = input.nvidiaModel;
-  if (input.geminiModel) values.geminiModel = input.geminiModel;
+  for (const field of ["nvidiaModel", "nvidiaFallbackModel", "geminiModel", "geminiFallbackModel"]) {
+    if (input[field]) values[field] = input[field];
+  }
   if (input.nvidiaKey) secrets.nvidiaKey = input.nvidiaKey;
   if (input.geminiApiKey) secrets.geminiApiKey = input.geminiApiKey;
   if (input.clearNvidiaKey) delete secrets.nvidiaKey;

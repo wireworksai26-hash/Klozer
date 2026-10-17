@@ -26,6 +26,7 @@ import * as personaCtrl from "../controllers/personaController.js";
 import * as bankCtrl from "../controllers/bankAccountController.js";
 import * as auditCtrl from "../controllers/auditController.js";
 import * as uploadCtrl from "../controllers/uploadController.js";
+import * as proofCtrl from "../controllers/proofController.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -86,6 +87,9 @@ router.post("/ai/ask", publicAiLimiter, validate({ body: v.publicAskBody }), h(c
 router.get("/chats/:leadId", ...tenant, requireRole(...SALES), validate({ params: v.leadIdParams }), h(chatCtrl.getChatMessages));
 router.post("/chats/send", ...tenant, requireRole(...SALES), validate({ body: v.sendMessageBody }), h(chatCtrl.sendMessage));
 router.post("/ai/chat", ...tenant, requireRole(...SALES), aiLimiter, validate({ body: v.aiChatBody }), h(chatCtrl.aiChatSimulation));
+router.post("/ai/analyze-proof", ...tenant, requireRole(...MONEY), aiLimiter, validate({ body: v.analyzeProofBody }), h(proofCtrl.analyzeProofPreview));
+router.get("/orders/:id/proofs", ...tenant, requireRole(...MONEY), validate({ params: v.idParams }), h(proofCtrl.listOrderProofs));
+router.get("/payment-proofs/:id/image", ...tenant, requireRole(...MONEY), validate({ params: v.idParams }), h(proofCtrl.getProofImage));
 router.post("/webhooks/whatsapp/simulate", ...tenant, requireRole(...MANAGERS), validate({ body: v.simulateInboundBody }), h(webhookCtrl.simulateWhatsAppInbound));
 
 router.get("/bank-accounts", ...tenant, requireRole(...MANAGERS, "finance"), h(bankCtrl.listBankAccounts));
