@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/common/Logo";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+import { featureForPath, FEATURE_LIST } from "@/utils/plans";
 import {
   CrownIcon,
   BriefcaseIcon,
@@ -47,8 +48,17 @@ import {
   ShieldCheckIcon,
 } from "@/components/icons";
 
+// Modules whose screens are interface previews: they work on sample data held in the page and are
+// not saved to the server yet. A thin notice keeps that visible during client demos.
+const PREVIEW_ROUTES = [
+  "templates", "labels", "label-stats", "blasting", "credits", "blocked-contacts", "internal-chat", "instagram", "escalation",
+  "bookings", "pic-roster", "warehouses", "etalase", "doa-knowledge",
+  "superadmin/ai-scenarios", "superadmin/blasting", "superadmin/exports", "superadmin/leads", "superadmin/transactions",
+].map((p) => `/dashboard/${p}`);
+
 function DashboardContent({ children }) {
   const pathname = usePathname();
+  const isPreview = PREVIEW_ROUTES.includes(pathname);
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -390,28 +400,15 @@ function DashboardContent({ children }) {
     },
   };
 
-  // Modules that are not connected to the backend yet stay out of the menu (their pages say so if opened directly).
-  const UNAVAILABLE = [
-    "/dashboard/labels",
-    "/dashboard/internal-chat",
-    "/dashboard/escalation",
-    "/dashboard/bookings",
-    "/dashboard/blocked-contacts",
-    "/dashboard/blasting",
-    "/dashboard/warehouses",
-    "/dashboard/instagram",
-    "/dashboard/templates",
-    "/dashboard/credits",
-    "/dashboard/pic-roster",
-    "/dashboard/doa-knowledge",
-    "/dashboard/superadmin/transactions",
-    "/dashboard/superadmin/settings",
-    "/dashboard/superadmin/leads",
-    "/dashboard/superadmin/exports",
-    "/dashboard/superadmin/blasting",
-    "/dashboard/superadmin/ai-scenarios",
-  ];
-  const available = (item) => !UNAVAILABLE.includes(item.href.split("?")[0]);
+  // Pages of a feature that the tenant's package does not include stay out of the menu,
+  // and the page itself explains why when opened directly. The superadmin is never restricted.
+  const modules = activeInstitution?.modules || {};
+  const featureOff = (href) => {
+    const feature = featureForPath(href);
+    return role !== "superadmin" && Boolean(feature) && modules[feature] === false;
+  };
+  const available = (item) => !featureOff(item.href);
+  const lockedFeature = featureOff(pathname) ? FEATURE_LIST.find((f) => f.key === featureForPath(pathname)) : null;
   const baseConfig = rolesConfig[role] || rolesConfig.owner;
   const currentRoleConfig = {
     ...baseConfig,
@@ -939,7 +936,21 @@ function DashboardContent({ children }) {
                 </button>
               </div>
             )}
-            {children}
+            {isPreview && (
+              <div className="mb-5 px-3.5 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-caption font-semibold">
+                Pratinjau fitur: tampilan ini memakai data contoh dan belum menyimpan ke server.
+              </div>
+            )}
+            {lockedFeature ? (
+              <div className="max-w-[560px] mx-auto text-center bg-white border border-line rounded-2xl p-10 mt-6">
+                <span className="inline-block text-caption font-bold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 px-3 py-1 rounded-full mb-4">Tidak termasuk paket Anda</span>
+                <h1 className="page-title mb-2">{lockedFeature.label}</h1>
+                <p className="text-body-sm text-fg-muted leading-relaxed">Fitur ini belum aktif di paket langganan toko Anda. Hubungi admin Klozer untuk mengaktifkannya atau menaikkan paket.</p>
+                <Link href="/dashboard" className="btn-primary inline-block mt-6 !py-2 !px-5 font-bold no-underline">Kembali ke Dashboard</Link>
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </main>
       </div>

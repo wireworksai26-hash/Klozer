@@ -17,7 +17,7 @@ Di development, database dibuat otomatis dan secret memakai nilai bawaan lokal. 
 | Perintah | Fungsi |
 | :--- | :--- |
 | `npm run migrate` | terapkan migrasi di `src/database/migrations` (juga otomatis saat start, matikan dengan `RUN_MIGRATIONS_ON_START=false`) |
-| `npm run seed` | dua tenant demo, hanya development (password dari `SEED_PASSWORD`, bawaan `DemoPass123!`) |
+| `npm run seed` | tiga tenant demo lengkap (staf, katalog, lead, chat, pesanan 45 hari terakhir). Password dari `SEED_PASSWORD`, atau dibuat acak dan dicetak sekali. `-- --reset` membangun ulang |
 | `npm run lint` | ESLint |
 | `npm test` | test integrasi pada MySQL asli (`TEST_DB_HOST/PORT/USER/PASSWORD`, bawaan `127.0.0.1:3307`, `root`/`testroot`) |
 
@@ -38,7 +38,7 @@ src/app.js          rakitan Express (helmet, CORS, pembatas laju, rute, error ha
 src/server.js       bootstrap: DB, migrasi, superadmin, Socket.io, shutdown halus
 src/config/         env (validasi), db (pool, transaksi), logger
 src/controllers/    satu file per domain
-src/services/       AI, WhatsApp, Midtrans, token, order, komisi, audit
+src/services/       AI, WhatsApp, iPaymu, token, order, komisi, audit
 src/middlewares/    auth, konteks tenant, RBAC, validasi, rate limit
 src/validation/     skema Zod
 src/database/       migrasi, bootstrap, seed

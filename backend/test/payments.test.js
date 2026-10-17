@@ -5,35 +5,57 @@ import crypto from "crypto";
 import { api, bearer, createProduct, createTenant, setupDatabase, teardownDatabase } from "./helpers.js";
 import { query } from "../src/config/db.js";
 
-const SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
+const VA = process.env.IPAYMU_VA;
+const API_KEY = process.env.IPAYMU_API_KEY;
 
 before(setupDatabase);
 after(teardownDatabase);
 afterEach(() => mock.restoreAll());
 
-function mockMidtrans(response) {
+function mockIpaymu(response) {
   return mock.method(globalThis, "fetch", async () => ({
     ok: true,
     json: async () =>
       response ?? {
-        status_code: "201",
-        transaction_id: "mt-tx-1",
-        qr_string: "00020101021226...",
-        actions: [{ name: "generate-qr-code", url: "https://api.sandbox.midtrans.com/qr/1.png" }],
+        Status: 200,
+        Success: true,
+        Message: "success",
+        Data: { TransactionId: 777, Via: "qris", Channel: "mpm", QrString: "00020101021226...", QrImage: "https://sandbox.ipaymu.com/qr/777.png", Fee: 1050 },
       },
   }));
 }
 
-const sign = (n) => crypto.createHash("sha512").update(`${n.order_id}${n.status_code}${n.gross_amount}${SERVER_KEY}`).digest("hex");
-const notification = (ref, amount, overrides = {}) => {
-  const n = { order_id: ref, status_code: "200", gross_amount: `${Number(amount).toFixed(2)}`, transaction_status: "settlement", transaction_id: "mt-tx-1", ...overrides };
-  return { ...n, signature_key: overrides.signature_key ?? sign(n) };
+// Callback signature as iPaymu documents it: HMAC-SHA256(VA) over the key-sorted JSON.
+const sign = (body) => {
+  const sorted = Object.fromEntries(Object.keys(body).sort().map((k) => [k, body[k]]));
+  return crypto.createHmac("sha256", VA).update(JSON.stringify(sorted)).digest("hex");
 };
+const notification = (ref, amount, overrides = {}) => {
+  const { signature, ...fields } = overrides;
+  const body = {
+    trx_id: 777,
+    sid: "sid-1",
+    reference_id: ref,
+    status: "berhasil",
+    status_code: 1,
+    transaction_status_code: 1,
+    amount: String(amount),
+    sub_total: String(amount),
+    total: String(amount),
+    fee: "1050",
+    via: "qris",
+    channel: "mpm",
+    additional_info: [],
+    ...fields,
+  };
+  return { body, signature: signature ?? sign(body) };
+};
+const callback = (n) => api().post("/api/v1/payments/webhook").set("X-Signature", n.signature).send(n.body);
 
 async function orderWithQris(t, { price = 150000, qty = 1 } = {}) {
   const product = await createProduct(t.institutionId, { price, stock: 100 });
   const created = await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: qty }] });
-  mockMidtrans();
+  mockIpaymu();
   const qris = await api().post("/api/v1/payments/qris").set(bearer(t.csToken)).send({ order_id: created.body.data.id });
   mock.restoreAll();
   return { order: created.body.data, qris: qris.body };
@@ -48,17 +70,25 @@ describe("creating a QRIS payment", () => {
     const product = await createProduct(t.institutionId, { price: 150000, stock: 10 });
     const order = (await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 2 }], shipping_fee: 10000 })).body.data;
 
-    const fetchMock = mockMidtrans();
+    const fetchMock = mockIpaymu();
     const res = await api().post("/api/v1/payments/qris").set(bearer(t.csToken)).send({ order_id: order.id, amount: 1, gross_amount: 1 });
 
     assert.equal(res.status, 201);
     assert.equal(res.body.amount, 310000);
-    assert.equal(res.body.mode, "midtrans_sandbox");
-    assert.equal(res.body.qrImageUrl, "https://api.sandbox.midtrans.com/qr/1.png");
+    assert.equal(res.body.mode, "ipaymu_sandbox");
+    assert.equal(res.body.qrImageUrl, "https://sandbox.ipaymu.com/qr/777.png");
 
-    const sent = JSON.parse(fetchMock.mock.calls[0].arguments[1].body);
-    assert.equal(sent.transaction_details.gross_amount, 310000);
-    assert.match(sent.transaction_details.order_id, /^KLZ-\d+-\d+-[0-9A-F]{6}$/);
+    const [url, init] = fetchMock.mock.calls[0].arguments;
+    assert.ok(url.endsWith("/payment/direct"));
+    const sent = JSON.parse(init.body);
+    assert.equal(sent.amount, 310000);
+    assert.equal(sent.paymentMethod, "qris");
+    assert.equal(sent.paymentChannel, "mpm");
+    assert.match(sent.referenceId, /^KLZ-[0-9]+-[0-9]+-[0-9A-F]{6}$/);
+    assert.equal(init.headers.va, VA);
+    const bodyHash = crypto.createHash("sha256").update(init.body).digest("hex");
+    const expectedSignature = crypto.createHmac("sha256", API_KEY).update(`POST:${VA}:${bodyHash}:${API_KEY}`).digest("hex");
+    assert.equal(init.headers.signature, expectedSignature);
     const [row] = await query("SELECT amount, status FROM payments WHERE payment_reference = ?", [res.body.paymentReference]);
     assert.equal(Number(row.amount), 310000);
     assert.equal(row.status, "pending");
@@ -70,7 +100,7 @@ describe("creating a QRIS payment", () => {
     const productA = await createProduct(a.institutionId, { stock: 10 });
     const orderA = (await api().post("/api/v1/orders").set(bearer(a.csToken)).send({ items: [{ product_id: productA, quantity: 1 }] })).body.data;
 
-    mockMidtrans();
+    mockIpaymu();
     const byNumber = await api().post("/api/v1/payments/qris").set(bearer(a.csToken)).send({ order_id: orderA.order_number });
     assert.equal(byNumber.status, 201);
     const foreign = await api().post("/api/v1/payments/qris").set(bearer(b.csToken)).send({ order_id: orderA.id });
@@ -81,7 +111,7 @@ describe("creating a QRIS payment", () => {
     const t = await createTenant();
     const product = await createProduct(t.institutionId, { stock: 10 });
     const order = (await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }], payment_method: "cash" })).body.data;
-    mockMidtrans();
+    mockIpaymu();
     const res = await api().post("/api/v1/payments/qris").set(bearer(t.csToken)).send({ order_id: order.id });
     assert.equal(res.status, 409);
   });
@@ -91,7 +121,7 @@ describe("creating a QRIS payment", () => {
     const product = await createProduct(t.institutionId, { stock: 10 });
     const order = (await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] })).body.data;
 
-    mockMidtrans({ status_code: "400", status_message: "Invalid merchant" });
+    mockIpaymu({ Status: 400, Success: false, Message: "Invalid merchant" });
     const res = await api().post("/api/v1/payments/qris").set(bearer(t.csToken)).send({ order_id: order.id });
     assert.equal(res.status, 502);
     assert.equal((await query("SELECT id FROM payments WHERE order_id = ?", [order.id])).length, 0);
@@ -112,7 +142,7 @@ describe("creating a QRIS payment", () => {
   test("issuing a new QR expires the previous pending one", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
-    mockMidtrans();
+    mockIpaymu();
     const second = await api().post("/api/v1/payments/qris").set(bearer(t.csToken)).send({ order_id: order.id });
     assert.equal(second.status, 201);
     const rows = await query("SELECT payment_reference, status FROM payments WHERE order_id = ?", [order.id]);
@@ -121,15 +151,18 @@ describe("creating a QRIS payment", () => {
   });
 });
 
-describe("Midtrans webhook", () => {
+describe("iPaymu callback", () => {
   test("rejects a missing or forged signature and changes nothing", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
 
-    const forged = await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000, { signature_key: "f".repeat(128) }));
+    const forged = await callback(notification(qris.paymentReference, 150000, { signature: "f".repeat(64) }));
     assert.equal(forged.status, 401);
-    const unsigned = await api().post("/api/v1/payments/webhook").send({ order_id: qris.paymentReference, transaction_status: "settlement", status_code: "200", gross_amount: "150000.00" });
+    const unsigned = await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000).body);
     assert.equal(unsigned.status, 401);
+    const tampered = notification(qris.paymentReference, 150000);
+    tampered.body.amount = "1";
+    assert.equal((await callback(tampered)).status, 401);
     const empty = await api().post("/api/v1/payments/webhook").send({});
     assert.equal(empty.status, 401);
     assert.equal(await orderStatus(order.id), "waiting_payment");
@@ -139,7 +172,7 @@ describe("Midtrans webhook", () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
 
-    const res = await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000));
+    const res = await callback(notification(qris.paymentReference, 150000));
     assert.equal(res.status, 200);
     assert.equal(res.body.status, "paid");
     assert.equal(await orderStatus(order.id), "paid");
@@ -147,15 +180,15 @@ describe("Midtrans webhook", () => {
     const [p] = await query("SELECT status, paid_at, provider_transaction_id FROM payments WHERE payment_reference = ?", [qris.paymentReference]);
     assert.equal(p.status, "paid");
     assert.ok(p.paid_at);
-    assert.equal(p.provider_transaction_id, "mt-tx-1");
+    assert.equal(p.provider_transaction_id, "777");
   });
 
   test("redelivery is ignored: still one commission, still paid", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
     const body = notification(qris.paymentReference, 150000);
-    await api().post("/api/v1/payments/webhook").send(body);
-    const again = await api().post("/api/v1/payments/webhook").send(body);
+    await callback(body);
+    const again = await callback(body);
     assert.equal(again.status, 200);
     assert.equal(again.body.duplicateIgnored, true);
     assert.equal(await commissionCount(order.id), 1);
@@ -165,11 +198,11 @@ describe("Midtrans webhook", () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
     const body = notification(qris.paymentReference, 150000);
-    const results = await Promise.all(Array.from({ length: 8 }, () => api().post("/api/v1/payments/webhook").send(body)));
+    const results = await Promise.all(Array.from({ length: 8 }, () => callback(body)));
     assert.ok(results.every((r) => r.status === 200));
     assert.equal(await commissionCount(order.id), 1);
     assert.equal(await orderStatus(order.id), "paid");
-    const logs = await query("SELECT status FROM webhook_logs WHERE idempotency_key LIKE ?", [`MIDTRANS:${qris.paymentReference}:%`]);
+    const logs = await query("SELECT status FROM webhook_logs WHERE idempotency_key LIKE ?", [`IPAYMU:${qris.paymentReference}:%`]);
     assert.equal(logs.length, 1);
     assert.equal(logs[0].status, "PROCESSED");
   });
@@ -177,7 +210,7 @@ describe("Midtrans webhook", () => {
   test("a validly signed notification with a different amount does not pay the order", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t, { price: 150000 });
-    const res = await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 1000));
+    const res = await callback(notification(qris.paymentReference, 1000));
     assert.equal(res.status, 200);
     assert.equal(res.body.reason, "amount_mismatch");
     assert.equal(await orderStatus(order.id), "waiting_payment");
@@ -187,7 +220,7 @@ describe("Midtrans webhook", () => {
   test("expire and deny update the payment without paying the order", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
-    const expired = await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000, { transaction_status: "expire", status_code: "407" }));
+    const expired = await callback(notification(qris.paymentReference, 150000, { status: "expired", status_code: -2, transaction_status_code: 0 }));
     assert.equal(expired.body.status, "expired");
     const [p] = await query("SELECT status FROM payments WHERE payment_reference = ?", [qris.paymentReference]);
     assert.equal(p.status, "expired");
@@ -195,7 +228,7 @@ describe("Midtrans webhook", () => {
   });
 
   test("unknown references are acknowledged but ignored (no retry storm, no state change)", async () => {
-    const res = await api().post("/api/v1/payments/webhook").send(notification("KLZ-0-0-NOPE", 1000));
+    const res = await callback(notification("KLZ-0-0-NOPE", 1000));
     assert.equal(res.status, 200);
     assert.equal(res.body.ignored, true);
   });
@@ -204,7 +237,7 @@ describe("Midtrans webhook", () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
     await api().patch(`/api/v1/orders/${order.id}/status`).set(bearer(t.ownerToken)).send({ status: "cancelled" });
-    await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000));
+    await callback(notification(qris.paymentReference, 150000));
     assert.equal(await orderStatus(order.id), "cancelled");
     assert.equal(await commissionCount(order.id), 0);
   });
@@ -212,7 +245,7 @@ describe("Midtrans webhook", () => {
   test("a paid order cannot be cancelled by staff without a refund", async () => {
     const t = await createTenant();
     const { order, qris } = await orderWithQris(t);
-    await api().post("/api/v1/payments/webhook").send(notification(qris.paymentReference, 150000));
+    await callback(notification(qris.paymentReference, 150000));
     const res = await api().patch(`/api/v1/orders/${order.id}/status`).set(bearer(t.ownerToken)).send({ status: "cancelled" });
     assert.equal(res.status, 409);
     assert.equal(await orderStatus(order.id), "paid");

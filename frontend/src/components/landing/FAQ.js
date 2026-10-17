@@ -1,33 +1,10 @@
 "use client";
 import { useState } from "react";
 import { ChevronDownIcon, MessageSquareIcon } from "@/components/icons";
+import { faqItems } from "@/utils/legal/faq";
+import { whatsappUrl } from "@/utils/legal/config";
 
-const faqs = [
-  {
-    q: "Apakah saya harus punya keahlian IT atau coding untuk memakai Klozer?",
-    a: "Sama sekali tidak. Klozer dirancang sangat mudah digunakan seperti memakai aplikasi WhatsApp biasa. Anda hanya perlu mendaftar, memasukkan daftar produk, dan sistem otomatis langsung bekerja.",
-  },
-  {
-    q: "Bagaimana cara uang masuk ke rekening saya saat pembeli scan QRIS?",
-    a: "Pembayaran QRIS diproses langsung melalui Payment Gateway resmi berizin Bank Indonesia (seperti Xendit atau Midtrans). Dana yang dibayar pembeli akan langsung masuk dan cair ke rekening bank toko Anda.",
-  },
-  {
-    q: "Apakah nomor WhatsApp toko saya aman dari risiko diblokir?",
-    a: "Sangat aman. Klozer menggunakan integrasi resmi WhatsApp Business Cloud API dari Meta. Sistem kami juga dilengkapi jeda pengiriman cerdas dan batasan follow-up agar nomor Anda terbebas dari cap spam.",
-  },
-  {
-    q: "Bagaimana jika ada pembeli yang bertanya di luar daftar produk?",
-    a: "Jika ada pertanyaan rumit yang belum diketahui oleh AI, sistem secara otomatis akan meneruskan obrolan tersebut ke staf CS manusia Anda secara mulus.",
-  },
-  {
-    q: "Bagaimana Klozer bisa tahu jika pembeli mengirim bukti transfer palsu?",
-    a: "Sistem secara otomatis mengecek apakah ada uang masuk di rekening bank Anda dengan nominal dan waktu yang sesuai. Jika uang belum benar-benar masuk, pesanan tidak akan disetujui untuk dikirim.",
-  },
-  {
-    q: "Apakah Klozer bisa digunakan di HP (smartphone)?",
-    a: "Ya! Dashboard Klozer dapat dibuka dengan nyaman melalui browser HP maupun komputer/laptop Anda kapan saja dan di mana saja.",
-  },
-];
+const faqs = faqItems;
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(0);
@@ -48,9 +25,8 @@ export default function FAQ() {
             </p>
 
             <a
-              href="https://wa.me/6281234567890"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={whatsappUrl() || "/kontak"}
+              {...(whatsappUrl() ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className="p-5 rounded-2xl bg-white border border-line shadow-sm flex items-center gap-4 hover:border-brand hover:-translate-y-1 transition-all no-underline block"
             >
               <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -58,7 +34,7 @@ export default function FAQ() {
               </div>
               <div>
                 <div className="text-body-sm font-bold text-ink">Hubungi Tim Kami di WhatsApp</div>
-                <div className="text-label text-fg-muted">Respon cepat dalam hitungan menit</div>
+                <div className="text-label text-fg-muted">Lihat kontak lengkap dan jam layanan</div>
               </div>
             </a>
           </div>

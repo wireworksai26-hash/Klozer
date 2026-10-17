@@ -1,7 +1,7 @@
 import { query, queryOne } from "../config/db.js";
 import { logger } from "../config/logger.js";
 import { notFound } from "../utils/errors.js";
-import { config } from "../config/env.js";
+import { getEffectiveAi } from "./platformSettings.js";
 
 /**
  * Multi-layer AI Guardrails Rules & Evaluator
@@ -168,8 +168,9 @@ export async function getInstitutionRagContext(institutionId) {
  * @returns {Promise<string|null>} Generated text
  */
 export async function callNvidiaNimApi({ systemPrompt, userMessage }) {
-  const apiKey = config.ai.nvidiaKey;
-  const model = config.ai.nvidiaModel || "meta/llama-3.3-70b-instruct";
+  const ai = await getEffectiveAi();
+  const apiKey = ai.nvidiaKey;
+  const model = ai.nvidiaModel || "meta/llama-3.3-70b-instruct";
   if (!apiKey) return null;
 
   const started = Date.now();
@@ -217,8 +218,9 @@ export async function callNvidiaNimApi({ systemPrompt, userMessage }) {
  * @returns {Promise<{text: string, model: string, usage: Object, latencyMs: number}|null>}
  */
 export async function callGeminiApi({ systemPrompt, userMessage }) {
-  const apiKey = config.ai.geminiApiKey;
-  const model = config.ai.geminiModel;
+  const ai = await getEffectiveAi();
+  const apiKey = ai.geminiApiKey;
+  const model = ai.geminiModel;
   if (!apiKey) return null;
 
   const started = Date.now();
@@ -258,9 +260,18 @@ export async function callGeminiApi({ systemPrompt, userMessage }) {
   }
 }
 
+/** Small round trip used by the superadmin "uji koneksi" button. Never returns the key or the raw provider error. */
+export async function testAiProvider(provider) {
+  const call = provider === "gemini" ? callGeminiApi : callNvidiaNimApi;
+  const result = await call({ systemPrompt: "Balas hanya dengan kata: OK", userMessage: "Tes koneksi" });
+  if (!result) return { ok: false, message: "Penyedia menolak permintaan atau tidak dapat dihubungi. Periksa API key dan nama model." };
+  return { ok: true, model: result.model, latencyMs: result.latencyMs, message: "Koneksi berhasil." };
+}
+
 /** Try the configured primary provider first, then the other one. */
 async function callBestProvider(args) {
-  const order = config.ai.provider === "gemini" ? [callGeminiApi, callNvidiaNimApi] : [callNvidiaNimApi, callGeminiApi];
+  const { provider } = await getEffectiveAi();
+  const order = provider === "gemini" ? [callGeminiApi, callNvidiaNimApi] : [callNvidiaNimApi, callGeminiApi];
   for (const call of order) {
     const result = await call(args);
     if (result) return result;

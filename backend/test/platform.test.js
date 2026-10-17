@@ -6,7 +6,7 @@ import { query } from "../src/config/db.js";
 import { runMigrations } from "../src/database/migrate.js";
 import { ensureSuperadmin } from "../src/database/bootstrap.js";
 import { decryptSecret, encryptSecret, generateRandomPassword, safeEqual } from "../src/utils/crypto.js";
-import { verifyHmacSignature, verifyMidtransSignature } from "../src/utils/hmacValidator.js";
+import { verifyHmacSignature, verifyIpaymuSignature } from "../src/utils/hmacValidator.js";
 import { escapeLike, normalizePhone } from "../src/utils/helpers.js";
 import { errorHandler } from "../src/middlewares/errorHandler.js";
 import crypto from "crypto";
@@ -60,13 +60,22 @@ describe("crypto utilities", () => {
     assert.equal(verifyHmacSignature(raw, "sha256=short", "k"), false);
   });
 
-  test("Midtrans signature requires every field", () => {
-    const n = { order_id: "X-1", status_code: "200", gross_amount: "1000.00" };
-    const sig = crypto.createHash("sha512").update("X-1" + "200" + "1000.00" + "key").digest("hex");
-    assert.equal(verifyMidtransSignature({ ...n, signature_key: sig }, "key"), true);
-    assert.equal(verifyMidtransSignature({ ...n, signature_key: sig }, "wrong"), false);
-    assert.equal(verifyMidtransSignature({ ...n, gross_amount: "1.00", signature_key: sig }, "key"), false);
-    assert.equal(verifyMidtransSignature({ order_id: "X-1", signature_key: sig }, "key"), false);
+  test("iPaymu callback signature: sorted JSON keyed by the VA, form-encoded strings accepted", () => {
+    const va = "0000001234567890";
+    const hmac = (json) => crypto.createHmac("sha256", va).update(json).digest("hex");
+    const sorted = (o) => JSON.stringify(Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]])));
+    const body = { trx_id: 1, reference_id: "KLZ-1-2-ABC", status: "berhasil", status_code: 1, amount: "1000", additional_info: [], url: "https://x.test/a" };
+    const sig = hmac(sorted(body));
+    assert.equal(verifyIpaymuSignature(body, sig, va), true);
+    // Form-encoded callbacks deliver integers as strings and may omit additional_info.
+    const { additional_info: _omitted, ...rest } = body;
+    assert.equal(verifyIpaymuSignature({ ...rest, trx_id: "1", status_code: "1" }, sig, va), true);
+    // A signature computed over JSON that escapes "/" is accepted as well.
+    assert.equal(verifyIpaymuSignature(body, hmac(sorted(body).split("/").join(String.fromCharCode(92) + "/")), va), true);
+    assert.equal(verifyIpaymuSignature(body, sig, "another-va"), false);
+    assert.equal(verifyIpaymuSignature({ ...body, amount: "1" }, sig, va), false);
+    assert.equal(verifyIpaymuSignature(body, "", va), false);
+    assert.equal(verifyIpaymuSignature(null, sig, va), false);
   });
 
   test("helpers: phone normalisation and LIKE escaping", () => {
@@ -397,7 +406,7 @@ describe("integration status", () => {
     const res = await api().get("/api/v1/system/integrations").set(bearer(sa.token));
     assert.equal(res.status, 200);
     assert.equal(typeof res.body.ai.nvidia, "boolean");
-    assert.equal(typeof res.body.payments.midtrans, "boolean");
+    assert.equal(typeof res.body.payments.ipaymu, "boolean");
     assert.match(res.body.webhooks.whatsapp, /\/api\/v1\/webhooks\/whatsapp$/);
     assert.ok(!/key|secret|token/i.test(Object.keys(res.body.ai).join()));
     const owner = await createTenant();

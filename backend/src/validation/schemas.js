@@ -367,3 +367,24 @@ export const createBankAccountBody = z.object({
 });
 
 export const updateBankAccountBody = z.object(bankFields).partial();
+
+// ---------- platform AI settings (superadmin) ----------
+const apiKeyField = z
+  .string()
+  .trim()
+  .min(10, "API key terlalu pendek")
+  .max(400, "API key terlalu panjang")
+  .refine((k) => /^[!-~]+$/.test(k), "API key hanya boleh berisi karakter ASCII tanpa spasi")
+  .optional();
+
+export const aiSettingsBody = z.object({
+  provider: z.enum(["nvidia", "gemini"]).optional(),
+  nvidiaModel: optionalText(120),
+  geminiModel: optionalText(120),
+  nvidiaKey: z.preprocess((v) => (v === "" ? undefined : v), apiKeyField),
+  geminiApiKey: z.preprocess((v) => (v === "" ? undefined : v), apiKeyField),
+  clearNvidiaKey: boolField.optional(),
+  clearGeminiKey: boolField.optional(),
+});
+
+export const aiSettingsTestBody = z.object({ provider: z.enum(["nvidia", "gemini"]) });

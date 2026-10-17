@@ -1,6 +1,9 @@
 import os from "os";
 import { getPool, pingDb, query } from "../config/db.js";
 import { config } from "../config/env.js";
+import { audit } from "../services/auditService.js";
+import { testAiProvider } from "../services/aiBrainService.js";
+import { getAiSettingsPublic, getEffectiveAi, saveAiSettings } from "../services/platformSettings.js";
 
 const GB = 1024 ** 3;
 
@@ -79,16 +82,37 @@ export async function getSystemMetrics(req, res) {
  * secrets themselves never leave the server and are changed through its environment.
  */
 export async function getIntegrationStatus(req, res) {
-  const { ai, meta, midtrans, smtp } = config;
+  const { meta, ipaymu, smtp } = config;
+  const ai = await getEffectiveAi();
   res.json({
     success: true,
     ai: { primaryProvider: ai.provider, nvidia: Boolean(ai.nvidiaKey), nvidiaModel: ai.nvidiaModel, gemini: Boolean(ai.geminiApiKey), geminiModel: ai.geminiModel },
     whatsapp: { appSecret: Boolean(meta.appSecret), verifyToken: Boolean(meta.verifyToken), graphVersion: meta.graphVersion },
-    payments: { midtrans: Boolean(midtrans.serverKey), mode: midtrans.serverKey ? (midtrans.isProduction ? "production" : "sandbox") : null },
+    payments: { ipaymu: Boolean(ipaymu.va && ipaymu.apiKey), mode: ipaymu.va && ipaymu.apiKey ? (ipaymu.isProduction ? "production" : "sandbox") : null },
     email: { smtp: Boolean(smtp.host && smtp.user && smtp.pass) },
     webhooks: {
       whatsapp: `${config.appUrl}/api/v1/webhooks/whatsapp`,
-      midtrans: `${config.appUrl}/api/v1/payments/webhook`,
+      ipaymu: `${config.appUrl}/api/v1/payments/webhook`,
     },
   });
+}
+
+/** GET /system/ai-settings (superadmin): provider, models and whether each key is set. Never the key itself. */
+export async function getAiSettings(req, res) {
+  res.json({ success: true, settings: await getAiSettingsPublic() });
+}
+
+/** PUT /system/ai-settings (superadmin): empty key fields keep the stored key. */
+export async function updateAiSettings(req, res) {
+  const settings = await saveAiSettings(req.body, req.user.id);
+  const changed = Object.keys(req.body).filter((k) => req.body[k] !== undefined && req.body[k] !== "");
+  // Record which fields changed, never their values.
+  await audit(req, "platform.ai_settings_update", { entityType: "platform_settings", entityId: "ai", metadata: { fields: changed } });
+  res.json({ success: true, message: "Pengaturan AI tersimpan.", settings });
+}
+
+/** POST /system/ai-settings/test (superadmin): one tiny request with the key currently in effect. */
+export async function testAiSettings(req, res) {
+  const result = await testAiProvider(req.body.provider);
+  res.json({ success: result.ok, ...result });
 }

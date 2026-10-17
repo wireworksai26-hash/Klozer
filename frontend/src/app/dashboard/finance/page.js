@@ -34,7 +34,7 @@ export default function FinancePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">Keuangan dan Arus Kas Masuk</h1>
-          <p className="text-body-sm text-fg-muted">Pembayaran pesanan {name}. QRIS terverifikasi otomatis oleh Midtrans; transfer manual dikonfirmasi di sini.</p>
+          <p className="text-body-sm text-fg-muted">Pembayaran pesanan {name}. QRIS terverifikasi otomatis oleh iPaymu; transfer manual dikonfirmasi di sini.</p>
         </div>
         <button type="button" onClick={exportCsv} disabled={!paid.length} className="btn-primary !py-2.5 !px-5 text-body-sm font-bold flex items-center gap-2 cursor-pointer self-start disabled:opacity-50">
           <DownloadIcon className="w-4 h-4" />

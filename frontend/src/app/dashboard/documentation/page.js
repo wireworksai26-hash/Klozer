@@ -50,17 +50,17 @@ Token disimpan terenkripsi dan tidak pernah ditampilkan lagi. Satu nomor WhatsAp
     },
     {
       id: "qris-settle",
-      title: "3. Pembayaran QRIS (Midtrans)",
+      title: "3. Pembayaran QRIS (iPaymu)",
       icon: <QrIcon className="w-4 h-4 text-emerald-600" />,
       summary: "Menerbitkan QRIS dari chat dan pelunasan otomatis.",
       content: `
 ### Cara kerja QRIS:
 1. Di Live Chat, klik **Terbitkan QRIS**, pilih produk dan jumlah. Klozer membuat pesanan sungguhan (stok berkurang) lalu mengirim tautan QRIS ke pelanggan.
 2. Nominal selalu diambil dari pesanan di server, bukan dari yang diketik.
-3. Setelah pelanggan membayar, Midtrans mengirim notifikasi ke \`${origin}/api/v1/payments/webhook\`. Tanda tangan notifikasi diperiksa, nominal dicocokkan, dan pesanan otomatis menjadi **Lunas**.
-4. Notifikasi ganda diabaikan, jadi komisi CS hanya dihitung sekali.
+3. Setelah pelanggan membayar, iPaymu mengirim callback ke \`${origin}/api/v1/payments/webhook\`. Tanda tangan callback diperiksa, nominal dicocokkan, dan pesanan otomatis menjadi **Lunas**.
+4. Callback ganda diabaikan, jadi komisi CS hanya dihitung sekali.
 
-QRIS membutuhkan Midtrans Server Key yang diatur admin di server. Untuk pembayaran transfer manual, pesanan dikonfirmasi oleh owner, supervisor, atau finance di menu **Keuangan**.
+QRIS membutuhkan VA dan API Key iPaymu yang diatur admin di server. Kode QRIS berlaku 5 menit; jika kedaluwarsa, terbitkan ulang. Untuk pembayaran transfer manual, pesanan dikonfirmasi oleh owner, supervisor, atau finance di menu **Keuangan**.
       `,
     },
     {

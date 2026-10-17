@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/common/Logo";
+import { whatsappUrl } from "@/utils/legal/config";
 
 export default function Footer() {
   return (
@@ -66,9 +67,11 @@ export default function Footer() {
             <div>
               <h5 className="font-bold text-white mb-4">Bantuan</h5>
               <ul className="flex flex-col gap-3 text-white/80">
-                <li><a href="#faq" className="hover:text-white transition-colors no-underline">Pusat Bantuan</a></li>
-                <li><a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" className="hover:text-white transition-colors no-underline">WhatsApp Support</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors no-underline">Tanya Jawab (FAQ)</a></li>
+                <li><Link href="/faq" className="hover:text-white transition-colors no-underline">Tanya Jawab (FAQ)</Link></li>
+                <li><Link href="/bayar" className="hover:text-white transition-colors no-underline">Cara Bayar</Link></li>
+                <li><Link href="/kontak" className="hover:text-white transition-colors no-underline">Kontak</Link></li>
+                <li><Link href="/kebijakan-refund" className="hover:text-white transition-colors no-underline">Kebijakan Refund</Link></li>
+                {whatsappUrl() && <li><a href={whatsappUrl()} target="_blank" rel="noreferrer" className="hover:text-white transition-colors no-underline">WhatsApp Support</a></li>}
               </ul>
             </div>
 
@@ -96,6 +99,8 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-6">
+            <Link href="/syarat-ketentuan" className="hover:text-white transition-colors no-underline">Syarat &amp; Ketentuan</Link>
+            <Link href="/kebijakan-privasi" className="hover:text-white transition-colors no-underline">Kebijakan Privasi</Link>
             <span>© 2026 Klozer. All rights reserved.</span>
             <span>Standar Keamanan Meta & Bank Indonesia</span>
           </div>

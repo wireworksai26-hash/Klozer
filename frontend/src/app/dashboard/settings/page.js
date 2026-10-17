@@ -3,7 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
 import { api } from "@/utils/api";
-import { BotIcon, BuildingIcon, SparklesIcon, UserIcon, UsersIcon, XIcon } from "@/components/icons";
+import { BotIcon, BuildingIcon, EyeIcon, EyeOffIcon, KeyIcon, SparklesIcon, UserIcon, UsersIcon, XIcon } from "@/components/icons";
 
 const card = "bg-white p-6 rounded-2xl border border-line shadow-[0_2px_12px_rgba(12,23,84,0.04)]";
 const input = "w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand";
@@ -25,8 +25,170 @@ function StatusPill({ ok, yes, no }) {
   );
 }
 
+const PROVIDERS = {
+  nvidia: { name: "NVIDIA NIM", hint: "Dapatkan key di build.nvidia.com", modelHint: "meta/llama-3.3-70b-instruct" },
+  gemini: { name: "Google Gemini", hint: "Dapatkan key di aistudio.google.com", modelHint: "gemini-2.5-flash-lite" },
+};
+const SOURCE_TEXT = { database: "disimpan dari dashboard", environment: "dari environment server", none: "belum diatur" };
+
+function ApiKeyField({ providerKey, settings, value, onChange, onClear, clearRequested }) {
+  const [show, setShow] = useState(false);
+  const p = PROVIDERS[providerKey];
+  const info = settings[providerKey];
+  const placeholder = info.configured ? `${info.hint} (${SOURCE_TEXT[info.source]}). Kosongkan bila tidak diubah` : `Tempel API key ${p.name}`;
+  return (
+    <div>
+      <label className={label}>API Key {p.name}</label>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          autoComplete="off"
+          spellCheck={false}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${input} font-mono pr-11`}
+        />
+        <button type="button" onClick={() => setShow(!show)} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-fg-muted" aria-label={show ? "Sembunyikan" : "Tampilkan"}>
+          {show ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+        </button>
+      </div>
+      <div className="flex items-center justify-between mt-1.5 gap-3">
+        <span className="text-caption text-fg-muted">{p.hint}</span>
+        {info.source === "database" && (
+          <label className="text-caption text-rose-700 flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" checked={clearRequested} onChange={(e) => onClear(e.target.checked)} />
+            Hapus key tersimpan
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AiKeysCard({ onSaved }) {
+  const { notify } = useDashboard();
+  const [settings, setSettings] = useState(null);
+  const [form, setForm] = useState({ provider: "nvidia", nvidiaModel: "", geminiModel: "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState("");
+  const [results, setResults] = useState({});
+
+  const apply = (data) => {
+    setSettings(data);
+    setForm({ provider: data.provider, nvidiaModel: data.nvidia.model || "", geminiModel: data.gemini.model || "", nvidiaKey: "", geminiApiKey: "", clearNvidiaKey: false, clearGeminiKey: false });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/system/ai-settings")
+      .then((res) => !cancelled && apply(res.settings))
+      .catch((err) => !cancelled && notify("error", err.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [notify]);
+
+  if (!settings) return <div className={card}>Memuat pengaturan AI...</div>;
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await api.put("/system/ai-settings", form);
+      apply(res.settings);
+      setResults({});
+      notify("success", "Pengaturan AI tersimpan. Langsung dipakai untuk balasan berikutnya.");
+      onSaved?.();
+    } catch (err) {
+      notify("error", err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const test = async (provider) => {
+    setTesting(provider);
+    try {
+      const res = await api.post("/system/ai-settings/test", { provider });
+      setResults((r) => ({
+        ...r,
+        [provider]: res.ok ? { ok: true, text: `Terhubung (${res.model}, ${res.latencyMs} ms)` } : { ok: false, text: res.message },
+      }));
+    } catch (err) {
+      setResults((r) => ({ ...r, [provider]: { ok: false, text: err.message } }));
+    } finally {
+      setTesting("");
+    }
+  };
+
+  const fallback = form.provider === "nvidia" ? "gemini" : "nvidia";
+  const modelKey = (p) => (p === "nvidia" ? "nvidiaModel" : "geminiModel");
+  const keyKey = (p) => (p === "nvidia" ? "nvidiaKey" : "geminiApiKey");
+  const clearKey = (p) => (p === "nvidia" ? "clearNvidiaKey" : "clearGeminiKey");
+
+  const section = (p, title) => (
+    <div className="rounded-xl border border-line p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="font-bold text-ink">{title}</div>
+        <span className="text-caption font-bold text-fg-muted">{PROVIDERS[p].name}</span>
+      </div>
+      <ApiKeyField
+        providerKey={p}
+        settings={settings}
+        value={form[keyKey(p)]}
+        onChange={(v) => setForm({ ...form, [keyKey(p)]: v })}
+        clearRequested={form[clearKey(p)]}
+        onClear={(v) => setForm({ ...form, [clearKey(p)]: v })}
+      />
+      <div>
+        <label className={label}>Model</label>
+        <input className={`${input} font-mono`} value={form[modelKey(p)]} placeholder={PROVIDERS[p].modelHint} onChange={(e) => setForm({ ...form, [modelKey(p)]: e.target.value })} />
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button type="button" disabled={testing === p || !settings[p].configured} onClick={() => test(p)} className="btn-outline !py-2 !px-4 text-body-sm font-bold disabled:opacity-50">
+          {testing === p ? "Menguji..." : "Uji koneksi"}
+        </button>
+        {results[p] && <span className={`text-caption font-semibold ${results[p].ok ? "text-emerald-700" : "text-rose-700"}`}>{results[p].text}</span>}
+        {!settings[p].configured && <span className="text-caption text-fg-muted">Simpan key dulu untuk bisa diuji.</span>}
+      </div>
+    </div>
+  );
+
+  return (
+    <form onSubmit={save} className={card}>
+      <div className="flex items-center gap-2 mb-1">
+        <KeyIcon className="w-5 h-5 text-brand" />
+        <h3 className="card-title">Kunci API AI</h3>
+      </div>
+      <p className="text-label text-fg-muted mb-5">
+        Key disimpan terenkripsi di server dan tidak pernah dikirim kembali ke browser. Jika tidak diisi di sini, server memakai nilai dari file .env. Perubahan langsung berlaku tanpa restart.
+      </p>
+      <div className="mb-4">
+        <label className={label}>Penyedia utama</label>
+        <select className={input} value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}>
+          {Object.entries(PROVIDERS).map(([k, p]) => (
+            <option key={k} value={k}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col gap-4">
+        {section(form.provider, "Model utama")}
+        {section(fallback, "Cadangan (dipakai bila utama gagal)")}
+      </div>
+      <div className="flex justify-end mt-5">
+        <button type="submit" disabled={saving} className="btn-primary !py-2.5 !px-6 font-bold disabled:opacity-60">
+          {saving ? "Menyimpan..." : "Simpan Pengaturan AI"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function PlatformTab() {
   const [state, setState] = useState({ loading: true, data: null, error: "" });
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +199,8 @@ function PlatformTab() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reload]);
+
 
   if (state.loading) return <div className={card}>Memuat status integrasi...</div>;
   if (state.error) return <div className={`${card} text-rose-700`}>{state.error}</div>;
@@ -49,16 +212,17 @@ function PlatformTab() {
     ["Google Gemini", ai.geminiModel, ai.gemini],
     ["Meta App Secret (verifikasi webhook)", "META_APP_SECRET", whatsapp.appSecret],
     ["Meta Verify Token", "META_WEBHOOK_VERIFY_TOKEN", whatsapp.verifyToken],
-    ["Midtrans (QRIS)", payments.mode ? `mode ${payments.mode}` : "MIDTRANS_SERVER_KEY", payments.midtrans],
+    ["iPaymu (QRIS)", payments.mode ? `mode ${payments.mode}` : "IPAYMU_VA / IPAYMU_API_KEY", payments.ipaymu],
     ["Email SMTP", "SMTP_HOST / SMTP_USER / SMTP_PASS", email.smtp],
   ];
 
   return (
     <div className="flex flex-col gap-6 max-w-[860px]">
+      <AiKeysCard onSaved={() => setReload((n) => n + 1)} />
       <div className={card}>
         <h3 className="card-title mb-1">Status Integrasi Platform</h3>
         <p className="text-label text-fg-muted mb-5">
-          Kunci API dan rahasia disimpan di environment server dan tidak pernah dikirim ke browser. Untuk mengubahnya, edit file .env di server lalu restart layanan.
+          Kunci AI diatur di kartu di atas. Kunci lain (WhatsApp/Meta, iPaymu, SMTP) diatur lewat file .env di server, lalu restart layanan.
         </p>
         <div className="divide-y divide-line">
           {rows.map(([name, detail, ok]) => (
@@ -76,7 +240,7 @@ function PlatformTab() {
         <h3 className="card-title mb-3">URL Webhook untuk Didaftarkan</h3>
         {[
           ["Meta WhatsApp", webhooks.whatsapp],
-          ["Midtrans Notification URL", webhooks.midtrans],
+          ["iPaymu Callback (Notify) URL", webhooks.ipaymu],
         ].map(([name, url]) => (
           <div key={name} className="mb-3">
             <label className={label}>{name}</label>
