@@ -14,6 +14,8 @@ export const DEFAULT_FEATURES = Object.freeze({
   antiFraud: true,
   metaCapi: true,
   multiCs: true,
+  knowledgeBase: true,
+  aiLearning: true,
 });
 
 export const LEAD_STATUSES = ["new", "in_progress", "closing", "repeat", "idle", "closed_lost"];

@@ -17,6 +17,9 @@ import {
 // stock and bank details tied to the data it is given. Landing answers state product facts, so they stay tighter.
 const LANDING_TEMPERATURE = 0.5;
 import { getEffectiveAi } from "./platformSettings.js";
+import { buildKnowledgeBlock, buildLearningBlock, buildRetrievalQuery } from "./aiContext.js";
+import { retrieveLearning } from "./aiLearningService.js";
+import { retrieveKnowledge } from "./knowledge/knowledgeService.js";
 
 /**
  * Multi-layer AI Guardrails Rules & Evaluator
@@ -134,7 +137,7 @@ export class AiGuardrails {
  */
 export async function getInstitutionRagContext(institutionId) {
   const inst = await queryOne(
-    "SELECT id, name, mode, sector, address, phone_number, ai_persona_json FROM institutions WHERE id = ? AND is_active = 1",
+    "SELECT id, name, mode, sector, address, phone_number, ai_persona_json, features_json FROM institutions WHERE id = ? AND is_active = 1",
     [institutionId]
   );
   if (!inst) throw notFound("Instansi tidak ditemukan.");
@@ -170,6 +173,7 @@ export async function getInstitutionRagContext(institutionId) {
     address: inst.address,
     csContact: inst.phone_number,
     persona: parseJsonColumn(inst.ai_persona_json),
+    features: parseJsonColumn(inst.features_json),
     catalog: products,
     programs,
     paymentAccounts: bankAccounts,
@@ -443,6 +447,16 @@ export async function callVisionModel({ systemPrompt, userText, file, maxTokens 
   return null;
 }
 
+/** Retrieval must never stop a reply: a failing lookup just means the reply goes out without that extra context. */
+async function safely(label, fn, fallback) {
+  try {
+    return await fn();
+  } catch (err) {
+    logger.warn({ err: err.message, label }, "AI context lookup failed; replying without it");
+    return fallback;
+  }
+}
+
 /**
  * Generate AI Customer Service Response with Gemini & Strict Guardrails
  * @param {Object} params { institutionId, customerName, customerPhone, messageText, history }
@@ -531,6 +545,14 @@ export async function generateAiCsResponse({
 
   // 3. Build the system prompt: casual WhatsApp voice on top, tenant data as the only source of facts.
   // Tenant-configured persona (bot name, tone, greeting) is plain text, length-limited by validation.
+  // Owner-provided context: reference documents and corrections. Each can be switched off per tenant (package).
+  const features = baseContext.features || {};
+  const retrievalText = buildRetrievalQuery(messageText, history);
+  const [knowledge, learning] = await Promise.all([
+    features.knowledgeBase === false ? { chunks: [], sources: [] } : safely("knowledge", () => retrieveKnowledge({ institutionId, text: retrievalText }), { chunks: [], sources: [] }),
+    features.aiLearning === false ? { rules: [], examples: [] } : safely("learning", () => retrieveLearning({ institutionId, text: retrievalText }), { rules: [], examples: [] }),
+  ]);
+
   const systemPrompt = buildCsSystemPrompt({
     instName,
     instSector,
@@ -543,6 +565,8 @@ export async function generateAiCsResponse({
     bankTransferSummary,
     instAddress,
     instHours,
+    learningBlock: buildLearningBlock(learning),
+    knowledgeBlock: buildKnowledgeBlock(knowledge.chunks),
   });
 
   // 4. Build Multi-Turn History in User Prompt
@@ -574,6 +598,8 @@ export async function generateAiCsResponse({
       modelUsed: result.model,
       provider: result.provider,
       fallbackUsed: result.fallbackUsed,
+      sources: knowledge.sources,
+      correctionIds: [...learning.rules.map((r) => r.id), ...learning.examples.map((e) => e.id)],
       usage: result.usage,
       latencyMs: result.latencyMs,
       institutionContext: { name: instName, sector: instSector },

@@ -274,6 +274,8 @@ export const DEFAULT_MODULES = Object.freeze({
   antiFraud: true,
   metaCapi: true,
   multiCs: true,
+  knowledgeBase: true,
+  aiLearning: true,
 });
 
 const TIER_LABELS = { starter: "Starter", pro: "Pro Plan", enterprise: "Enterprise" };

@@ -58,13 +58,15 @@ export const FEATURE_LIST = [
   { key: "antiFraud", label: "Anti-Fraud Bukti Transfer", menu: [] },
   { key: "metaCapi", label: "Meta Ads CAPI Tracking", menu: [] },
   { key: "multiCs", label: "Multi-CS & Chat Internal", menu: ["/dashboard/internal-chat"] },
+  { key: "knowledgeBase", label: "Basis Pengetahuan AI (SOP & dokumen)", menu: [] },
+  { key: "aiLearning", label: "Evaluasi & Pembelajaran AI", menu: [] },
 ];
 
 const only = (keys) => Object.fromEntries(FEATURE_LIST.map(({ key }) => [key, keys.includes(key)]));
 
 // What each package includes (follows the pricing table). The superadmin can still switch single features per tenant.
 const STARTER_FEATURES = ["personaAi", "qris", "stockManagement", "printReceipt"];
-const PRO_FEATURES = [...STARTER_FEATURES, "multiCs", "voiceAi", "antiFraud", "metaCapi", "autoLabel", "picFeature"];
+const PRO_FEATURES = [...STARTER_FEATURES, "multiCs", "voiceAi", "antiFraud", "metaCapi", "autoLabel", "picFeature", "knowledgeBase", "aiLearning"];
 export const PLAN_FEATURES = {
   Starter: only(STARTER_FEATURES),
   Pro: only(PRO_FEATURES),

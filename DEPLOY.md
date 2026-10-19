@@ -135,3 +135,10 @@ Saat pelanggan mengirim foto atau PDF di WhatsApp, AI membacanya (nominal, bank,
 - Berkas tidak disimpan di server. Dashboard mengambilnya dari WhatsApp saat dibuka (Meta menyimpan media sekitar 30 hari).
 - Uji tanpa pelanggan sungguhan: **Test CS AI → Bukti bayar** (tidak mengubah pesanan dan tidak mengirim pesan).
 - Model cadangan per penyedia diatur di **Pengaturan → Integrasi Platform** (atau `GEMINI_FALLBACK_MODEL` / `NVIDIA_FALLBACK_MODEL`).
+
+## Basis pengetahuan dan evaluasi AI
+
+- **Basis pengetahuan** (`/api/v1/knowledge`, owner dan supervisor): tempel teks SOP atau unggah PDF (harus punya lapisan teks, bukan hasil scan), TXT, atau MD, maksimal 5 MB per berkas, 50 dokumen per toko. Isinya dipecah jadi potongan dan dicari dengan MySQL FULLTEXT; potongan yang relevan ikut masuk prompt AI sebagai bahan bacaan, bukan perintah. Data resmi (katalog, harga, rekening) tetap menang bila bertentangan.
+- **Evaluasi AI** (`/api/v1/ai/evaluation`): daftar balasan AI beserta pertanyaan yang dijawab dan sumber dokumennya. CS boleh menilai (baik/buruk), owner dan supervisor boleh mengoreksi. Koreksi disimpan per toko dan dipakai langsung untuk pertanyaan serupa. **Aturan** (`/api/v1/ai/rules`) selalu dikirim pada setiap balasan (maks. 30).
+- Keduanya punya sakelar paket: `knowledgeBase` dan `aiLearning` (menu Instansi Tenant). Ini bukan pelatihan ulang model: koreksi dan dokumen dikirim ke model pada setiap balasan, jadi menambah token per balasan.
+- Migrasi 009 dan 010 jalan otomatis saat backend start.

@@ -289,8 +289,8 @@ export async function processInboundMessage({ institutionId, fromPhone, customer
   const sent = await sendWhatsAppMessage({ institutionId, to: phone, text: ai.replyText });
 
   await query(
-    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error)
-     VALUES (?, ?, ?, 'ai_agent', 'text', ?, ?, ?, ?, ?)`,
+    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error, meta_json)
+     VALUES (?, ?, ?, 'ai_agent', 'text', ?, ?, ?, ?, ?, ?)`,
     [
       institutionId,
       leadId,
@@ -300,6 +300,7 @@ export async function processInboundMessage({ institutionId, fromPhone, customer
       ai.modelUsed ?? null,
       sent.success ? 1 : 0,
       sent.success ? null : String(sent.error).slice(0, 250),
+      JSON.stringify({ provider: ai.provider ?? null, fallbackUsed: Boolean(ai.fallbackUsed), sources: ai.sources ?? [], correctionIds: ai.correctionIds ?? [] }),
     ]
   );
   emitToTenant(institutionId, "chat:message", { leadId, direction: "outbound", text: ai.replyText, sender: "ai_agent" });

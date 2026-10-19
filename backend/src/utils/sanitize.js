@@ -43,7 +43,7 @@ export function sanitizeXss(value) {
  * Recursively sanitize objects, arrays, and strings.
  * Safely skips critical non-text fields such as hashed/raw passwords.
  */
-const DEFAULT_SKIP_KEYS = new Set([
+export const DEFAULT_SKIP_KEYS = new Set([
   "password",
   "currentPassword",
   "newPassword",

@@ -26,6 +26,7 @@
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "socket.io": "^4.8.3",
+    "unpdf": "^1.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

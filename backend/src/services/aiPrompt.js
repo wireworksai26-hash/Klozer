@@ -41,6 +41,8 @@ export function effectiveTone(persona = {}) {
  * @param {string} p.bankTransferSummary
  * @param {string} p.instAddress
  * @param {string} p.instHours
+ * @param {string} [p.learningBlock]   owner rules and corrections (see aiContext.buildLearningBlock)
+ * @param {string} [p.knowledgeBlock]  passages from the owner's documents (see aiContext.buildKnowledgeBlock)
  */
 export function buildCsSystemPrompt({
   instName,
@@ -54,6 +56,8 @@ export function buildCsSystemPrompt({
   bankTransferSummary,
   instAddress,
   instHours,
+  learningBlock = "",
+  knowledgeBlock = "",
 }) {
   const agentName = persona.botName ? String(persona.botName).trim() : `Admin ${instName}`;
   const callName = customerFirstName ? `Kak ${customerFirstName}` : "kak";
@@ -81,7 +85,7 @@ Ikuti gaya bicara di atas bila ada, tapi balasan tetap singkat dan tanpa format 
 
   return `
 Kamu adalah ${agentName}, admin chat WhatsApp "${instName}" (${instSector}). Kamu ngobrol langsung dengan pelanggan untuk menjawab pertanyaan produk, membantu mereka memesan, dan mengurus pembayarannya.
-${personaBlock}
+${personaBlock}${learningBlock}
 CARA NGOBROL (utamakan ini):
 1. Pakai bahasa WhatsApp sehari-hari: santai, hangat, tetap sopan. Sapa pelanggan "kak". Sebut dirimu "aku" atau "kami", bukan "saya" atau "Anda". Contoh nada: "Ready kak, masih ada 7 pcs ya", "Siap kak, aku catat dulu", "Boleh banget kak".
 2. Singkat: 1-3 kalimat pendek per balasan, seperti orang mengetik di HP. Baru panjangkan untuk rincian pesanan, total, atau cara bayar, dan itu pun rapi per baris. Jangan menulis seperti esai atau surat.
@@ -125,7 +129,7 @@ ${promoList}
 [REKENING & QRIS RESMI]:
 - Dynamic QRIS Otomatis (Semua Bank & e-Wallet)
 ${bankList}
-`.trim();
+${knowledgeBlock}`.trim();
 }
 
 /** What the model receives as the user turn: recent history, a one-line turn hint, the new message. */

@@ -27,6 +27,9 @@ import * as bankCtrl from "../controllers/bankAccountController.js";
 import * as auditCtrl from "../controllers/auditController.js";
 import * as uploadCtrl from "../controllers/uploadController.js";
 import * as proofCtrl from "../controllers/proofController.js";
+import * as knowledgeCtrl from "../controllers/knowledgeController.js";
+import * as evalCtrl from "../controllers/aiEvaluationController.js";
+import * as lv from "../validation/learningSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -87,9 +90,31 @@ router.post("/ai/ask", publicAiLimiter, validate({ body: v.publicAskBody }), h(c
 router.get("/chats/:leadId", ...tenant, requireRole(...SALES), validate({ params: v.leadIdParams }), h(chatCtrl.getChatMessages));
 router.post("/chats/send", ...tenant, requireRole(...SALES), validate({ body: v.sendMessageBody }), h(chatCtrl.sendMessage));
 router.post("/ai/chat", ...tenant, requireRole(...SALES), aiLimiter, validate({ body: v.aiChatBody }), h(chatCtrl.aiChatSimulation));
-router.post("/ai/analyze-proof", ...tenant, requireRole(...MONEY), aiLimiter, validate({ body: v.analyzeProofBody }), h(proofCtrl.analyzeProofPreview));
+router.post("/ai/analyze-proof", ...tenant, requireRole(...MONEY), aiLimiter, validate({ body: v.analyzeProofBody }, { rawFields: ["imageBase64"] }), h(proofCtrl.analyzeProofPreview));
 router.get("/orders/:id/proofs", ...tenant, requireRole(...MONEY), validate({ params: v.idParams }), h(proofCtrl.listOrderProofs));
 router.get("/payment-proofs/:id/image", ...tenant, requireRole(...MONEY), validate({ params: v.idParams }), h(proofCtrl.getProofImage));
+
+// ==================== AI KNOWLEDGE BASE ====================
+const knowledgeOn = requireFeature("knowledgeBase", "Basis Pengetahuan AI");
+router.get("/knowledge", ...tenant, requireRole(...MANAGERS), knowledgeOn, h(knowledgeCtrl.list));
+router.post("/knowledge/text", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ body: lv.createKnowledgeTextBody }, { rawFields: ["content"] }), h(knowledgeCtrl.createText));
+router.post("/knowledge/file", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ body: lv.createKnowledgeFileBody }, { rawFields: ["contentBase64"] }), h(knowledgeCtrl.createFile));
+router.post("/knowledge/search", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ body: lv.knowledgeSearchBody }), h(knowledgeCtrl.search));
+router.get("/knowledge/:id", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ params: v.idParams }), h(knowledgeCtrl.get));
+router.put("/knowledge/:id", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ params: v.idParams, body: lv.updateKnowledgeBody }, { rawFields: ["content"] }), h(knowledgeCtrl.update));
+router.delete("/knowledge/:id", ...tenant, requireRole(...MANAGERS), knowledgeOn, validate({ params: v.idParams }), h(knowledgeCtrl.remove));
+
+// ==================== AI EVALUATION & LEARNING ====================
+const learningOn = requireFeature("aiLearning", "Evaluasi dan Pembelajaran AI");
+const rawText = { rawFields: ["correctedReply", "ruleText", "note"] };
+router.get("/ai/evaluation", ...tenant, requireRole(...SALES), learningOn, validate({ query: lv.evaluationQuery }), h(evalCtrl.feed));
+router.get("/ai/evaluation/summary", ...tenant, requireRole(...SALES), learningOn, validate({ query: lv.evaluationSummaryQuery }), h(evalCtrl.summary));
+router.post("/ai/evaluation/:id/feedback", ...tenant, requireRole(...SALES), learningOn, validate({ params: v.idParams, body: lv.feedbackBody }), h(evalCtrl.feedback));
+router.post("/ai/evaluation/:id/correct", ...tenant, requireRole(...MANAGERS), learningOn, validate({ params: v.idParams, body: lv.correctReplyBody }, rawText), h(evalCtrl.correct));
+router.get("/ai/corrections", ...tenant, requireRole(...MANAGERS), learningOn, validate({ query: lv.correctionsQuery }), h(evalCtrl.corrections));
+router.post("/ai/rules", ...tenant, requireRole(...MANAGERS), learningOn, validate({ body: lv.createRuleBody }, rawText), h(evalCtrl.rule));
+router.put("/ai/corrections/:id", ...tenant, requireRole(...MANAGERS), learningOn, validate({ params: v.idParams, body: lv.updateCorrectionBody }, rawText), h(evalCtrl.update));
+router.delete("/ai/corrections/:id", ...tenant, requireRole(...MANAGERS), learningOn, validate({ params: v.idParams }), h(evalCtrl.remove));
 router.post("/webhooks/whatsapp/simulate", ...tenant, requireRole(...MANAGERS), validate({ body: v.simulateInboundBody }), h(webhookCtrl.simulateWhatsAppInbound));
 
 router.get("/bank-accounts", ...tenant, requireRole(...MANAGERS, "finance"), h(bankCtrl.listBankAccounts));
