@@ -82,3 +82,18 @@ export const webhookLimiter = rateLimit({
   limit: 600,
   handler: handler("Terlalu banyak permintaan webhook."),
 });
+
+// Public web chat widget: anonymous visitors on other people's websites. Polling is frequent, sending is not.
+export const webchatPollLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 1000,
+  limit: 120,
+  handler: handler("Terlalu banyak permintaan. Coba lagi sebentar."),
+});
+
+export const webchatSendLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 1000,
+  limit: 15,
+  handler: handler("Terlalu banyak pesan. Coba lagi sebentar."),
+});

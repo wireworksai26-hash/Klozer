@@ -2,8 +2,8 @@ import { queryOne } from "../config/db.js";
 import { audit } from "../services/auditService.js";
 import { supportedChannelTypes } from "../services/channels/adapters/index.js";
 import { channelLimitFor } from "../services/channels/channelPlans.js";
-import { createChannel, deleteChannel, getChannel, listChannels, updateChannel } from "../services/channels/channelRepository.js";
-import { verifyChannel } from "../services/channels/channelService.js";
+import { getChannel, listChannels, updateChannel } from "../services/channels/channelRepository.js";
+import { connectChannel, disconnectChannel, verifyChannel } from "../services/channels/channelService.js";
 
 /** GET /channels: connected accounts (no tokens) and how many the plan allows. */
 export async function list(req, res) {
@@ -13,7 +13,8 @@ export async function list(req, res) {
 
 /** POST /channels: connect a new account. */
 export async function create(req, res) {
-  const channel = await createChannel({ institutionId: req.tenantId, ...req.body });
+  const { type, name, aiEnabled, ...input } = req.body;
+  const { channel } = await connectChannel({ institutionId: req.tenantId, type, name, aiEnabled, input });
   await audit(req, "channel.create", { entityType: "channel", entityId: channel.id, metadata: { type: channel.type } });
   res.status(201).json({ success: true, message: "Kanal terhubung.", data: channel });
 }
@@ -27,7 +28,7 @@ export async function update(req, res) {
 
 /** DELETE /channels/:id */
 export async function remove(req, res) {
-  await deleteChannel(req.tenantId, Number(req.params.id));
+  await disconnectChannel(req.tenantId, Number(req.params.id));
   await audit(req, "channel.delete", { entityType: "channel", entityId: Number(req.params.id) });
   res.json({ success: true, message: "Kanal dihapus." });
 }

@@ -151,3 +151,35 @@ Saat pelanggan mengirim foto atau PDF di WhatsApp, AI membacanya (nominal, bank,
 - **Status online** dihitung dari koneksi Socket.io dashboard (jeda 20 detik untuk reload halaman). Status ini disimpan di memori proses backend: bila nanti backend dijalankan lebih dari satu instance, perlu Redis.
 - **Serah terima AI ke manusia**: AI berhenti membalas bila pelanggan memakai kata kunci (komplain, refund, "bicara dengan manusia", dst.; daftar bisa diubah per tenant), bila pesan terkena pengaman AI, atau bila bukti bayar perlu dicek. Pelanggan menerima kalimat tetap, bukan karangan model. CS yang membalas dari dashboard otomatis memegang chat; AI aktif lagi setelah tidak ada balasan manusia selama waktu tahan, atau lewat `POST /leads/:id/handback`. Jika semua model AI gagal, tidak ada balasan dikirim dan CS diberi notifikasi, tetapi AI tetap aktif untuk pesan berikutnya.
 - Migrasi 011 jalan otomatis saat backend start dan menyalin nomor dari tabel lama `whatsapp_channels` (tabel lama dibiarkan, tidak lagi dibaca).
+
+## Instagram, Messenger, Telegram, dan live chat website
+
+Semua kanal masuk ke alur yang sama dengan WhatsApp: pembagian chat, serah terima ke manusia, bukti bayar, dan evaluasi AI bekerja tanpa perubahan. Jumlah kanal per paket dihitung dari semua jenis (Starter 1, Pro 5, Enterprise 20). Balasan AI yang lebih panjang dari batas platform (Instagram 1000 karakter, Messenger 2000, Telegram 4000) dikirim sebagai beberapa pesan, dan tanda tebal gaya WhatsApp (`*teks*`) dibuang di kanal selain WhatsApp.
+
+Semua dihubungkan lewat `POST /api/v1/channels` (owner dan supervisor):
+
+| Kanal | Isian | Yang terjadi saat dihubungkan |
+|---|---|---|
+| Messenger | `type: "messenger"`, `pageId`, `accessToken` (token Halaman) | Halaman dibaca, lalu didaftarkan ke webhook aplikasi Meta (`subscribed_apps`, field `messages`) |
+| Instagram | `type: "instagram"`, `pageId`, `accessToken` (token Halaman yang tertaut ke akun Instagram Business) | Akun Instagram yang tertaut dicari otomatis dan jadi ID kanal; Halaman didaftarkan ke webhook |
+| Telegram | `type: "telegram"`, `accessToken` (token dari @BotFather) | Bot dibaca (`getMe`), lalu webhook `https://DOMAIN/api/v1/webhooks/telegram/<id-bot>` didaftarkan dengan secret acak |
+| Live chat website | `type: "webchat"`, opsional `config` (`title`, `welcomeMessage`, `color`, `allowedOrigins`) | Dibuat kunci publik `wc_...`; respons berisi `embedSnippet` untuk ditempel di situs |
+
+Bila pendaftaran webhook gagal, kanal tidak disimpan dan pesan error dari platform ditampilkan. Menghapus kanal Telegram juga mencabut webhook-nya.
+
+**Meta (Messenger dan Instagram).** Di aplikasi Meta yang sama dengan WhatsApp: tambahkan produk Messenger dan Instagram, lalu isi Callback URL `https://DOMAIN/api/v1/webhooks/meta` dengan Verify Token yang sama (`META_WEBHOOK_VERIFY_TOKEN`) dan field `messages`. `META_APP_SECRET` yang sama dipakai untuk memeriksa tanda tangan. Izin yang umumnya dibutuhkan: `pages_messaging`, `pages_manage_metadata`, `pages_show_list`, dan untuk Instagram `instagram_basic` dan `instagram_manage_messages` (nama dan syarat bisa berubah, periksa di dashboard Meta). Selama aplikasi masih mode Development, hanya akun yang punya peran di aplikasi yang bisa mengirim pesan; untuk pelanggan umum butuh App Review dan Business Verification. Balasan hanya bisa dikirim dalam 24 jam setelah pesan terakhir pelanggan; di luar itu Meta menolak dan pesan tersimpan sebagai "gagal terkirim". Token Halaman yang dibuat dari token pengguna jangka panjang tidak kedaluwarsa; token jangka pendek mati dalam hitungan jam.
+
+**Bukti bayar lewat Messenger dan Instagram.** AI tetap membaca fotonya, tetapi alamat file dari Meta cepat kedaluwarsa, jadi tombol lihat gambar di dashboard bisa menjawab "tidak lagi tersedia". Ringkasan hasil bacaan tetap tersimpan di chat.
+
+**Live chat website.** Tempel `embedSnippet` sebelum `</body>`:
+
+```html
+<script src="https://DOMAIN/api/v1/public/webchat/widget.js" data-key="wc_..." async></script>
+```
+
+- Pengunjung tidak perlu akun. Browser mereka menyimpan token bertanda tangan server yang mengikat satu pengunjung ke satu widget; token itu satu-satunya cara membaca percakapan. Widget mengambil balasan dengan polling tiap 3 detik saat jendela terbuka (melambat bila sepi).
+- `allowedOrigins` (mis. `["https://tokoanda.com"]`) membatasi situs yang boleh memakai widget; kosong berarti semua situs. Endpoint publik dibatasi laju per IP.
+- Catatan internal (serah terima, penugasan) tidak pernah terlihat pengunjung.
+- Sesi dan balasan dihitung per proses backend tanpa penyimpanan tambahan, jadi aman bila backend dijalankan lebih dari satu instance.
+
+Migrasi 012 jalan otomatis (memperpanjang kolom ID pesan dan alamat file bukti bayar).

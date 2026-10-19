@@ -25,7 +25,7 @@ export async function getProofImage(req, res) {
 
   // the proof is fetched with the account the customer wrote to (a tenant may have several numbers)
   const file = await downloadMedia({ institutionId: req.tenantId, channelId: row.channel_id, type: row.channel_type, mediaId: row.image_url.slice(MEDIA_PREFIX.length) });
-  if (!file) throw notFound("Berkas tidak lagi tersedia di WhatsApp (media hanya disimpan Meta sekitar 30 hari).");
+  if (!file) throw notFound("Berkas tidak lagi tersedia di platform asalnya (WhatsApp menyimpan media sekitar 30 hari; alamat file Messenger dan Instagram cepat kedaluwarsa).");
 
   res.set({
     "Content-Type": file.mimeType,

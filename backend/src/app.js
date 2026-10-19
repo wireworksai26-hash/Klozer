@@ -46,14 +46,16 @@ export function createApp() {
   app.use(helmet());
 
   const allowed = new Set(config.corsOrigins);
-  app.use(
-    cors({
-      // Requests without an Origin (webhooks, curl, server-to-server) are not browser CORS traffic.
-      origin: (origin, cb) => cb(null, !origin || allowed.has(origin)),
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    })
-  );
+  const dashboardCors = {
+    // Requests without an Origin (webhooks, curl, server-to-server) are not browser CORS traffic.
+    origin: (origin, cb) => cb(null, !origin || allowed.has(origin)),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  };
+  // The web chat widget runs on other people's websites. It carries its credential in a header, never a cookie, so any
+  // origin may call these routes; each chat channel can still list the sites it accepts (checked in the controller).
+  const publicCors = { origin: true, credentials: false, methods: ["GET", "POST", "OPTIONS"], maxAge: 600 };
+  app.use(cors((req, cb) => cb(null, req.path.startsWith("/api/v1/public/") ? publicCors : dashboardCors)));
 
   // The payment-proof simulator uploads a photo as base64 (up to 5 MB of file), which is more than the default limit.
   // Registered first so the larger limit applies to this one path only.

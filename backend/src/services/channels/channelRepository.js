@@ -1,9 +1,19 @@
 import { query, queryOne, transaction } from "../../config/db.js";
+import { config as appConfig } from "../../config/env.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { decryptSecret, encryptSecret } from "../../utils/crypto.js";
 import { CONNECTABLE_CHANNEL_TYPES, channelLimitFor } from "./channelPlans.js";
 
 const parseJson = (v) => (typeof v === "string" ? JSON.parse(v) : v ?? null);
+
+// Settings that authenticate the platform to us (a webhook secret). They are stored with the channel but never leave the server.
+const PRIVATE_CONFIG_KEYS = ["webhookSecret"];
+
+function publicConfig(row) {
+  const config = { ...(parseJson(row.config_json) || {}) };
+  for (const key of PRIVATE_CONFIG_KEYS) delete config[key];
+  return config;
+}
 
 /** What the dashboard may see: never the access token, only whether one is stored. */
 export function toPublicChannel(row) {
@@ -17,7 +27,8 @@ export function toPublicChannel(row) {
     isActive: Boolean(row.is_active),
     isDefault: Boolean(row.is_default),
     hasToken: Boolean(row.encrypted_access_token),
-    config: parseJson(row.config_json) || {},
+    config: publicConfig(row),
+    ...(row.type === "webchat" ? { embedSnippet: `<script src="${appConfig.appUrl}/api/v1/public/webchat/widget.js" data-key="${row.external_id}" async></script>` } : {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -55,9 +66,15 @@ export async function findActiveByExternalId(type, externalId) {
   return row ? toTransportChannel(row) : null;
 }
 
-/** A specific channel of a tenant, ready to send with. */
+/** A specific active channel of a tenant, ready to send with. */
 export async function loadTransportChannel(institutionId, id) {
   const row = await queryOne("SELECT * FROM channels WHERE id = ? AND institution_id = ? AND is_active = 1", [id, institutionId]);
+  return row ? toTransportChannel(row) : null;
+}
+
+/** Same, whether or not the channel is switched on (needed to disconnect it cleanly). */
+export async function loadTransportChannelAny(institutionId, id) {
+  const row = await queryOne("SELECT * FROM channels WHERE id = ? AND institution_id = ?", [id, institutionId]);
   return row ? toTransportChannel(row) : null;
 }
 
@@ -68,7 +85,8 @@ export async function loadDefaultChannel(institutionId, type = "whatsapp") {
 }
 
 // ---------------------------------------------------------------- writing
-async function assertWithinLimit(tx, institutionId) {
+/** Throws when the tenant's plan has no room for another channel. `tx` is anything with queryOne (a transaction, or the pool). */
+export async function assertWithinLimit(tx, institutionId) {
   const inst = await tx.queryOne("SELECT subscription_tier FROM institutions WHERE id = ?", [institutionId]);
   if (!inst) throw notFound("Instansi tidak ditemukan.");
   const limit = channelLimitFor(inst.subscription_tier);
@@ -100,9 +118,9 @@ export async function createChannel({ institutionId, type, name, externalId, dis
 }
 
 /** Change a channel. A field left undefined is untouched; `accessToken` replaces the stored token. */
-export async function updateChannel({ institutionId, id, name, displayHandle, accessToken, aiEnabled, isActive, isDefault }) {
+export async function updateChannel({ institutionId, id, name, displayHandle, accessToken, aiEnabled, isActive, isDefault, config }) {
   await transaction(async (tx) => {
-    const row = await tx.queryOne("SELECT id, type, is_default FROM channels WHERE id = ? AND institution_id = ? FOR UPDATE", [id, institutionId]);
+    const row = await tx.queryOne("SELECT id, type, is_default, config_json FROM channels WHERE id = ? AND institution_id = ? FOR UPDATE", [id, institutionId]);
     if (!row) throw notFound("Kanal tidak ditemukan.");
 
     const sets = [];
@@ -116,6 +134,9 @@ export async function updateChannel({ institutionId, id, name, displayHandle, ac
     if (accessToken) set("encrypted_access_token", encryptSecret(accessToken));
     if (aiEnabled !== undefined) set("ai_enabled", aiEnabled ? 1 : 0);
     if (isActive !== undefined) set("is_active", isActive ? 1 : 0);
+    // appearance and similar settings are merged into what is stored, so secrets kept there survive an edit
+    if (config !== undefined && row.type !== "webchat") throw badRequest("Pengaturan tampilan hanya untuk live chat website.", { code: "CONFIG_NOT_SUPPORTED" });
+    if (config !== undefined) set("config_json", JSON.stringify({ ...(parseJson(row.config_json) || {}), ...config }));
 
     if (isDefault === true) {
       await tx.query("UPDATE channels SET is_default = 0 WHERE institution_id = ? AND type = ?", [institutionId, row.type]);

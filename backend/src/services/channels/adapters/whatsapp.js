@@ -31,6 +31,7 @@ async function graphPost(channel, body) {
 
 export const whatsappAdapter = {
   type: "whatsapp",
+  maxTextLength: 4000,
 
   /** The id WhatsApp knows a customer by: their number in international form. */
   normalizeContactId: normalizePhone,

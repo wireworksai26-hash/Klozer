@@ -23,6 +23,11 @@ export default [
     rules: { "no-console": "off" },
   },
   {
+    // The web chat widget is served to browsers, not run by Node.
+    files: ["src/public/**"],
+    languageOptions: { sourceType: "script", globals: { ...globals.browser } },
+  },
+  {
     // Test files need console for debug output and assertions.
     files: ["test/**"],
     rules: { "no-console": "off" },

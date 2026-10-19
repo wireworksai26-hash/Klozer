@@ -478,6 +478,7 @@ export async function generateAiCsResponse({
   sector = null,
   address = null,
   hours = null,
+  channelLabel = undefined,
 }) {
   // 1. Evaluate Guardrails on User Input
   const guardrailCheck = AiGuardrails.evaluate(messageText);
@@ -567,6 +568,7 @@ export async function generateAiCsResponse({
     instHours,
     learningBlock: buildLearningBlock(learning),
     knowledgeBlock: buildKnowledgeBlock(knowledge.chunks),
+    channelLabel,
   });
 
   // 4. Build Multi-Turn History in User Prompt

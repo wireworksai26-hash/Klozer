@@ -5,7 +5,7 @@ import { parseJsonColumn } from "../utils/jsonColumn.js";
 import { emitToTenant } from "../realtime.js";
 import { generateAiCsResponse } from "./aiBrainService.js";
 import { getAdapter } from "./channels/adapters/index.js";
-import { downloadMedia, markRead, sendText } from "./channels/channelService.js";
+import { downloadMedia, lookupProfileName, markRead, sendText } from "./channels/channelService.js";
 import { detectHandoff, handoffReply, isHumanHolding } from "./handoff/handoffPolicy.js";
 import { handBack, startHandoff } from "./handoff/handoffService.js";
 import { handleCustomerPaymentProof } from "./paymentProofService.js";
@@ -24,16 +24,24 @@ import { assertTokenQuota, estimateTokens, recordTokenUsage } from "./tokenServi
  * Human-like delay before an automated reply. Instant uniform replies are a
  * known WhatsApp spam signal. 3.0s - 6.8s depending on reply length.
  */
-export function calculateHumanPacingDelay(text = "") {
+export function calculateHumanPacingDelay(text = "", channelType = "whatsapp") {
   const reading = 1200 + Math.floor(Math.random() * 800);
   const typing = (text.length || 20) * (18 + Math.floor(Math.random() * 12));
   const jitter = Math.floor(Math.random() * 1000);
-  return Math.min(6800, Math.max(3000, reading + typing + jitter));
+  const total = reading + typing + jitter;
+  // a visitor watching a chat window on a website expects an answer sooner than someone waiting in a messaging app
+  return channelType === "webchat" ? Math.min(3500, Math.max(1500, total)) : Math.min(6800, Math.max(3000, total));
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Create the contact or refresh it. A contact is one person on one channel type (their number, handle or chat id). */
+/** How the assistant refers to the place it is chatting on. */
+const CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram: "Instagram", telegram: "Telegram", webchat: "live chat website" };
+
+/**
+ * Create the contact or refresh it. A contact is one person on one channel type (their number, handle or chat id).
+ * @returns {Promise<{ leadId: number, created: boolean }>}
+ */
 async function upsertLead({ institutionId, channelId, channelType, contactId, name }) {
   const phone = channelType === "whatsapp" ? contactId : null;
   const result = await query(
@@ -45,7 +53,14 @@ async function upsertLead({ institutionId, channelId, channelType, contactId, na
                              id = LAST_INSERT_ID(id)`,
     [institutionId, channelId, channelType, contactId, phone, name, channelType]
   );
-  return result.insertId;
+  return { leadId: result.insertId, created: result.affectedRows === 1 };
+}
+
+/** A new contact on a platform that knows their name: replace the placeholder once the platform answers. */
+function refreshContactName({ institutionId, channelId, channelType, contactId, leadId }) {
+  lookupProfileName({ institutionId, channelId, type: channelType, contactId })
+    .then((name) => name && query("UPDATE leads SET name = ? WHERE id = ? AND institution_id = ?", [name.slice(0, 150), leadId, institutionId]))
+    .catch((err) => logger.warn({ err: err.message }, "Could not store the customer's name"));
 }
 
 /** Keep the AI's or system's outgoing message in the conversation. */
@@ -71,7 +86,7 @@ function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderTyp
 
 /** Send an automated reply the way a person would (after a pause), then record it and tell the dashboards. */
 async function reply({ ctx, text, tokens = 0, model = null, meta = null }) {
-  if (!isTest) await sleep(calculateHumanPacingDelay(text));
+  if (!isTest) await sleep(calculateHumanPacingDelay(text, ctx.channelType));
   const sent = await sendText({ institutionId: ctx.institutionId, channelId: ctx.channelId, type: ctx.channelType, to: ctx.contactId, text });
   await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta });
   emitToTenant(ctx.institutionId, "chat:message", { leadId: ctx.leadId, direction: "outbound", text, sender: "ai_agent" });
@@ -142,7 +157,7 @@ async function answerWithAi(ctx, { customerName, text }) {
     .slice(0, -1) // the current message is passed separately
     .map((m) => ({ role: m.sender_type === "customer" ? "user" : "assistant", content: m.content_text }));
 
-  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.contactId, messageText: text, history });
+  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType] });
 
   if (ai.usage && (ai.usage.promptTokens !== 0 || ai.usage.completionTokens !== 0 || ai.replyText)) {
     await recordTokenUsage({
@@ -187,8 +202,10 @@ export async function handleInbound({ institutionId, channel = null, channelType
   if (!contact) return { success: false, reason: "invalid_phone" };
   const channelId = channel?.id ?? null;
 
-  const leadId = await upsertLead({ institutionId, channelId, channelType, contactId: contact, name: contactName });
+  const { leadId, created } = await upsertLead({ institutionId, channelId, channelType, contactId: contact, name: contactName });
   const ctx = { institutionId, leadId, channelId, channelType, contactId: contact };
+
+  if (created && contactName === "Pelanggan") refreshContactName({ institutionId, channelId, channelType, contactId: contact, leadId });
 
   const stored = await query(
     `INSERT IGNORE INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, message_type, content_text)

@@ -7,6 +7,7 @@ Platform penjualan lewat WhatsApp untuk bisnis retail, kuliner, fesyen, jasa, da
 - **Multi-tenant**: setiap query dibatasi `institution_id` dari token sesi, bukan dari input klien. Peran: superadmin, owner, supervisor, finance, CS, PIC gudang.
 - **Live Chat WhatsApp** (Meta Cloud API): pesan masuk tampil realtime (Socket.io), balasan CS dikirim lewat nomor tenant. Tanda tangan webhook diperiksa dan pesan ganda dari retry Meta diabaikan.
 - **Balasan AI**: NVIDIA NIM dengan failover Gemini. AI hanya memakai katalog aktif, stok, rekening terdaftar, dan persona tenant. Kuota token per tenant dicatat. Jika AI tidak tersedia, kuota habis, atau pelanggan mengirim gambar/suara, percakapan diteruskan ke CS dan muncul notifikasi.
+- **Omnichannel**: selain WhatsApp, Instagram DM, Facebook Messenger, Telegram, dan live chat di website sendiri masuk ke satu inbox dan satu AI. Lihat DEPLOY.md.
 - **Banyak nomor dan pembagian chat**: tiap tenant bisa menghubungkan beberapa nomor WhatsApp (sesuai paket), chat baru dibagikan ke CS yang online (paling sedikit chat atau bergiliran), dan AI menyerahkan percakapan ke manusia saat pelanggan minta atau pesannya berisiko. Lihat DEPLOY.md.
 - **Pesanan**: harga dan HPP selalu dihitung server, stok tidak bisa oversell (diuji dengan pembelian paralel), alur status dijaga, pembatalan mengembalikan stok.
 - **QRIS (iPaymu)**: nominal dari pesanan di server, webhook diverifikasi tanda tangan dan nominalnya, notifikasi ganda diproses sekali, komisi CS dihitung sekali.

@@ -6,7 +6,7 @@ import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { findActiveByExternalId } from "../services/channels/channelRepository.js";
 import { processInboundMessage } from "../services/whatsappService.js";
 
-/** GET /webhooks/whatsapp — Meta subscription handshake. */
+/** GET /webhooks/whatsapp and /webhooks/meta — Meta subscription handshake. */
 export function verifyWhatsAppWebhook(req, res) {
   const { "hub.mode": mode, "hub.verify_token": token, "hub.challenge": challenge } = req.query;
   if (mode === "subscribe" && safeEqual(token, config.meta.verifyToken)) {
@@ -38,14 +38,8 @@ function extractMessages(body) {
   return out;
 }
 
-/**
- * POST /webhooks/whatsapp
- * The signature is verified over the exact raw bytes before anything is
- * parsed. Each message is routed to the tenant that owns the receiving number;
- * numbers we do not know are ignored. Processing happens after the 200 so Meta
- * does not time out and retry.
- */
-export async function handleWhatsAppInbound(req, res) {
+/** Meta signs every webhook with the app secret; the signature covers the exact raw bytes, so it is checked before anything is parsed. */
+export function assertMetaSignature(req) {
   if (config.meta.appSecret) {
     if (!verifyHmacSignature(req.rawBody, req.headers["x-hub-signature-256"], config.meta.appSecret)) {
       throw unauthorized("Signature webhook tidak valid.");
@@ -54,8 +48,18 @@ export async function handleWhatsAppInbound(req, res) {
     // env validation makes this unreachable in production, kept as a hard guard.
     throw unauthorized("META_APP_SECRET belum dikonfigurasi.");
   } else {
-    logger.warn("META_APP_SECRET is not set; accepting unsigned WhatsApp webhook (development only)");
+    logger.warn("META_APP_SECRET is not set; accepting unsigned Meta webhook (development only)");
   }
+}
+
+/**
+ * POST /webhooks/whatsapp
+ * Each message is routed to the tenant that owns the receiving number;
+ * numbers we do not know are ignored. Processing happens after the 200 so Meta
+ * does not time out and retry.
+ */
+export async function handleWhatsAppInbound(req, res) {
+  assertMetaSignature(req);
 
   res.status(200).json({ status: "EVENT_RECEIVED" });
 

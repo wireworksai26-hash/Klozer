@@ -3,7 +3,7 @@ import { authenticate, requireRole, requireSuperadmin } from "../middlewares/aut
 import { tenantContext } from "../middlewares/tenantContext.js";
 import { validate } from "../middlewares/validate.js";
 import { requireFeature } from "../middlewares/featureGate.js";
-import { aiLimiter, loginLimiter, publicAiLimiter, registerLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
+import { aiLimiter, loginLimiter, publicAiLimiter, registerLimiter, webchatPollLimiter, webchatSendLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
 import { asyncHandler } from "../utils/errors.js";
 import * as v from "../validation/schemas.js";
 
@@ -31,6 +31,8 @@ import * as knowledgeCtrl from "../controllers/knowledgeController.js";
 import * as evalCtrl from "../controllers/aiEvaluationController.js";
 import * as channelCtrl from "../controllers/channelController.js";
 import * as routingCtrl from "../controllers/routingController.js";
+import * as channelWebhookCtrl from "../controllers/channelWebhookController.js";
+import * as webchatCtrl from "../controllers/webchatController.js";
 import * as lv from "../validation/learningSchemas.js";
 import * as cv from "../validation/channelSchemas.js";
 
@@ -58,7 +60,16 @@ router.post("/auth/logout", h(authCtrl.logout));
 // ==================== 2. PUBLIC WEBHOOKS (authenticated by signature, not by user) ====================
 router.get("/webhooks/whatsapp", webhookLimiter, h(webhookCtrl.verifyWhatsAppWebhook));
 router.post("/webhooks/whatsapp", webhookLimiter, h(webhookCtrl.handleWhatsAppInbound));
+router.get("/webhooks/meta", webhookLimiter, h(webhookCtrl.verifyWhatsAppWebhook));
+router.post("/webhooks/meta", webhookLimiter, h(channelWebhookCtrl.handleMetaMessagingInbound));
+router.post("/webhooks/telegram/:botId", webhookLimiter, h(channelWebhookCtrl.handleTelegramInbound));
 router.post("/payments/webhook", webhookLimiter, h(paymentCtrl.paymentWebhookHandler));
+
+// ==================== 2b. PUBLIC WEB CHAT WIDGET (anonymous visitors; a signed visitor token is the credential) ====================
+router.get("/public/webchat/widget.js", webchatPollLimiter, webchatCtrl.serveWidget);
+router.post("/public/webchat/:key/session", webchatPollLimiter, validate({ params: cv.webchatParams }), h(webchatCtrl.startSession));
+router.post("/public/webchat/:key/messages", webchatSendLimiter, validate({ params: cv.webchatParams, body: cv.webchatMessageBody }, { rawFields: ["text", "name"] }), h(webchatCtrl.sendVisitorMessage));
+router.get("/public/webchat/:key/messages", webchatPollLimiter, validate({ params: cv.webchatParams, query: cv.webchatPollQuery }), h(webchatCtrl.pollMessages));
 
 // ==================== 3. INSTITUTIONS ====================
 router.get("/institutions", authenticate, validate({ query: v.listInstitutionsQuery }), h(instCtrl.getAllInstitutions));

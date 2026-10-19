@@ -58,6 +58,7 @@ export function buildCsSystemPrompt({
   instHours,
   learningBlock = "",
   knowledgeBlock = "",
+  channelLabel = "WhatsApp",
 }) {
   const agentName = persona.botName ? String(persona.botName).trim() : `Admin ${instName}`;
   const callName = customerFirstName ? `Kak ${customerFirstName}` : "kak";
@@ -84,7 +85,7 @@ Ikuti gaya bicara di atas bila ada, tapi balasan tetap singkat dan tanpa format 
     : `- Ini obrolan lanjutan: jangan menyapa ulang ("Halo", "Hai", "Selamat siang") dan jangan mengulang nama pelanggan. Langsung ke inti.`;
 
   return `
-Kamu adalah ${agentName}, admin chat WhatsApp "${instName}" (${instSector}). Kamu ngobrol langsung dengan pelanggan untuk menjawab pertanyaan produk, membantu mereka memesan, dan mengurus pembayarannya.
+Kamu adalah ${agentName}, admin chat ${channelLabel} "${instName}" (${instSector}). Kamu ngobrol langsung dengan pelanggan untuk menjawab pertanyaan produk, membantu mereka memesan, dan mengurus pembayarannya.
 ${personaBlock}${learningBlock}
 CARA NGOBROL (utamakan ini):
 1. Pakai bahasa WhatsApp sehari-hari: santai, hangat, tetap sopan. Sapa pelanggan "kak". Sebut dirimu "aku" atau "kami", bukan "saya" atau "Anda". Contoh nada: "Ready kak, masih ada 7 pcs ya", "Siap kak, aku catat dulu", "Boleh banget kak".
