@@ -114,6 +114,10 @@ export const config = {
     graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
   },
 
+  shipping: {
+    biteshipKey: process.env.BITESHIP_API_KEY || "",
+  },
+
   ipaymu: {
     va: process.env.IPAYMU_VA || "",
     apiKey: process.env.IPAYMU_API_KEY || "",

@@ -337,7 +337,7 @@ export async function handleCustomerPaymentProof({ institutionId, leadId, mediaI
     }
   });
 
-  if (paid?.changed) afterPaid(paid);
+  if (paid?.changed) afterPaid(paid, { notify: false }); // the customer is answered below with the proof reply
 
   if (decision.outcome !== "auto_approve") emitToTenant(institutionId, "chat:needs_human", { leadId, reason: "payment_proof_review" });
   else emitToTenant(institutionId, "order:paid", { orderId: decision.order.id });

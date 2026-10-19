@@ -445,3 +445,16 @@ describe("hand-off between the AI and people", () => {
     assert.equal((await query("SELECT handled_by FROM leads WHERE id = ?", [lead]))[0].handled_by, "human");
   });
 });
+
+describe("bursts", () => {
+  test("several first messages from a new customer at the same moment are all kept", async () => {
+    const t = await createTenant();
+    const pn = `PN-BURST-${t.institutionId}`;
+    await connect(t, pn);
+    mockNetwork();
+    const from = "6281900000777";
+    await Promise.all(Array.from({ length: 8 }, (_, i) => post(inbound({ phoneNumberId: pn, from, id: `wamid.BURST${t.institutionId}${i}`, text: `pesan ${i}` }))));
+    await waitFor(async () => (await customerMessages(t.institutionId)) === 8, { timeout: 8000 });
+    assert.equal((await query("SELECT id FROM leads WHERE institution_id = ?", [t.institutionId])).length, 1, "one contact, however many messages arrived together");
+  });
+});

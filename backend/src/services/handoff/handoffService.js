@@ -9,7 +9,8 @@ import { reasonLabel } from "./handoffPolicy.js";
  * quiet; the hold ends after `humanHoldMinutes` without human activity, or when someone hands it back.
  */
 
-async function writeSystemNote({ institutionId, leadId, channelId = null, text }) {
+/** A note in the conversation only staff see (hand-offs, assignments, order summaries). */
+export async function addSystemNote({ institutionId, leadId, channelId = null, text }) {
   await query(
     "INSERT INTO chat_messages (institution_id, lead_id, channel_id, sender_type, message_type, content_text, is_delivered) VALUES (?, ?, ?, 'system', 'text', ?, 1)",
     [institutionId, leadId, channelId, text]
@@ -29,7 +30,7 @@ export async function startHandoff({ institutionId, leadId, channelId = null, re
   );
   if (result.affectedRows === 0) return { changed: false };
 
-  await writeSystemNote({ institutionId, leadId, channelId, text: `Dialihkan ke tim: ${reasonLabel(reason)}.` });
+  await addSystemNote({ institutionId, leadId, channelId, text: `Dialihkan ke tim: ${reasonLabel(reason)}.` });
   emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason });
   if (reason !== "manual") emitToTenant(institutionId, "chat:needs_human", { leadId, reason });
   return { changed: true };
@@ -44,8 +45,8 @@ export async function noteHumanReply({ institutionId, leadId, userId }) {
   if (!current) return;
   const takingOver = current.handled_by !== "human";
   await query(
-    `UPDATE leads SET handled_by = 'human', handoff_at = UTC_TIMESTAMP(),
-                      handoff_reason = IF(handled_by = 'human', handoff_reason, 'cs_replied'),
+    `UPDATE leads SET handoff_reason = IF(handled_by = 'human', handoff_reason, 'cs_replied'),
+                      handled_by = 'human', handoff_at = UTC_TIMESTAMP(),
                       assigned_cs_id = COALESCE(assigned_cs_id, ?), assigned_at = IF(assigned_cs_id IS NULL, UTC_TIMESTAMP(), assigned_at)
       WHERE id = ? AND institution_id = ?`,
     [userId, leadId, institutionId]
@@ -60,7 +61,7 @@ export async function handBack({ institutionId, leadId, reason = "manual", note 
     [leadId, institutionId]
   );
   if (result.affectedRows === 0) return { changed: false };
-  if (note) await writeSystemNote({ institutionId, leadId, text: reason === "expired" ? "AI melanjutkan percakapan (tidak ada balasan tim)." : "Percakapan dikembalikan ke AI." });
+  if (note) await addSystemNote({ institutionId, leadId, text: reason === "expired" ? "AI melanjutkan percakapan (tidak ada balasan tim)." : "Percakapan dikembalikan ke AI." });
   emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "ai", reason });
   return { changed: true };
 }

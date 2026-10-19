@@ -1,4 +1,4 @@
-import { query, queryOne } from "../config/db.js";
+import { query, queryOne, retryOnDeadlock } from "../config/db.js";
 import { isTest } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { parseJsonColumn } from "../utils/jsonColumn.js";
@@ -9,6 +9,8 @@ import { downloadMedia, lookupProfileName, markRead, sendText } from "./channels
 import { detectHandoff, handoffReply, isHumanHolding } from "./handoff/handoffPolicy.js";
 import { handBack, startHandoff } from "./handoff/handoffService.js";
 import { handleCustomerPaymentProof } from "./paymentProofService.js";
+import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
+import { onCustomerActivity } from "./followup/followupService.js";
 import { ensureAssigned } from "./routing/assignmentService.js";
 import { getRoutingSettings } from "./routing/routingSettings.js";
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "./tokenService.js";
@@ -44,15 +46,15 @@ const CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram
  */
 async function upsertLead({ institutionId, channelId, channelType, contactId, name }) {
   const phone = channelType === "whatsapp" ? contactId : null;
-  const result = await query(
-    `INSERT INTO leads (institution_id, channel_id, channel_type, external_id, phone_number, name, source, status, last_contacted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'new', UTC_TIMESTAMP())
-     ON DUPLICATE KEY UPDATE last_contacted_at = UTC_TIMESTAMP(),
+  const result = await retryOnDeadlock(() => query(
+    `INSERT INTO leads (institution_id, channel_id, channel_type, external_id, phone_number, name, source, status, last_contacted_at, last_inbound_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'new', UTC_TIMESTAMP(), UTC_TIMESTAMP())
+     ON DUPLICATE KEY UPDATE last_contacted_at = UTC_TIMESTAMP(), last_inbound_at = UTC_TIMESTAMP(),
                              channel_id = COALESCE(VALUES(channel_id), channel_id),
                              external_id = COALESCE(external_id, VALUES(external_id)),
                              id = LAST_INSERT_ID(id)`,
     [institutionId, channelId, channelType, contactId, phone, name, channelType]
-  );
+  ));
   return { leadId: result.insertId, created: result.affectedRows === 1 };
 }
 
@@ -146,7 +148,7 @@ async function handlePaymentProofMessage(ctx, { messageId, mediaId, aiAllowed, h
   return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: `payment_proof_${result.outcome}`, outcome: result.outcome, reasons: result.reasons };
 }
 
-async function answerWithAi(ctx, { customerName, text }) {
+async function answerWithAi(ctx, { customerName, text, lead }) {
   const historyRows = await query(
     `SELECT sender_type, content_text FROM chat_messages
       WHERE lead_id = ? AND institution_id = ? AND content_text IS NOT NULL AND sender_type <> 'system' ORDER BY id DESC LIMIT 10`,
@@ -156,6 +158,23 @@ async function answerWithAi(ctx, { customerName, text }) {
     .reverse()
     .slice(0, -1) // the current message is passed separately
     .map((m) => ({ role: m.sender_type === "customer" ? "user" : "assistant", content: m.content_text }));
+
+  // Taking an order is handled by rules, not by the model: totals, shipping and payment steps are fixed (see chatCommerceService).
+  const commerce = await handleCommerceTurn({ ctx, lead, text, customerName, history }).catch((err) => {
+    logger.error({ err: err.message, leadId: ctx.leadId }, "Order handling failed; the normal assistant answers instead");
+    return null;
+  });
+  if (commerce) {
+    const sent = await reply({
+      ctx,
+      text: commerce.replyText,
+      tokens: (commerce.nluUsage?.promptTokens ?? 0) + (commerce.nluUsage?.completionTokens ?? 0),
+      model: commerce.model ?? null,
+      meta: commerce.meta ?? null,
+    });
+    if (commerce.handoffReason) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: commerce.handoffReason });
+    return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "commerce", commerce: commerce.meta?.commerce };
+  }
 
   const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType] });
 
@@ -223,8 +242,11 @@ export async function handleInbound({ institutionId, channel = null, channelType
   emitToTenant(institutionId, "chat:message", { leadId, direction: "inbound", text, messageType });
   if (messageId) markRead({ institutionId, channelId, type: channelType, messageId }).catch(() => {});
 
-  const lead = await queryOne("SELECT id, channel_id, assigned_cs_id, handled_by, handoff_at FROM leads WHERE id = ?", [leadId]);
+  const lead = await queryOne("SELECT id, name, channel_id, assigned_cs_id, handled_by, handoff_at FROM leads WHERE id = ?", [leadId]);
   ctx.channelId = ctx.channelId ?? lead.channel_id; // replies leave from the account the conversation is on
+
+  // The customer is talking: reminders planned earlier are moot (and restart from now if something is still open).
+  await onCustomerActivity({ institutionId, leadId }).catch((err) => logger.warn({ err: err.message, leadId }, "Reminder bookkeeping failed"));
   const settings = await getRoutingSettings(institutionId);
 
   // Every conversation gets an agent (or waits in the queue), whoever ends up answering the customer.
@@ -261,5 +283,5 @@ export async function handleInbound({ institutionId, channel = null, channelType
     return flagForHuman(ctx, "token_quota_exhausted");
   }
 
-  return answerWithAi(ctx, { customerName: contactName, text });
+  return answerWithAi(ctx, { customerName: contactName, text, lead });
 }

@@ -57,6 +57,9 @@ const REASON_LABELS = {
   payment_proof: "Bukti pembayaran perlu dicek",
   cs_replied: "CS membalas langsung",
   manual: "Diambil alih manual",
+  commerce_shipping: "Pesanan masuk, ongkir perlu dihitung tim",
+  commerce_payment: "Pesanan masuk, cara bayar perlu dibantu tim",
+  commerce_problem: "Pesanan di chat perlu dibantu tim",
 };
 
 export function reasonLabel(reason = "") {

@@ -93,6 +93,11 @@ export const whatsappAdapter = {
     return { buffer, mimeType };
   },
 
+  /** Nothing to look up when connecting: the owner gives the phone number id and token; "test" proves them later. */
+  async resolveConnection({ externalId, displayHandle = null, accessToken }) {
+    return { externalId, displayHandle, accessToken, config: null };
+  },
+
   /** Ask Meta about the number behind this token, to prove the credentials work. */
   async verify(channel) {
     try {

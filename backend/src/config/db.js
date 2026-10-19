@@ -91,6 +91,22 @@ const LOCK_WAIT_TIMEOUT = 1205;
  * above but share one connection. Commits on success, rolls back on any throw,
  * and retries once on deadlock.
  */
+/**
+ * Run a single statement (or a small group of them) again when MySQL picks it as the victim of a deadlock. An
+ * "insert or update this row" on a table with two unique keys can deadlock with an identical statement running at the
+ * same moment; the loser is safe to repeat.
+ */
+export async function retryOnDeadlock(fn, { attempts = 4 } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err.errno !== DEADLOCK || attempt >= attempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 10 * attempt + Math.floor(Math.random() * 25)));
+    }
+  }
+}
+
 export async function transaction(fn, { attempts = 2 } = {}) {
   for (let attempt = 1; ; attempt++) {
     const conn = await getPool().getConnection();
@@ -135,4 +151,4 @@ export async function closeDb() {
   }
 }
 
-export default { query, queryOne, transaction, initDb, getPool, pingDb, closeDb };
+export default { query, queryOne, transaction, retryOnDeadlock, initDb, getPool, pingDb, closeDb };

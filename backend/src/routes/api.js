@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { authenticate, requireRole, requireSuperadmin } from "../middlewares/authMiddleware.js";
 import { tenantContext } from "../middlewares/tenantContext.js";
 import { validate } from "../middlewares/validate.js";
@@ -35,6 +36,8 @@ import * as channelWebhookCtrl from "../controllers/channelWebhookController.js"
 import * as webchatCtrl from "../controllers/webchatController.js";
 import * as lv from "../validation/learningSchemas.js";
 import * as cv from "../validation/channelSchemas.js";
+import * as commerceCtrl from "../controllers/commerceController.js";
+import * as mv from "../validation/commerceSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -103,6 +106,16 @@ router.post("/leads/:id/claim", ...tenant, requireRole(...SALES), validate({ par
 router.post("/leads/:id/handoff", ...tenant, requireRole(...SALES), validate({ params: v.idParams }), h(routingCtrl.handoff));
 router.post("/leads/:id/handback", ...tenant, requireRole(...SALES), validate({ params: v.idParams }), h(routingCtrl.handback));
 
+// ==================== CHAT COMMERCE ====================
+const commerceOn = requireFeature("chatCommerce", "Chat Commerce");
+router.get("/commerce/settings", ...tenant, requireRole(...SALES), commerceOn, h(commerceCtrl.getSettings));
+router.put("/commerce/settings", ...tenant, requireRole(...MANAGERS), commerceOn, validate({ body: mv.updateCommerceSettingsBody }), h(commerceCtrl.putSettings));
+router.get("/commerce/drafts", ...tenant, requireRole(...SALES), commerceOn, h(commerceCtrl.listDrafts));
+router.post("/commerce/drafts/:id/cancel", ...tenant, requireRole(...SALES), commerceOn, validate({ params: v.idParams }), h(commerceCtrl.cancelDraft));
+router.get("/commerce/followups", ...tenant, requireRole(...MANAGERS), commerceOn, h(commerceCtrl.followups));
+router.post("/commerce/followups/:id/cancel", ...tenant, requireRole(...MANAGERS), commerceOn, validate({ params: v.idParams }), h(commerceCtrl.cancelFollowup));
+router.put("/leads/:id/followup-opt-out", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: mv.followupOptOutBody }), h(commerceCtrl.setOptOut));
+
 // ==================== CHANNELS & ROUTING ====================
 router.get("/channels", ...tenant, requireRole(...SALES), h(channelCtrl.list));
 router.post("/channels", ...tenant, requireRole(...MANAGERS), validate({ body: cv.createChannelBody }, { rawFields: ["accessToken"] }), h(channelCtrl.create));
@@ -170,6 +183,7 @@ router.post("/payments/simulate-settlement", ...tenant, requireRole(...MANAGERS)
 // ==================== 10. SHIPPING & FRAUD ====================
 router.post("/shipping/rates", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ body: v.ratesBody }), h(shippingCtrl.getRates));
 router.post("/shipping/cod-risk-score", ...tenant, requireRole(...MONEY), validate({ body: v.codRiskBody }), h(shippingCtrl.checkCodRisk));
+router.put("/shipping/orders/:orderId", ...tenant, requireRole(...STOCK, "cs", "finance"), validate({ params: z.object({ orderId: v.idParams.shape.id }), body: mv.updateShipmentBody }), h(shippingCtrl.updateShipment));
 router.post("/shipping/book", ...tenant, requireRole(...STOCK, "cs", "finance"), validate({ body: v.bookShipmentBody }), h(shippingCtrl.bookShipment));
 router.post("/fraud/verify-receipt", ...tenant, requireRole(...MONEY), requireFeature("antiFraud", "Anti-Fraud"), validate({ body: v.verifyReceiptBody }), h(fraudCtrl.verifyReceipt));
 router.post("/fraud/reconcile-mutation", ...tenant, requireRole("owner", "supervisor", "finance"), requireFeature("antiFraud", "Anti-Fraud"), validate({ body: v.reconcileBody }), h(fraudCtrl.reconcileMutation));

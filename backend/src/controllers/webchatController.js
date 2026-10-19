@@ -5,6 +5,7 @@ import { query, queryOne } from "../config/db.js";
 import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { findActiveByExternalId } from "../services/channels/channelRepository.js";
 import { WEBCHAT_DEFAULTS } from "../services/channels/adapters/webchat.js";
+import { stripChatMarkup } from "../services/channels/textUtils.js";
 import { issueVisitorToken, verifyVisitorToken } from "../services/channels/webchatSession.js";
 import { handleInbound } from "../services/conversationService.js";
 
@@ -36,7 +37,7 @@ function visitorOf(req, channel) {
 }
 
 /** What a visitor may see of a conversation: their own messages and the replies, not internal notes. */
-const asVisible = (m) => ({ id: Number(m.id), from: m.sender_type === "customer" ? "visitor" : "agent", text: m.content_text, at: m.created_at });
+const asVisible = (m) => ({ id: Number(m.id), from: m.sender_type === "customer" ? "visitor" : "agent", text: m.sender_type === "customer" ? m.content_text : stripChatMarkup(m.content_text), at: m.created_at });
 
 async function conversationOf(channel, visitorId) {
   return queryOne("SELECT id FROM leads WHERE institution_id = ? AND channel_type = 'webchat' AND external_id = ?", [channel.institutionId, visitorId]);

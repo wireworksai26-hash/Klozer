@@ -7,6 +7,7 @@ import { runMigrations } from "./database/migrate.js";
 import { ensureSuperadmin } from "./database/bootstrap.js";
 import { attachRealtime } from "./realtime.js";
 import { resetPresence } from "./services/routing/presenceService.js";
+import { startCommerceWorker } from "./services/followup/followupWorker.js";
 
 const app = createApp();
 const server = http.createServer(app);
@@ -70,6 +71,7 @@ async function start() {
     logger.info({ port: config.port, env: config.nodeEnv }, "Klozer API listening");
   });
 
+  startCommerceWorker();
   pruneOldRows();
   setInterval(pruneOldRows, 24 * 60 * 60 * 1000).unref();
 }

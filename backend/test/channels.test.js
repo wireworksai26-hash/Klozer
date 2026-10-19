@@ -53,6 +53,7 @@ const metaPost = (payload) => {
 };
 const messagingEvent = (accountId, object, from, mid, text) => ({ object, entry: [{ id: accountId, messaging: [{ sender: { id: from }, recipient: { id: accountId }, message: { mid, text } }] }] });
 const sentTexts = (calls) => calls.graph.filter((c) => c.method === "POST" && c.url.endsWith("/messages")).map((c) => c.body.message.text);
+const asObject = (value) => (typeof value === "string" ? JSON.parse(value) : value); // the driver may hand JSON columns back parsed or as text
 const leadsOf = (institutionId) => query("SELECT * FROM leads WHERE institution_id = ?", [institutionId]);
 const messagesOf = (institutionId) => query("SELECT sender_type, content_text, channel_id FROM chat_messages WHERE institution_id = ? ORDER BY id", [institutionId]);
 const aiCount = async (institutionId) => (await messagesOf(institutionId)).filter((m) => m.sender_type === "ai_agent").length;
@@ -221,7 +222,7 @@ describe("Telegram", () => {
     const hook = calls.telegram.find((c) => c.method === "setWebhook");
     assert.match(hook.body.url, new RegExp(`/api/v1/webhooks/telegram/${botId}$`));
     const [stored] = await query("SELECT config_json FROM channels WHERE institution_id = ?", [t.institutionId]);
-    assert.equal(JSON.parse(stored.config_json).webhookSecret, hook.body.secret_token);
+    assert.equal(asObject(stored.config_json).webhookSecret, hook.body.secret_token);
   });
 
   test("a rejected webhook registration leaves nothing connected", async () => {
@@ -250,7 +251,7 @@ describe("Telegram", () => {
     const botId = botIdFor(t);
     const calls = mockNetwork({ reply: "*Ready* kak" });
     await connect(t, { type: "telegram", name: "Bot", accessToken: tgToken(botId) });
-    const secret = JSON.parse((await query("SELECT config_json FROM channels WHERE institution_id = ?", [t.institutionId]))[0].config_json).webhookSecret;
+    const secret = asObject((await query("SELECT config_json FROM channels WHERE institution_id = ?", [t.institutionId]))[0].config_json).webhookSecret;
     const update = { update_id: 1, message: { message_id: 7, chat: { id: 4242, type: "private" }, from: { id: 4242, first_name: "Budi", is_bot: false }, text: "Ada stok?" } };
     const post = (headers = {}, id = botId) => api().post(`/api/v1/webhooks/telegram/${id}`).set(headers).send(update);
 

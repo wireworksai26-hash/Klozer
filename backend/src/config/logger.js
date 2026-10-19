@@ -17,7 +17,7 @@ const redact = {
 };
 
 export const logger = pino({
-  level: isTest ? "silent" : config.logLevel,
+  level: isTest ? process.env.TEST_LOG_LEVEL || "silent" : config.logLevel,
   redact,
   base: { service: "klozer-backend" },
   ...(config.isProduction

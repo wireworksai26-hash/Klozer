@@ -2,6 +2,7 @@ import { query, queryOne } from "../config/db.js";
 import { calculateShippingRates, calculateCodRiskScore } from "../services/shippingService.js";
 import { badRequest, conflict, notFound } from "../utils/errors.js";
 import { audit } from "../services/auditService.js";
+import { notifyOrderShipped } from "../services/orderNotifications.js";
 
 /** POST /shipping/rates — static estimates (see shippingService). */
 export async function getRates(req, res) {
@@ -64,4 +65,47 @@ export async function bookShipment(req, res) {
     status: shipment.shipping_status,
     message: shipment.awb_number ? "Data pengiriman tersimpan." : "Draft pengiriman tersimpan. Isi nomor resi setelah booking ke kurir.",
   });
+}
+
+/**
+ * PUT /shipping/orders/:orderId
+ * Staff fill in or correct the courier, the waybill (resi) and the shipping status after booking with the courier.
+ * When a waybill is set or changed, the customer is told in their chat (unless `notify_customer` is false); the
+ * response says whether that message went out, because outside the platform's 24-hour window it cannot.
+ */
+export async function updateShipment(req, res) {
+  const b = req.body;
+  const order = await queryOne("SELECT * FROM orders WHERE id = ? AND institution_id = ?", [req.params.orderId, req.tenantId]);
+  if (!order) throw notFound("Pesanan tidak ditemukan.");
+  if (order.status === "cancelled") throw conflict("Pesanan ini sudah dibatalkan.");
+
+  let shipment = await queryOne("SELECT * FROM shipping_shipments WHERE order_id = ?", [order.id]);
+  if (!shipment) {
+    if (!b.courier_code) throw badRequest("courier_code wajib diisi untuk membuat data pengiriman.");
+    const isCod = order.payment_method === "cod";
+    const created = await query(
+      `INSERT INTO shipping_shipments (order_id, courier_code, service_name, awb_number, shipping_fee_customer, is_cod, cod_amount, cod_status, shipping_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [order.id, b.courier_code, b.service_name || "REG", b.awb_number ?? null, order.shipping_fee, isCod ? 1 : 0, isCod ? order.total_amount : 0, isCod ? "pending_courier" : "none", b.shipping_status || (b.awb_number ? "pickup_requested" : "draft")]
+    );
+    shipment = await queryOne("SELECT * FROM shipping_shipments WHERE id = ?", [created.insertId]);
+  } else {
+    const sets = [];
+    const values = [];
+    for (const [column, value] of [["courier_code", b.courier_code], ["service_name", b.service_name], ["awb_number", b.awb_number], ["shipping_status", b.shipping_status]]) {
+      if (value !== undefined) (sets.push(`${column} = ?`), values.push(value));
+    }
+    if (b.awb_number !== undefined && b.shipping_status === undefined && shipment.shipping_status === "draft") (sets.push("shipping_status = ?"), values.push("pickup_requested"));
+    if (sets.length) await query(`UPDATE shipping_shipments SET ${sets.join(", ")} WHERE id = ?`, [...values, shipment.id]);
+    const previous = shipment;
+    shipment = await queryOne("SELECT * FROM shipping_shipments WHERE id = ?", [shipment.id]);
+    shipment.previousAwb = previous.awb_number;
+  }
+
+  const awbChanged = b.awb_number !== undefined && b.awb_number !== (shipment.previousAwb ?? null);
+  const notified = awbChanged && b.notify_customer !== false ? await notifyOrderShipped({ order, courier: shipment.courier_code, service: shipment.service_name, awb: shipment.awb_number }) : { sent: false, reason: awbChanged ? "disabled_by_request" : "no_waybill_change" };
+  await audit(req, "shipment.update", { entityType: "order", entityId: order.id, metadata: { fields: Object.keys(b).filter((k) => k !== "notify_customer"), notified: notified.sent } });
+
+  const { previousAwb, ...clean } = shipment; // eslint-disable-line no-unused-vars
+  res.json({ success: true, data: clean, notified });
 }

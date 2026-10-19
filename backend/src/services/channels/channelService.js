@@ -87,8 +87,9 @@ export async function downloadMedia({ institutionId, channelId = null, type = "w
 export async function verifyChannel({ institutionId, id }) {
   const channel = await loadTransportChannel(institutionId, id);
   if (!channel) return { ok: false, error: "Kanal tidak ditemukan atau tidak aktif." };
-  if (!channel.accessToken) return { ok: false, error: "Kanal ini belum punya access token." };
-  return getAdapter(channel.type).verify(channel);
+  const adapter = getAdapter(channel.type);
+  if (!channel.accessToken && adapter.requiresToken !== false) return { ok: false, error: "Kanal ini belum punya access token." };
+  return adapter.verify(channel);
 }
 
 /** The customer's display name from the platform, or null. Best effort: a failure never affects the conversation. */

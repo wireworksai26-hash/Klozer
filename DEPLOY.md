@@ -183,3 +183,30 @@ Bila pendaftaran webhook gagal, kanal tidak disimpan dan pesan error dari platfo
 - Sesi dan balasan dihitung per proses backend tanpa penyimpanan tambahan, jadi aman bila backend dijalankan lebih dari satu instance.
 
 Migrasi 012 jalan otomatis (memperpanjang kolom ID pesan dan alamat file bukti bayar).
+
+## Chat commerce: pesanan, ongkir, dan pengingat di chat
+
+AI bisa mengambil pesanan sampai selesai di chat (semua kanal). **Mati secara default**: tiap toko menyalakannya di `PUT /api/v1/commerce/settings` (`enabled: true`), dan `GET /commerce/settings` menampilkan daftar hal yang masih kurang (produk, cara bayar, ongkir).
+
+**Cara kerjanya.** Pesanan dibangun sebagai draf per pelanggan: produk, penerima dan alamat, ongkir, cara bayar, lalu ringkasan yang harus dikonfirmasi pelanggan ("YA"). Semua angka (harga, subtotal, ongkir, total, stok) dihitung server dari katalog dan aturan toko. Model AI hanya dipakai untuk membaca teks bebas pelanggan menjadi produk, jumlah, dan alamat; hasilnya divalidasi ketat (id produk harus ada di katalog toko itu, jumlah wajar, nomor HP dan kode pos dibaca dari kata pelanggan sendiri). Memilih kurir atau cara bayar, konfirmasi, dan semua kalimat tentang pesanan adalah aturan dan templat tetap, bukan karangan model, jadi total tidak bisa "salah hitung secara kreatif". Pesanan baru dibuat setelah pelanggan konfirmasi, lewat jalur yang sama dengan dashboard (stok dikunci, tidak bisa oversell, idempoten per draf). Pesanan dari chat bertanda `created_via: "chat"` dan komisi CS jatuh ke CS yang menangani chat itu.
+
+**Ongkir** (`shippingMode`):
+- `ask_team` (default): setelah alamat diterima, draf diserahkan ke tim dengan ringkasan di catatan chat; tidak ada ongkir yang dikarang.
+- `flat`: ongkir tetap `shippingFlatFee`. `free`: gratis.
+- `provider`: tarif langsung dari Biteship. Butuh `BITESHIP_API_KEY` di `.env` server dan `originPostalCode` toko; pelanggan diminta kode pos tujuan, lalu memilih dari maksimal 4 opsi termurah. Tanpa kunci atau tanpa hasil, ongkir diserahkan ke tim (tidak pernah memakai tabel tarif perkiraan). `allowPickup` mengizinkan ambil sendiri tanpa ongkir.
+
+**Pembayaran.** QRIS (iPaymu; berlaku 5 menit, pelanggan bisa balas "QRIS" untuk dibuatkan lagi), transfer bank (rekening aktif di menu Rekening; bukti foto dibaca seperti biasa), dan COD (`payCod`, hanya bila alamat tidak berisiko tinggi menurut skor RTS yang sudah ada). Bila hanya satu cara yang tersedia, langsung dipilih. Jika QRIS gagal dibuat, pesanan tetap ada dan chat diserahkan ke tim.
+
+**Resi dan status.** `PUT /api/v1/shipping/orders/:orderId` (CS, gudang, finance) mengisi kurir, resi, dan status kirim; saat resi baru diisi, pelanggan otomatis diberi tahu di chat, dan respons API menyebut apakah pesan terkirim (`notified`). Pelanggan yang bertanya "resinya mana" atau "pesananku sampai mana" dijawab dari database (plus posisi paket dari Biteship bila tersedia). Pelanggan juga diberi tahu otomatis saat pembayaran diterima. Pemberitahuan hanya untuk toko yang menyalakan chat commerce (`notifyCustomer`).
+
+**Pengingat** untuk pesanan yang belum dibayar dan keranjang yang tidak diselesaikan (worker berjalan tiap menit di proses backend; aman bila ada beberapa instance):
+- Jadwal default 30 menit, 6 jam, 20 jam setelah pesan terakhir pelanggan (`followupDelays`, maksimal 3 langkah, semuanya harus di dalam 23 jam).
+- **Jendela 24 jam**: WhatsApp, Messenger, dan Instagram hanya mengizinkan pesan bebas selama 24 jam setelah pesan terakhir pelanggan, jadi pengingat tidak pernah dijadwalkan atau dikirim di luar itu. Pengingat di luar jendela (butuh templat Meta yang disetujui) menunggu fase broadcast. Telegram tanpa jendela; live chat website tidak dikirimi pengingat.
+- **Jam tenang** (default 21.00 sampai 08.00 WIB): pengingat yang jatuh malam hari menunggu pagi.
+- Berhenti otomatis saat: pesanan dibayar atau dibatalkan, pelanggan membalas (urutan dimulai ulang dari sekarang), CS/manusia sedang memegang chat, atau pelanggan meminta berhenti ("stop", "jangan hubungi lagi"); permintaan itu langsung dicatat (`leads.followup_opt_out`) dan bisa diubah staf lewat `PUT /leads/:id/followup-opt-out`.
+- Hanya satu langkah per pesanan per putaran worker, dengan jarak minimal 30 menit antar pengingat, jadi worker yang sempat mati tidak mengirim semua langkah sekaligus.
+- `unpaidCancelHours` (default 0 = mati): pesanan **dari chat** yang tidak dibayar melewati batas itu dibatalkan otomatis dan stoknya dikembalikan. Pesanan yang sudah punya bukti bayar (menunggu cek) atau pembayaran tidak disentuh, dan pesanan dari dashboard tidak pernah dibatalkan otomatis. Pelanggan diberi tahu bila jendela chat masih terbuka.
+
+**Dashboard.** `GET /commerce/drafts` (pesanan yang sedang disusun di chat, dengan harga dari server), `POST /commerce/drafts/:id/cancel`, `GET /commerce/followups` (statistik dan pengingat berikutnya), `POST /commerce/followups/:id/cancel`. Sakelar paket: `chatCommerce` (menu Instansi Tenant).
+
+**Batasan saat ini:** kode voucher belum diterapkan di chat (diskon tidak otomatis); pelanggan yang menyebut kode promo dijawab oleh asisten biasa. Satu pelanggan hanya punya satu draf terbuka, dan draf yang tidak disentuh 48 jam ditutup. Integrasi Biteship ditulis berdasarkan dokumentasi publik dan belum diuji dengan akun sungguhan: coba dulu dengan satu pesanan uji. Migrasi 013 jalan otomatis.

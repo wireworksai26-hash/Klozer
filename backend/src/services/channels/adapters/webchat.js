@@ -19,6 +19,7 @@ const VISITOR_ID = /^[a-f0-9]{32}$/;
 export const webchatAdapter = {
   type: "webchat",
   maxTextLength: 2000,
+  requiresToken: false,
   normalizeContactId: (id) => (VISITOR_ID.test(String(id ?? "").trim()) ? String(id).trim() : null),
   formatText: stripChatMarkup,
 
