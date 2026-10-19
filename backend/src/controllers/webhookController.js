@@ -3,7 +3,8 @@ import { logger } from "../config/logger.js";
 import { safeEqual } from "../utils/crypto.js";
 import { verifyHmacSignature } from "../utils/hmacValidator.js";
 import { forbidden, notFound, unauthorized } from "../utils/errors.js";
-import { findChannelByPhoneNumberId, processInboundMessage } from "../services/whatsappService.js";
+import { findActiveByExternalId } from "../services/channels/channelRepository.js";
+import { processInboundMessage } from "../services/whatsappService.js";
 
 /** GET /webhooks/whatsapp — Meta subscription handshake. */
 export function verifyWhatsAppWebhook(req, res) {
@@ -60,13 +61,14 @@ export async function handleWhatsAppInbound(req, res) {
 
   for (const msg of extractMessages(req.body)) {
     (async () => {
-      const institutionId = await findChannelByPhoneNumberId(msg.phoneNumberId);
-      if (!institutionId) {
+      const channel = await findActiveByExternalId("whatsapp", msg.phoneNumberId);
+      if (!channel) {
         logger.warn({ phoneNumberId: msg.phoneNumberId }, "WhatsApp message for unknown number ignored");
         return;
       }
       await processInboundMessage({
-        institutionId,
+        institutionId: channel.institutionId,
+        channel,
         fromPhone: msg.from,
         customerName: msg.name,
         text: msg.text,

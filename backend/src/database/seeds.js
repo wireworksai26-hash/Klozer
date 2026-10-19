@@ -388,6 +388,7 @@ export async function seedTenant(tx, t, ctx) {
     lead.id = await insert(tx, "leads", {
       institution_id: instId,
       phone_number: lead.phone,
+      external_id: lead.phone,
       name: lead.name,
       gender: lead.gender,
       address_full: lead.orders.length ? lead.address : null,

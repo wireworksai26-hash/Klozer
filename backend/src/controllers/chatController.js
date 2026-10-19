@@ -3,7 +3,8 @@ import { notFound, serviceUnavailable } from "../utils/errors.js";
 import { emitToTenant } from "../realtime.js";
 import { generateAiCsResponse, generateLandingAiResponse } from "../services/aiBrainService.js";
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "../services/tokenService.js";
-import { sendWhatsAppMessage } from "../services/whatsappService.js";
+import { sendText } from "../services/channels/channelService.js";
+import { noteHumanReply } from "../services/handoff/handoffService.js";
 
 /** GET /chats/:leadId — most recent 200 messages, oldest first. */
 export async function getChatMessages(req, res) {
@@ -19,20 +20,28 @@ export async function getChatMessages(req, res) {
   res.json({ success: true, data: { lead, messages } });
 }
 
-/** POST /chats/send — a human CS replies to a customer through WhatsApp. */
+/** POST /chats/send — a person replies to a customer on the channel the conversation is on. */
 export async function sendMessage(req, res) {
   const { lead_id, content_text } = req.body;
-  const lead = await queryOne("SELECT id, phone_number FROM leads WHERE id = ? AND institution_id = ?", [lead_id, req.tenantId]);
+  const lead = await queryOne("SELECT id, phone_number, external_id, channel_id, channel_type FROM leads WHERE id = ? AND institution_id = ?", [lead_id, req.tenantId]);
   if (!lead) throw notFound("Kontak tidak ditemukan.");
 
-  const sent = await sendWhatsAppMessage({ institutionId: req.tenantId, to: lead.phone_number, text: content_text });
+  const sent = await sendText({
+    institutionId: req.tenantId,
+    channelId: lead.channel_id,
+    type: lead.channel_type,
+    to: lead.external_id ?? lead.phone_number,
+    text: content_text,
+  });
 
   const result = await query(
-    `INSERT INTO chat_messages (institution_id, lead_id, wa_message_id, sender_type, sender_user_id, message_type, content_text, is_delivered, delivery_error)
-     VALUES (?, ?, ?, 'cs', ?, 'text', ?, ?, ?)`,
-    [req.tenantId, lead.id, sent.messageId ?? null, req.user.id, content_text, sent.success ? 1 : 0, sent.success ? null : String(sent.error).slice(0, 250)]
+    `INSERT INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, sender_user_id, message_type, content_text, is_delivered, delivery_error)
+     VALUES (?, ?, ?, ?, 'cs', ?, 'text', ?, ?, ?)`,
+    [req.tenantId, lead.id, lead.channel_id, sent.messageId ?? null, req.user.id, content_text, sent.success ? 1 : 0, sent.success ? null : String(sent.error).slice(0, 250)]
   );
   await query("UPDATE leads SET last_contacted_at = UTC_TIMESTAMP(), status = IF(status = 'new', 'in_progress', status) WHERE id = ?", [lead.id]);
+  // From now on a person holds the conversation: the AI stays quiet until the hold runs out or it is handed back.
+  await noteHumanReply({ institutionId: req.tenantId, leadId: lead.id, userId: req.user.id });
 
   const message = await queryOne("SELECT * FROM chat_messages WHERE id = ?", [result.insertId]);
   emitToTenant(req.tenantId, "chat:message", { leadId: lead.id, direction: "outbound", text: content_text, sender: "cs" });

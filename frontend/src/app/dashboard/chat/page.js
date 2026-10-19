@@ -182,6 +182,14 @@ export default function ChatPage() {
 
   const bubble = (m) => {
     const kind = SENDER[m.sender_type] || "cs";
+    // hand-off and assignment notes are timeline markers, not messages from anyone
+    if (kind === "system") {
+      return (
+        <div key={m.id} className="flex justify-center">
+          <p className="text-micro text-fg-subtle bg-soft border border-line rounded-full px-3 py-1 text-center">{m.content_text}</p>
+        </div>
+      );
+    }
     const mine = kind !== "customer";
     return (
       <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>

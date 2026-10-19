@@ -5,7 +5,7 @@ import { audit } from "../services/auditService.js";
 import { disconnectUser } from "../realtime.js";
 
 const SAFE_COLUMNS =
-  "id, institution_id, name, email, role, phone_number, commission_rate_percent, permissions_json, is_online, is_active, last_login_at, created_at";
+  "id, institution_id, name, email, role, phone_number, commission_rate_percent, permissions_json, is_online, is_available, is_active, last_login_at, created_at";
 
 /** GET /users — staff of the caller's institution. */
 export async function listUsers(req, res) {

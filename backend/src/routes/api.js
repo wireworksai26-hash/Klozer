@@ -29,7 +29,10 @@ import * as uploadCtrl from "../controllers/uploadController.js";
 import * as proofCtrl from "../controllers/proofController.js";
 import * as knowledgeCtrl from "../controllers/knowledgeController.js";
 import * as evalCtrl from "../controllers/aiEvaluationController.js";
+import * as channelCtrl from "../controllers/channelController.js";
+import * as routingCtrl from "../controllers/routingController.js";
 import * as lv from "../validation/learningSchemas.js";
+import * as cv from "../validation/channelSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -84,6 +87,21 @@ router.get("/leads", ...tenant, requireRole(...SALES, "finance"), validate({ que
 router.post("/leads", ...tenant, requireRole(...SALES), validate({ body: v.createLeadBody }), h(leadCtrl.createLead));
 router.put("/leads/:id", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: v.updateLeadBody }), h(leadCtrl.updateLead));
 router.delete("/leads/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(leadCtrl.deleteLead));
+router.post("/leads/:id/assign", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: cv.assignLeadBody }), h(routingCtrl.assign));
+router.post("/leads/:id/claim", ...tenant, requireRole(...SALES), validate({ params: v.idParams }), h(routingCtrl.claim));
+router.post("/leads/:id/handoff", ...tenant, requireRole(...SALES), validate({ params: v.idParams }), h(routingCtrl.handoff));
+router.post("/leads/:id/handback", ...tenant, requireRole(...SALES), validate({ params: v.idParams }), h(routingCtrl.handback));
+
+// ==================== CHANNELS & ROUTING ====================
+router.get("/channels", ...tenant, requireRole(...SALES), h(channelCtrl.list));
+router.post("/channels", ...tenant, requireRole(...MANAGERS), validate({ body: cv.createChannelBody }, { rawFields: ["accessToken"] }), h(channelCtrl.create));
+router.put("/channels/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: cv.updateChannelBody }, { rawFields: ["accessToken"] }), h(channelCtrl.update));
+router.delete("/channels/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(channelCtrl.remove));
+router.post("/channels/:id/test", ...tenant, requireRole(...MANAGERS), aiLimiter, validate({ params: v.idParams }), h(channelCtrl.test));
+router.get("/routing/settings", ...tenant, requireRole(...SALES), h(routingCtrl.getSettings));
+router.put("/routing/settings", ...tenant, requireRole(...MANAGERS), validate({ body: cv.updateRoutingBody }), h(routingCtrl.putSettings));
+router.get("/routing/overview", ...tenant, requireRole(...MANAGERS), h(routingCtrl.overview));
+router.put("/users/me/availability", ...tenant, requireRole(...SALES), validate({ body: cv.availabilityBody }), h(routingCtrl.putAvailability));
 
 // ==================== 7. CHAT & AI ====================
 router.post("/ai/ask", publicAiLimiter, validate({ body: v.publicAskBody }), h(chatCtrl.publicAskAi));

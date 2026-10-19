@@ -1,6 +1,6 @@
 import { query, queryOne } from "../config/db.js";
 import { badRequest, notFound } from "../utils/errors.js";
-import { downloadWhatsAppMedia } from "../services/whatsappService.js";
+import { downloadMedia } from "../services/channels/channelService.js";
 import { MAX_PROOF_BYTES, previewPaymentProof } from "../services/paymentProofService.js";
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "../services/tokenService.js";
 
@@ -18,12 +18,13 @@ function sniffMime(buffer) {
 /** GET /payment-proofs/:id/image: the customer's proof, fetched from WhatsApp on demand (nothing is stored on our disk). */
 export async function getProofImage(req, res) {
   const row = await queryOne(
-    `SELECT p.image_url FROM payment_proofs p JOIN orders o ON o.id = p.order_id WHERE p.id = ? AND o.institution_id = ?`,
+    `SELECT p.image_url, l.channel_id, l.channel_type FROM payment_proofs p JOIN orders o ON o.id = p.order_id JOIN leads l ON l.id = o.lead_id WHERE p.id = ? AND o.institution_id = ?`,
     [req.params.id, req.tenantId]
   );
   if (!row || !String(row.image_url).startsWith(MEDIA_PREFIX)) throw notFound("Bukti pembayaran tidak ditemukan.");
 
-  const file = await downloadWhatsAppMedia({ institutionId: req.tenantId, mediaId: row.image_url.slice(MEDIA_PREFIX.length) });
+  // the proof is fetched with the account the customer wrote to (a tenant may have several numbers)
+  const file = await downloadMedia({ institutionId: req.tenantId, channelId: row.channel_id, type: row.channel_type, mediaId: row.image_url.slice(MEDIA_PREFIX.length) });
   if (!file) throw notFound("Berkas tidak lagi tersedia di WhatsApp (media hanya disimpan Meta sekitar 30 hari).");
 
   res.set({

@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { config } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { loadUserFromToken, verifyToken } from "./middlewares/authMiddleware.js";
+import { userConnected, userDisconnected } from "./services/routing/presenceService.js";
 import { SESSION_COOKIE, isAllowedOrigin, readCookie } from "./utils/session.js";
 
 let ioInstance = null;
@@ -41,6 +42,9 @@ export function attachRealtime(httpServer) {
     socket.join(userRoom(user.id));
     // A user only ever joins their own tenant's room; only the superadmin may watch another.
     socket.join(tenantRoom(user.institution_id));
+    // Superadmins are not part of a tenant's team, so they never count as an online agent.
+    const tracksPresence = user.role !== "superadmin" && Boolean(user.institution_id);
+    if (tracksPresence) userConnected(user).catch((err) => logger.warn({ err: err.message }, "Presence connect failed"));
 
     socket.on("join-tenant", (tenantId) => {
       const id = Number(tenantId);
@@ -62,6 +66,7 @@ export function attachRealtime(httpServer) {
     socket.on("disconnect", () => {
       clearTimeout(expiryTimer);
       clearInterval(revalidate);
+      if (tracksPresence) userDisconnected(user);
     });
   });
 
@@ -72,6 +77,11 @@ export function attachRealtime(httpServer) {
 /** Push an event to every connected dashboard of one tenant. No-op before the socket server exists (e.g. in tests). */
 export function emitToTenant(tenantId, event, payload) {
   if (ioInstance) ioInstance.to(tenantRoom(tenantId)).emit(event, payload);
+}
+
+/** Push an event to one user's open dashboards. */
+export function emitToUser(userId, event, payload) {
+  if (ioInstance) ioInstance.to(userRoom(userId)).emit(event, payload);
 }
 
 /** Immediately drop the live sockets of a user whose sessions were just revoked. */

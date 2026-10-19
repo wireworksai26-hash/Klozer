@@ -232,7 +232,7 @@ describe("a proof sent by a customer", () => {
   test("end to end over WhatsApp: the media is downloaded, read, answered and flagged", async () => {
     const t = await createTenant();
     const x = await leadAndOrder(t);
-    await query("INSERT INTO whatsapp_channels (institution_id, phone_number_id, display_phone, encrypted_access_token) VALUES (?, ?, ?, ?)", [t.institutionId, `pn-${t.institutionId}`, "6281200000000", encryptSecret("wa-token")]);
+    await query("INSERT INTO channels (institution_id, type, name, external_id, display_handle, encrypted_access_token) VALUES (?, 'whatsapp', 'WhatsApp', ?, ?, ?)", [t.institutionId, `pn-${t.institutionId}`, "6281200000000", encryptSecret("wa-token")]);
 
     const sent = [];
     mock.method(globalThis, "fetch", async (url, init = {}) => {
@@ -250,8 +250,9 @@ describe("a proof sent by a customer", () => {
     const result = await processInboundMessage({ institutionId: t.institutionId, fromPhone: x.phone, customerName: "Budi", messageId: "wamid.IN1", messageType: "image", mediaId: "MEDIA1" });
     assert.equal(result.replied, true);
     assert.equal(result.intent, "payment_proof_review");
-    assert.equal(sent.length, 1);
-    assert.match(sent[0].text.body, /mengecek secara manual/);
+    const texts = sent.filter((m) => m.type === "text"); // the read receipt goes to the same endpoint
+    assert.equal(texts.length, 1);
+    assert.match(texts[0].text.body, /mengecek secara manual/);
     assert.equal((await orderRow(x.orderId)).review_status, "pending");
     const [stored] = await query("SELECT content_text FROM chat_messages WHERE wa_message_id = 'wamid.IN1'");
     assert.match(stored.content_text, /\[Bukti pembayaran\]/);
@@ -260,7 +261,7 @@ describe("a proof sent by a customer", () => {
   test("a media file from an unexpected host is never fetched", async () => {
     const t = await createTenant();
     await leadAndOrder(t);
-    await query("INSERT INTO whatsapp_channels (institution_id, phone_number_id, display_phone, encrypted_access_token) VALUES (?, ?, ?, ?)", [t.institutionId, `pn2-${t.institutionId}`, "6281200000001", encryptSecret("wa-token")]);
+    await query("INSERT INTO channels (institution_id, type, name, external_id, display_handle, encrypted_access_token) VALUES (?, 'whatsapp', 'WhatsApp', ?, ?, ?)", [t.institutionId, `pn2-${t.institutionId}`, "6281200000001", encryptSecret("wa-token")]);
     const { downloadWhatsAppMedia } = await import("../src/services/whatsappService.js");
     const urls = [];
     mock.method(globalThis, "fetch", async (url) => {

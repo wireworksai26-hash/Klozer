@@ -6,6 +6,7 @@ import { createApp } from "./app.js";
 import { runMigrations } from "./database/migrate.js";
 import { ensureSuperadmin } from "./database/bootstrap.js";
 import { attachRealtime } from "./realtime.js";
+import { resetPresence } from "./services/routing/presenceService.js";
 
 const app = createApp();
 const server = http.createServer(app);
@@ -63,6 +64,7 @@ async function start() {
   await initDb();
   if (process.env.RUN_MIGRATIONS_ON_START !== "false") await runMigrations();
   await ensureSuperadmin();
+  await resetPresence(); // nobody is connected yet; clear flags left by a restart or crash
 
   server.listen(config.port, () => {
     logger.info({ port: config.port, env: config.nodeEnv }, "Klozer API listening");

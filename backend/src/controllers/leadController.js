@@ -50,11 +50,12 @@ export async function createLead(req, res) {
   if (existing) return res.status(200).json({ success: true, message: "Kontak sudah ada.", data: existing });
 
   const result = await query(
-    `INSERT INTO leads (institution_id, phone_number, name, gender, address_full, city, assigned_cs_id, status, source,
+    `INSERT INTO leads (institution_id, phone_number, external_id, name, gender, address_full, city, assigned_cs_id, status, source,
                         interest, est_value, notes, risk_cod_score, last_contacted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())`,
     [
       req.tenantId,
+      phone,
       phone,
       b.name ?? "Pelanggan Baru",
       b.gender ?? null,
