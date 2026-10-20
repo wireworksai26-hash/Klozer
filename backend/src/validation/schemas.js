@@ -224,6 +224,9 @@ export const updateOrderStatusBody = z.object({
 export const sendMessageBody = z.object({
   lead_id: positiveInt,
   content_text: trimmed(4000),
+  // set when the text is an AI reply (or suggestion) that a person edited; `learn` lets a manager teach the assistant the corrected wording
+  edited_from_message_id: positiveInt.optional(),
+  learn: boolField.optional(),
 });
 
 export const aiChatBody = z.object({

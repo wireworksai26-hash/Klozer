@@ -65,9 +65,9 @@ export function mockNetwork(state = {}) {
 }
 
 let seq = 0;
-/** A shop with its own WhatsApp number, an owner, a cs and a finance user. */
-export async function shop() {
-  const t = await createTenant();
+/** A shop with its own WhatsApp number, an owner, a cs and a finance user. The fast path is off unless `{ fastPath: true }`. */
+export async function shop(over = {}) {
+  const t = await createTenant(over);
   const pn = `PN-KIT-${t.institutionId}-${++seq}`;
   const res = await api().post("/api/v1/channels").set(bearer(t.ownerToken)).send({ type: "whatsapp", name: "Toko", externalId: pn, accessToken: `EAAG-token-${pn}` });
   assert.equal(res.status, 201);

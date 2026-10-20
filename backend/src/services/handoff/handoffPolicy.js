@@ -53,6 +53,7 @@ export function detectHandoff(text, keywords = DEFAULT_HANDOFF_KEYWORDS) {
 const REASON_LABELS = {
   customer_request: "Pelanggan meminta berbicara dengan manusia",
   guardrail: "Pesan perlu ditangani manusia",
+  ai_unsure: "AI tidak yakin dan meneruskan ke tim",
   ai_unavailable: "AI sedang tidak tersedia",
   payment_proof: "Bukti pembayaran perlu dicek",
   cs_replied: "CS membalas langsung",

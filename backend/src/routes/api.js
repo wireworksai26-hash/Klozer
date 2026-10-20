@@ -51,6 +51,12 @@ import * as taskCtrl from "../controllers/taskController.js";
 import * as tv from "../validation/taskSchemas.js";
 import * as topupCtrl from "../controllers/tokenTopupController.js";
 import * as topv from "../validation/topupSchemas.js";
+import * as payCtrl from "../controllers/platformPaymentController.js";
+import * as payv from "../validation/paymentMethodSchemas.js";
+import * as voucherCtrl from "../controllers/voucherController.js";
+import * as vouv from "../validation/voucherSchemas.js";
+import * as fastCtrl from "../controllers/fastPathController.js";
+import * as fastv from "../validation/fastPathSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -194,10 +200,33 @@ router.post("/tasks/:id/claim", ...tenant, requireRole(...TEAM), tasksOn, valida
 router.post("/tasks/:id/comments", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams, body: tv.commentBody }), h(taskCtrl.comment));
 router.delete("/tasks/:id", ...tenant, requireRole(...MANAGERS), tasksOn, validate({ params: v.idParams }), h(taskCtrl.remove));
 
+// ==================== HOW KLOZER IS PAID (managed by the superadmin, shown publicly) ====================
+router.get("/public/payment-methods", webchatPollLimiter, h(payCtrl.publicList));
+router.get("/public/payment-methods/:id/qris", webchatPollLimiter, validate({ params: v.idParams }), h(payCtrl.publicQrisImage));
+router.get("/platform/vouchers", authenticate, requireSuperadmin, validate({ query: vouv.voucherListQuery }), h(voucherCtrl.list));
+router.post("/platform/vouchers", authenticate, requireSuperadmin, validate({ body: vouv.createVoucherBody }), h(voucherCtrl.create));
+router.put("/platform/vouchers/:id", authenticate, requireSuperadmin, validate({ params: v.idParams, body: vouv.updateVoucherBody }), h(voucherCtrl.update));
+router.delete("/platform/vouchers/:id", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(voucherCtrl.remove));
+router.get("/platform/payment-methods", authenticate, requireSuperadmin, h(payCtrl.adminList));
+router.post("/platform/payment-methods", authenticate, requireSuperadmin, validate({ body: payv.createMethodBody }), h(payCtrl.create));
+router.put("/platform/payment-methods/:id", authenticate, requireSuperadmin, validate({ params: v.idParams, body: payv.updateMethodBody }), h(payCtrl.update));
+router.delete("/platform/payment-methods/:id", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(payCtrl.remove));
+router.get("/platform/payment-methods/:id/qris", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(payCtrl.adminQrisImage));
+router.put("/platform/payment-methods/:id/qris", authenticate, requireSuperadmin, validate({ params: v.idParams, body: payv.qrisImageBody }, { rawFields: ["fileBase64"] }), h(payCtrl.uploadQris));
+router.delete("/platform/payment-methods/:id/qris", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(payCtrl.deleteQris));
+
+// ==================== FAST PATH (repetitive questions answered by code, no tokens) ====================
+router.get("/ai/fast-path", ...tenant, requireRole(...MANAGERS), h(fastCtrl.get));
+router.put("/ai/fast-path", ...tenant, requireRole(...MANAGERS), validate({ body: fastv.updateFastPathBody }), h(fastCtrl.put));
+router.get("/ai/fast-path/stats", ...tenant, requireRole(...MANAGERS), validate({ query: fastv.statsQuery }), h(fastCtrl.stats));
+
 // ==================== AI TOKEN TOP UP ====================
 router.get("/ai/topups", ...tenant, requireRole(...MANAGERS), h(topupCtrl.list));
+router.get("/ai/topups/price", ...tenant, requireRole(...MANAGERS), validate({ query: topv.priceQuery }), h(topupCtrl.price));
 router.post("/ai/topups", ...tenant, requireRole(...MANAGERS), validate({ body: topv.createTopupBody }), h(topupCtrl.create));
 router.get("/ai/topups/admin", authenticate, requireSuperadmin, validate({ query: topv.topupListQuery }), h(topupCtrl.adminList));
+router.post("/ai/topups/grant", authenticate, requireSuperadmin, validate({ body: topv.grantTokensBody }), h(topupCtrl.adminGrant));
+router.post("/ai/topups/:id/paid", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: topv.paidTopupBody }), h(topupCtrl.paid));
 router.post("/ai/topups/:id/cancel", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(topupCtrl.cancel));
 router.put("/ai/topups/:id/quote", authenticate, requireSuperadmin, validate({ params: v.idParams, body: topv.quoteTopupBody }), h(topupCtrl.adminQuote));
 router.post("/ai/topups/:id/credit", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(topupCtrl.adminCredit));
@@ -249,6 +278,7 @@ router.put("/users/me/availability", ...tenant, requireRole(...SALES), validate(
 router.post("/ai/ask", publicAiLimiter, validate({ body: v.publicAskBody }), h(chatCtrl.publicAskAi));
 router.get("/chats/:leadId", ...tenant, requireRole(...SALES), validate({ params: v.leadIdParams }), h(chatCtrl.getChatMessages));
 router.post("/chats/send", ...tenant, requireRole(...SALES), validate({ body: v.sendMessageBody }), h(chatCtrl.sendMessage));
+router.post("/chats/:leadId/suggest", ...tenant, requireRole(...SALES), aiLimiter, validate({ params: v.leadIdParams }), h(chatCtrl.suggestReply));
 router.post("/ai/chat", ...tenant, requireRole(...SALES), aiLimiter, validate({ body: v.aiChatBody }), h(chatCtrl.aiChatSimulation));
 router.post("/ai/analyze-proof", ...tenant, requireRole(...MONEY), aiLimiter, validate({ body: v.analyzeProofBody }, { rawFields: ["imageBase64"] }), h(proofCtrl.analyzeProofPreview));
 router.get("/orders/:id/proofs", ...tenant, requireRole(...MONEY), validate({ params: v.idParams }), h(proofCtrl.listOrderProofs));

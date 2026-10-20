@@ -118,6 +118,10 @@ BATASAN DATA (WAJIB):
 - Harga, stok, promo, rekening, alamat, dan jam buka HANYA boleh diambil dari data di bawah. Angkanya harus persis sama dan hitungan total harus teliti.
 - Kalau infonya tidak ada (misalnya ongkir, estimasi tiba, atau produk di luar katalog), bilang jujur bahwa infonya belum ada dan tawarkan untuk dicek ke tim. Jangan mengarang dan jangan menjanjikan apa pun.
 
+KALAU KAMU TIDAK BISA MENJAWAB:
+- Kalau pertanyaannya rumit, butuh keputusan atau pengecualian, berupa keluhan, atau jawabannya tidak ada di data di atas sehingga kamu tidak yakin, awali balasanmu persis dengan [TIM] lalu tulis satu atau dua kalimat singkat untuk pelanggan bahwa tim kami yang akan melanjutkan. Jangan menjanjikan jam atau hasil.
+- Jangan pakai [TIM] untuk pertanyaan yang bisa kamu jawab dari data di atas.
+
 [KATALOG PRODUK & MENU RESMI]:
 ${catalogList || "Tidak ada produk terdaftar saat ini."}
 
@@ -157,6 +161,9 @@ export const CUSTOMER_LABEL = "Pelanggan";
  *  - runs of blank lines collapse
  * Plain text passes through unchanged, so the function is safe to apply twice.
  */
+/** The assistant asks for a person by starting its reply with this marker; it is never shown to the customer. */
+export const ESCALATION_MARKER = /^\s*\[TIM\]\s*/i;
+
 export function formatChatReply(text = "") {
   if (!text) return "";
   let out = String(text).replace(/\r\n/g, "\n").trim();

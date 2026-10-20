@@ -13,6 +13,7 @@ import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
 import { onCustomerActivity } from "./followup/followupService.js";
 import { recordAdReferral } from "./ads/attribution.js";
 import { routeConversation } from "./agents/agentRouting.js";
+import { tryFastPath } from "./fastpath/fastPathService.js";
 import { createToolSession } from "./agents/tools/toolRunner.js";
 import { emitEvent } from "./integrations/eventBus.js";
 import { loadContactPayload, messagePayload } from "./integrations/eventPayloads.js";
@@ -76,10 +77,10 @@ function refreshContactName({ institutionId, channelId, channelType, contactId, 
 }
 
 /** Keep the AI's or system's outgoing message in the conversation. */
-function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderType = "ai_agent", tokens = 0, model = null, meta = null, agentId = null }) {
+function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderType = "ai_agent", tokens = 0, model = null, meta = null, agentId = null, replyPath = null }) {
   return query(
-    `INSERT INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error, meta_json, ai_agent_id)
-     VALUES (?, ?, ?, ?, ?, 'text', ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error, meta_json, ai_agent_id, reply_path)
+     VALUES (?, ?, ?, ?, ?, 'text', ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       institutionId,
       leadId,
@@ -93,15 +94,17 @@ function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderTyp
       sent.success ? null : String(sent.error).slice(0, 250),
       meta ? JSON.stringify(meta) : null,
       agentId,
+      replyPath,
     ]
   );
 }
 
 /** Send an automated reply the way a person would (after a pause), then record it and tell the dashboards. */
-async function reply({ ctx, text, tokens = 0, model = null, meta = null }) {
+/** `replyPath` says how the reply was made: "fast:<topic>" (code, no tokens), "rules" (fixed text or the order flow), or null (the language model). */
+async function reply({ ctx, text, tokens = 0, model = null, meta = null, replyPath = null }) {
   if (!isTest) await sleep(calculateHumanPacingDelay(text, ctx.channelType));
   const sent = await sendText({ institutionId: ctx.institutionId, channelId: ctx.channelId, type: ctx.channelType, to: ctx.contactId, text });
-  await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta, agentId: ctx.agentId ?? null });
+  await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta, agentId: ctx.agentId ?? null, replyPath });
   emitToTenant(ctx.institutionId, "chat:message", { leadId: ctx.leadId, direction: "outbound", text, sender: "ai_agent" });
   emitEvent({ institutionId: ctx.institutionId, type: "message.sent", data: messagePayload({ contactId: ctx.leadId, channelType: ctx.channelType, direction: "outbound", sender: "ai", text, externalId: sent.messageId ?? null }) });
   return sent;
@@ -122,7 +125,7 @@ async function agentReachable(userId) {
 async function handOffWithReply(ctx, reason, assignedTo) {
   await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason });
   const text = handoffReply({ agentAvailable: await agentReachable(assignedTo) });
-  const sent = await reply({ ctx, text });
+  const sent = await reply({ ctx, text, replyPath: "rules" });
   return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "human_escalation", reason: "handoff" };
 }
 
@@ -160,6 +163,20 @@ async function handlePaymentProofMessage(ctx, { messageId, mediaId, aiAllowed, h
   return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: `payment_proof_${result.outcome}`, outcome: result.outcome, reasons: result.reasons };
 }
 
+/**
+ * Repetitive questions (bank account, product list, a price, the address, a greeting) are answered from the shop's data
+ * by code: no tokens, no waiting for a model. Anything that is not clearly one of those returns null.
+ */
+async function answerFast(ctx, text) {
+  const fast = await tryFastPath({ institutionId: ctx.institutionId, text }).catch((err) => {
+    logger.warn({ err: err.message, leadId: ctx.leadId }, "Fast path failed; the normal flow answers");
+    return null;
+  });
+  if (!fast) return null;
+  const sent = await reply({ ctx, text: fast.replyText, model: "fast_path", replyPath: fast.path, meta: { path: fast.path } });
+  return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "fast_path", path: fast.path };
+}
+
 async function answerWithAi(ctx, { customerName, text, lead }) {
   const historyRows = await query(
     `SELECT sender_type, content_text FROM chat_messages
@@ -191,6 +208,7 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
       tokens: (commerce.nluUsage?.promptTokens ?? 0) + (commerce.nluUsage?.completionTokens ?? 0),
       model: commerce.model ?? null,
       meta: commerce.meta ?? null,
+      replyPath: "rules",
     });
     if (commerce.handoffReason) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: commerce.handoffReason });
     return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "commerce", commerce: commerce.meta?.commerce };
@@ -203,6 +221,10 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
         return null;
       })
     : null;
+
+  // Not an order step: a repetitive question is answered by code before the model is asked.
+  const quick = await answerFast(ctx, text);
+  if (quick) return quick;
 
   const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType], agent, tools });
 
@@ -233,7 +255,7 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
   if (tools?.effects.handoffReason) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: tools.effects.handoffReason });
 
   // The model's own reply already told the customer a person will follow up; now the conversation really goes to one.
-  if (ai.needsEscalation) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: "guardrail" });
+  if (ai.needsEscalation) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: ai.escalationReason ?? "guardrail" });
 
   return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, modelUsed: ai.modelUsed, intent: ai.intent };
 }
@@ -313,7 +335,7 @@ export async function handleInbound({ institutionId, channel = null, channelType
   if (isOptOut(text)) {
     await recordOptOutFromChat({ institutionId, leadId });
     if (!aiAllowed || humanHolding) return { success: true, leadId, replied: false, reason: "opted_out" };
-    const sent = await reply({ ctx, text: optOutText() });
+    const sent = await reply({ ctx, text: optOutText(), replyPath: "rules" });
     return { success: true, leadId, replied: true, delivered: sent.success, intent: "opt_out" };
   }
 
@@ -326,7 +348,8 @@ export async function handleInbound({ institutionId, channel = null, channelType
   try {
     await assertTokenQuota(institutionId);
   } catch {
-    return flagForHuman(ctx, "token_quota_exhausted");
+    // out of tokens: what needs no model is still answered, the rest waits for a person
+    return (await answerFast(ctx, text)) ?? flagForHuman(ctx, "token_quota_exhausted");
   }
 
   return answerWithAi(ctx, { customerName: contactName, text, lead });

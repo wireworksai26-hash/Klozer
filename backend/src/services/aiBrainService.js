@@ -10,9 +10,11 @@ import {
   GUARDRAIL_REPLIES,
   buildCsSystemPrompt,
   buildCsUserMessage,
+  ESCALATION_MARKER,
   formatChatReply,
   friendlyFirstName,
 } from "./aiPrompt.js";
+import { getFastPathSettings } from "./fastpath/fastPathSettings.js";
 
 // A little looser than before (was 0.3) so replies sound like a person; the prompt keeps prices,
 // stock and bank details tied to the data it is given. Landing answers state product facts, so they stay tighter.
@@ -514,7 +516,7 @@ export async function generateAiCsResponse({
   const instName = institutionName || baseContext.institutionName || "Toko Kami";
   const instSector = sector || baseContext.sector || "Bisnis";
   const instAddress = address || baseContext.address || "Belum diatur";
-  const instHours = hours || "Belum diatur";
+  const instHours = hours || (await getFastPathSettings(institutionId)).storeHours || "Belum diatur";
 
   // Ground truth only: caller-supplied sandbox catalog, otherwise this tenant's own products.
   const activeProducts = customProducts && customProducts.length > 0 ? customProducts : baseContext.catalog || [];
@@ -625,12 +627,17 @@ export async function generateAiCsResponse({
   // a request for a tool is never part of what the customer reads (a model may write one even when it was not offered any)
   if (result) result = { ...result, text: stripToolLines(result.text) };
 
+  // The assistant says it cannot answer by starting with [TIM]: the customer gets the rest of its sentence, then a person takes over.
+  const unsure = Boolean(result?.text) && ESCALATION_MARKER.test(result.text) && !consult;
+  if (result?.text && unsure) result = { ...result, text: result.text.replace(ESCALATION_MARKER, "").trim() || GUARDRAIL_REPLIES.escalation };
+
   if (result?.text) {
     return {
       success: true,
-      intent: "ai_generated",
+      intent: unsure ? "ai_unsure" : "ai_generated",
       replyText: formatChatReply(result.text),
-      needsEscalation: false,
+      needsEscalation: unsure,
+      escalationReason: unsure ? "ai_unsure" : undefined,
       modelUsed: result.model,
       provider: result.provider,
       fallbackUsed: result.fallbackUsed,

@@ -47,6 +47,9 @@ export async function createInstitution(overrides = {}) {
      VALUES (?, ?, ?, 'pro', ?, ?)`,
     [overrides.name || `Toko ${id}`, overrides.slug || `toko-${id}`, `owner@${id}.test`, overrides.ai_token_quota ?? 1000000, JSON.stringify(DEFAULT_FEATURES)]
   );
+  // The fast path answers short routine messages itself, so most tests (which check what the model is asked and says)
+  // start with it off. The fast path tests ask for it with `fastPath: true`.
+  if (overrides.fastPath !== true) await query("INSERT INTO fast_path_settings (institution_id, enabled, topics_json) VALUES (?, 0, '{}')", [result.insertId]);
   return result.insertId;
 }
 

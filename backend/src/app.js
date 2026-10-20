@@ -62,6 +62,8 @@ export function createApp() {
   app.use("/api/v1/ai/analyze-proof", express.json({ limit: "8mb" }));
   // Knowledge-base documents (PDF or text) are also sent as base64.
   app.use("/api/v1/knowledge/file", express.json({ limit: "8mb" }));
+  // The QRIS picture of a payment method is sent as base64 (up to 1.5 MB of image).
+  app.use("/api/v1/platform/payment-methods", express.json({ limit: "3mb" }));
 
   // The raw body is needed to verify webhook signatures byte-for-byte.
   app.use(
