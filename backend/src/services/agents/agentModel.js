@@ -15,7 +15,7 @@ export const INTENTS = Object.freeze(["buy", "order_status", "payment"]);
  * What an agent may do about orders. `full` takes orders, `service` only answers about existing ones (status, how to
  * pay, a new QRIS), `off` leaves orders to others.
  */
-export const DEFAULT_CAPABILITIES = Object.freeze({ commerce: "full" });
+export const DEFAULT_CAPABILITIES = Object.freeze({ commerce: "full", tools: [] });
 
 /** Situations an agent is meant for. Every kind that is filled in must match (AND); within a kind any value matches (OR). */
 export const EMPTY_TRIGGERS = Object.freeze({ channels: [], keywords: [], intents: [], labelIds: [], leadStatuses: [], newContact: null, hasOpenOrder: null });

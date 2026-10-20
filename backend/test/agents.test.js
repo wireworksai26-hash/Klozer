@@ -1,89 +1,15 @@
 import "./setupWhatsapp.js";
 import { test, before, after, afterEach, describe, mock } from "node:test";
 import assert from "node:assert/strict";
-import crypto from "crypto";
-import { api, bearer, createProduct, createTenant, setupDatabase, teardownDatabase, waitFor } from "./helpers.js";
+import { api, bearer, createProduct, setupDatabase, teardownDatabase } from "./helpers.js";
 import { query } from "../src/config/db.js";
+import { addAgent, agentBody, lastReply, leadOf, logs, mockNetwork, ok, row, say, shop, usePresets } from "./agentTestKit.js";
+
+const ROUTER_MARK = "memilih agen AI";
 
 before(setupDatabase);
 after(teardownDatabase);
 afterEach(() => mock.restoreAll());
-
-const APP_SECRET = "test-app-secret";
-const signed = (body) => `sha256=${crypto.createHmac("sha256", APP_SECRET).update(body).digest("hex")}`;
-const ok = (json = {}) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => json, text: async () => JSON.stringify(json) });
-const row = async (sql, params) => (await query(sql, params))[0];
-
-const NLU_MARK = "mengekstrak data pesanan";
-const ROUTER_MARK = "memilih agen AI";
-
-/** Fake network: the assistant's replies record the prompt they were given; the order reader and the router answer from `state`. */
-function mockNetwork(state = {}) {
-  const calls = { replies: [], nlu: 0, router: [], graph: [] };
-  mock.method(globalThis, "fetch", async (url, opts = {}) => {
-    const u = String(url);
-    const body = typeof opts.body === "string" && opts.body.startsWith("{") ? JSON.parse(opts.body) : opts.body;
-    if (u.includes("integrate.api.nvidia.com")) {
-      const system = String(body.messages[0].content);
-      const customer = String(body.messages[1].content).match(/"""\n([\s\S]*)\n"""/)?.[1] ?? "";
-      const usage = { prompt_tokens: 200, completion_tokens: 20 };
-      if (system.includes(NLU_MARK)) {
-        calls.nlu++;
-        return ok({ choices: [{ message: { content: JSON.stringify(state.nlu?.(customer) ?? {}) } }], usage });
-      }
-      if (system.includes(ROUTER_MARK)) {
-        calls.router.push({ system, customer });
-        const answer = state.router?.(customer);
-        return ok({ choices: [{ message: { content: typeof answer === "string" ? answer : JSON.stringify(answer ?? {}) } }], usage });
-      }
-      calls.replies.push({ system, user: String(body.messages[1].content) });
-      return ok({ choices: [{ message: { content: "Baik kak, aku bantu ya." } }], usage });
-    }
-    if (u.includes("graph.facebook.com")) {
-      calls.graph.push({ url: u, body });
-      return ok({ messages: [{ id: `wamid.OUT.${calls.graph.length}` }] });
-    }
-    throw new Error(`unexpected fetch to ${u}`);
-  });
-  return { calls, state };
-}
-
-let seq = 0;
-async function shop() {
-  const t = await createTenant();
-  const pn = `PN-AG-${t.institutionId}-${++seq}`;
-  const res = await api().post("/api/v1/channels").set(bearer(t.ownerToken)).send({ type: "whatsapp", name: "Toko", externalId: pn, accessToken: `EAAG-token-${pn}` });
-  assert.equal(res.status, 201);
-  return { ...t, pn, from: "6281500000001" };
-}
-
-const agentBody = (over = {}) => ({ name: "Penjualan", description: "Membantu calon pembeli memilih produk", instructions: "Fokus membantu pelanggan menyelesaikan pembelian dengan ramah.", ...over });
-const addAgent = async (t, over) => {
-  const res = await api().post("/api/v1/ai/agents").set(bearer(t.ownerToken)).send(agentBody(over));
-  assert.equal(res.status, 201, JSON.stringify(res.body));
-  return res.body.data;
-};
-const usePresets = async (t) => {
-  const res = await api().post("/api/v1/ai/agents/presets").set(bearer(t.ownerToken));
-  assert.equal(res.status, 201, JSON.stringify(res.body));
-  return Object.fromEntries(res.body.data.map((a) => [a.name, a]));
-};
-
-const inboundBody = (t, text, from = t.from) =>
-  JSON.stringify({ object: "whatsapp_business_account", entry: [{ id: "W", changes: [{ field: "messages", value: { messaging_product: "whatsapp", metadata: { phone_number_id: t.pn }, contacts: [{ profile: { name: "Pembeli" }, wa_id: from }], messages: [{ from, id: `wamid.${crypto.randomUUID()}`, type: "text", text: { body: text } }] } }] }] });
-
-/** The customer writes; resolves when the assistant's answer is stored. */
-async function say(t, text, from = t.from) {
-  const count = async () => Number((await row("SELECT COUNT(*) AS n FROM chat_messages WHERE institution_id = ? AND sender_type = 'ai_agent'", [t.institutionId])).n);
-  const before = await count();
-  const raw = inboundBody(t, text, from);
-  const res = await api().post("/api/v1/webhooks/whatsapp").set("Content-Type", "application/json").set("x-hub-signature-256", signed(raw)).send(raw);
-  assert.equal(res.status, 200);
-  await waitFor(async () => (await count()) > before, { timeout: 6000 });
-}
-const leadOf = (t, from = t.from) => row("SELECT * FROM leads WHERE institution_id = ? AND phone_number = ?", [t.institutionId, from]);
-const lastReply = (calls) => calls.replies.at(-1);
-const logs = (t) => query("SELECT g.*, a.name AS to_name, b.name AS from_name FROM agent_routing_logs g LEFT JOIN ai_agents a ON a.id = g.to_agent_id LEFT JOIN ai_agents b ON b.id = g.from_agent_id WHERE g.institution_id = ? ORDER BY g.id", [t.institutionId]);
 
 describe("managing agents", () => {
   test("create, read, change and delete; the same name twice is refused", async () => {
@@ -138,7 +64,7 @@ describe("managing agents", () => {
     const presets = await usePresets(t);
     assert.deepEqual(Object.keys(presets).sort(), ["Layanan Pelanggan", "Penjualan", "Umum"]);
     assert.equal(presets.Umum.isDefault, true);
-    assert.deepEqual(presets["Layanan Pelanggan"].capabilities, { commerce: "service" });
+    assert.deepEqual(presets["Layanan Pelanggan"].capabilities, { commerce: "service", tools: [] });
     const again = await api().post("/api/v1/ai/agents/presets").set(bearer(t.ownerToken));
     assert.equal(again.status, 409);
     assert.equal(again.body.code, "AGENTS_EXIST");

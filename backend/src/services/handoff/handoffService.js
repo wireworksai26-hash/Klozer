@@ -2,6 +2,7 @@ import { query, queryOne } from "../../config/db.js";
 import { emitToTenant } from "../../realtime.js";
 import { notFound } from "../../utils/errors.js";
 import { emitEvent } from "../integrations/eventBus.js";
+import { autoTaskOnHandoff, closeChatTasks } from "../tasks/taskService.js";
 import { reasonLabel } from "./handoffPolicy.js";
 
 const announce = (institutionId, contactId, handledBy, reason) => emitEvent({ institutionId, type: "conversation.handoff", data: { contact_id: contactId, handled_by: handledBy, reason } });
@@ -37,6 +38,7 @@ export async function startHandoff({ institutionId, leadId, channelId = null, re
   emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason });
   announce(institutionId, leadId, "human", reason);
   if (reason !== "manual") emitToTenant(institutionId, "chat:needs_human", { leadId, reason });
+  await autoTaskOnHandoff({ institutionId, leadId, reason }); // only when the shop turned it on; never throws
   return { changed: true };
 }
 
@@ -59,6 +61,7 @@ export async function noteHumanReply({ institutionId, leadId, userId }) {
     emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason: "cs_replied" });
     announce(institutionId, leadId, "human", "cs_replied");
   }
+  await closeChatTasks({ institutionId, leadId, userId }); // "take over this chat" tasks are done once someone answers
 }
 
 /** A person (or the hold timing out) gives the conversation back to the AI. */

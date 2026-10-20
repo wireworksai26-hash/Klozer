@@ -21,6 +21,18 @@ import { getEffectiveAi } from "./platformSettings.js";
 import { buildKnowledgeBlock, buildLearningBlock, buildRetrievalQuery } from "./aiContext.js";
 import { retrieveLearning } from "./aiLearningService.js";
 import { retrieveKnowledge } from "./knowledge/knowledgeService.js";
+import { followUpAfterTools, parseToolCalls, stripToolLines } from "./agents/tools/toolProtocol.js";
+
+/** Asked by another agent, not by a customer: answer for that agent, plainly, with no greeting. */
+const CONSULT_BLOCK = `
+[MODE KONSULTASI INTERNAL]
+Pertanyaan ini datang dari rekan AI yang sedang melayani pelanggan, bukan dari pelanggan. Jawab singkat, faktual, dan langsung ke intinya, tanpa sapaan. Kalau datanya tidak ada, katakan tidak tahu.
+`;
+
+const addUsage = (total, usage) => ({
+  promptTokens: (total.promptTokens ?? 0) + (usage?.promptTokens ?? 0),
+  completionTokens: (total.completionTokens ?? 0) + (usage?.completionTokens ?? 0),
+});
 
 /**
  * Multi-layer AI Guardrails Rules & Evaluator
@@ -481,6 +493,8 @@ export async function generateAiCsResponse({
   hours = null,
   channelLabel = undefined,
   agent = null,
+  tools = null,
+  consult = false,
 }) {
   // 1. Evaluate Guardrails on User Input
   const guardrailCheck = AiGuardrails.evaluate(messageText);
@@ -544,7 +558,7 @@ export async function generateAiCsResponse({
         h.sender_type === "ai_cs" ||
         h.sender_type === "assistant"
     );
-  const isInitialTurn = !hasPreviousAiReplies;
+  const isInitialTurn = !consult && !hasPreviousAiReplies; // a question from another agent is never a first greeting
 
   // 3. Build the system prompt: casual WhatsApp voice on top, tenant data as the only source of facts.
   // Tenant-configured persona (bot name, tone, greeting) is plain text, length-limited by validation.
@@ -560,7 +574,7 @@ export async function generateAiCsResponse({
     instName,
     instSector,
     persona: { ...(baseContext.persona || {}), ...agentPersona(agent) },
-    agentBlock: buildAgentBlock(agent),
+    agentBlock: `${buildAgentBlock(agent)}${consult ? CONSULT_BLOCK : ""}${tools?.block ?? ""}`,
     isInitialTurn,
     customerFirstName,
     catalogList,
@@ -592,9 +606,26 @@ export async function generateAiCsResponse({
   const finalUserMessage = buildCsUserMessage({ formattedHistory, isInitialTurn, customerFirstName, messageText });
 
   // 5. Generate with the configured provider (primary, then the other as failover)
-  const result = await callBestProvider({ systemPrompt, userMessage: finalUserMessage });
+  let result = await callBestProvider({ systemPrompt, userMessage: finalUserMessage });
 
-  if (result) {
+  // When the agent has tools the model may ask for one (a line starting with @tool); the answer goes back and it writes
+  // the reply. Plain text with no such line is the reply, exactly as for an agent without tools.
+  let usage = result?.usage ?? null;
+  if (result && tools) {
+    let gathered = "";
+    for (let round = 0; round < tools.maxRounds && result; round++) {
+      const asked = parseToolCalls(result.text);
+      if (!asked.calls.length && !asked.problems.length) break;
+      gathered += (gathered ? "\n" : "") + (await tools.execute(asked));
+      result = await callBestProvider({ systemPrompt, userMessage: finalUserMessage + followUpAfterTools(gathered) });
+      if (result) usage = addUsage(usage ?? {}, result.usage);
+    }
+    if (result) result = { ...result, usage };
+  }
+  // a request for a tool is never part of what the customer reads (a model may write one even when it was not offered any)
+  if (result) result = { ...result, text: stripToolLines(result.text) };
+
+  if (result?.text) {
     return {
       success: true,
       intent: "ai_generated",

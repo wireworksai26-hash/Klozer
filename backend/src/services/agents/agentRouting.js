@@ -1,12 +1,10 @@
 import { query, queryOne } from "../../config/db.js";
 import { logger } from "../../config/logger.js";
-import { emitToTenant } from "../../realtime.js";
 import { callWithFallback } from "../aiBrainService.js";
-import { addSystemNote } from "../handoff/handoffService.js";
-import { emitEvent } from "../integrations/eventBus.js";
 import { recordTokenUsage } from "../tokenService.js";
 import { buildClassifierPrompt, decideAgent, parseClassifierAnswer } from "./agentModel.js";
-import { getAgentSettings, listAgents, logRouting } from "./agentRepository.js";
+import { getAgentSettings, listAgents } from "./agentRepository.js";
+import { applySwitch } from "./agentSwitch.js";
 
 /**
  * Choosing which agent answers a message, and keeping a record of every switch. The decision itself is agentModel's
@@ -78,13 +76,7 @@ export async function routeConversation({ ctx, lead, text, history = [] }) {
   const agent = decision.agent;
   const switched = (agent?.id ?? null) !== (lead.ai_agent_id ?? null);
   if (switched) {
-    await query("UPDATE leads SET ai_agent_id = ? WHERE id = ?", [agent?.id ?? null, lead.id]);
-    await logRouting({ institutionId: ctx.institutionId, leadId: lead.id, fromAgentId: lead.ai_agent_id, toAgentId: agent?.id ?? null, method: decision.method, reason: decision.reason, confidence: decision.confidence });
-    emitToTenant(ctx.institutionId, "lead:agent_changed", { leadId: lead.id, agentId: agent?.id ?? null });
-    emitEvent({ institutionId: ctx.institutionId, type: "conversation.agent_changed", data: { contact_id: lead.id, from_agent: current?.name ?? null, to_agent: agent?.name ?? null, method: decision.method, reason: decision.reason } });
-    if (agent && lead.ai_agent_id && settings.announceSwitch) {
-      await addSystemNote({ institutionId: ctx.institutionId, leadId: lead.id, channelId: ctx.channelId, text: `Agen AI: ${current?.name ?? "sebelumnya"} → ${agent.name} (${decision.reason}).` });
-    }
+    await applySwitch({ institutionId: ctx.institutionId, channelId: ctx.channelId, lead, fromAgent: current, toAgent: agent, method: decision.method, reason: decision.reason, confidence: decision.confidence, announce: settings.announceSwitch });
   }
   return { agent, decision, switched };
 }

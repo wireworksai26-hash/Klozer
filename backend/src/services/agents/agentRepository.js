@@ -2,6 +2,7 @@ import { query, queryOne, transaction } from "../../config/db.js";
 import { parseJsonColumn } from "../../utils/jsonColumn.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { COMMERCE_MODES, DEFAULT_CAPABILITIES, normalizeTriggers } from "./agentModel.js";
+import { TOOL_NAMES } from "./tools/toolCatalog.js";
 
 /** Storage for AI agents, their knowledge scope, the routing settings and the routing log. */
 
@@ -11,6 +12,7 @@ export const agentLimitFor = (tier) => AGENT_LIMITS[String(tier || "").toLowerCa
 function toAgent(row, knowledgeDocumentIds = []) {
   const capabilities = { ...DEFAULT_CAPABILITIES, ...parseJsonColumn(row.capabilities_json, {}) };
   if (!COMMERCE_MODES.includes(capabilities.commerce)) capabilities.commerce = "off";
+  capabilities.tools = Array.isArray(capabilities.tools) ? [...new Set(capabilities.tools.filter((name) => TOOL_NAMES.includes(name)))] : [];
   return {
     id: row.id,
     institutionId: row.institution_id,
@@ -195,4 +197,29 @@ export async function listRoutingLogs(institutionId, { leadId = null, limit = 50
     [institutionId, leadId, leadId, limit, offset]
   );
   return rows.map((r) => ({ id: Number(r.id), leadId: r.lead_id, leadName: r.lead_name, from: r.from_name, to: r.to_name, method: r.method, reason: r.reason, confidence: r.confidence, createdAt: r.created_at }));
+}
+
+/** What agents did besides answering: each tool request, with what came of it. */
+export async function listToolCalls(institutionId, { leadId = null, agentId = null, tool = null, ok = null, limit = 50, offset = 0 } = {}) {
+  const rows = await query(
+    `SELECT c.*, l.name AS lead_name, a.name AS agent_name FROM agent_tool_calls c
+       LEFT JOIN leads l ON l.id = c.lead_id LEFT JOIN ai_agents a ON a.id = c.agent_id
+      WHERE c.institution_id = ? AND (? IS NULL OR c.lead_id = ?) AND (? IS NULL OR c.agent_id = ?) AND (? IS NULL OR c.tool = ?) AND (? IS NULL OR c.ok = ?)
+      ORDER BY c.id DESC LIMIT ? OFFSET ?`,
+    [institutionId, leadId, leadId, agentId, agentId, tool, tool, ok === null ? null : ok ? 1 : 0, ok === null ? null : ok ? 1 : 0, limit, offset]
+  );
+  return rows.map((r) => ({
+    id: Number(r.id),
+    leadId: r.lead_id,
+    leadName: r.lead_name,
+    agentId: r.agent_id,
+    agentName: r.agent_name,
+    tool: r.tool,
+    args: parseJsonColumn(r.args_json, null),
+    result: parseJsonColumn(r.result_json, null),
+    ok: Boolean(r.ok),
+    error: r.error,
+    durationMs: r.duration_ms,
+    createdAt: r.created_at,
+  }));
 }

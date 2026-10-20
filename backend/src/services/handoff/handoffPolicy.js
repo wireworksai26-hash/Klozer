@@ -64,6 +64,7 @@ const REASON_LABELS = {
 
 export function reasonLabel(reason = "") {
   if (reason.startsWith("keyword:")) return `Kata kunci "${reason.slice(8)}" terdeteksi`;
+  if (reason.startsWith("ai:")) return `AI meminta bantuan tim: ${reason.slice(3)}`;
   return REASON_LABELS[reason] || "Dialihkan ke tim";
 }
 

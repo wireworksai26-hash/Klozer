@@ -1,5 +1,6 @@
 import { audit } from "../services/auditService.js";
-import { AGENT_LIMITS, agentLimitFor, agentStats, createAgent, deleteAgent, getAgent, getAgentSettings, listAgents, listRoutingLogs, setConversationAgent, updateAgent, updateAgentSettings } from "../services/agents/agentRepository.js";
+import { AGENT_LIMITS, agentLimitFor, agentStats, createAgent, deleteAgent, getAgent, getAgentSettings, listAgents, listRoutingLogs, listToolCalls, setConversationAgent, updateAgent, updateAgentSettings } from "../services/agents/agentRepository.js";
+import { TOOL_CATALOG } from "../services/agents/tools/toolCatalog.js";
 import { previewRouting } from "../services/agents/agentRouting.js";
 import { AGENT_PRESETS } from "../services/agents/presets.js";
 import { queryOne } from "../config/db.js";
@@ -69,6 +70,16 @@ export async function preview(req, res) {
 /** GET /ai/agents/routing-log */
 export async function routingLog(req, res) {
   res.json({ success: true, data: await listRoutingLogs(req.tenantId, req.query) });
+}
+
+/** GET /ai/agents/tools: what an agent can be allowed to do (for the screen where the owner picks). */
+export async function tools(req, res) {
+  res.json({ success: true, data: TOOL_CATALOG });
+}
+
+/** GET /ai/agents/tool-calls: what agents did besides answering, and how it went. */
+export async function toolCalls(req, res) {
+  res.json({ success: true, data: await listToolCalls(req.tenantId, req.query) });
 }
 
 /** PUT /leads/:id/agent: put a conversation with an agent (pinned: automatic choice stops), or null to release it. */

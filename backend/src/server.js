@@ -10,6 +10,7 @@ import { resetPresence } from "./services/routing/presenceService.js";
 import { startCommerceWorker } from "./services/followup/followupWorker.js";
 import { startBroadcastWorker } from "./services/broadcast/broadcastWorker.js";
 import { startWebhookWorker } from "./services/integrations/webhookWorker.js";
+import { startTaskWorker } from "./services/tasks/taskWorker.js";
 
 const app = createApp();
 const server = http.createServer(app);
@@ -23,6 +24,8 @@ async function pruneOldRows() {
     await query("DELETE FROM webhook_logs WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)");
     await query("DELETE FROM whatsapp_session_logs WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)");
     await query("DELETE FROM audit_logs WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 400 DAY)");
+    await query("DELETE FROM agent_tool_calls WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)");
+    await query("DELETE FROM tasks WHERE status IN ('done', 'cancelled') AND updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 400 DAY)");
   } catch (err) {
     logger.warn({ err: err.message }, "Housekeeping failed");
   }
@@ -76,6 +79,7 @@ async function start() {
   startCommerceWorker();
   startBroadcastWorker();
   startWebhookWorker();
+  startTaskWorker();
   pruneOldRows();
   setInterval(pruneOldRows, 24 * 60 * 60 * 1000).unref();
 }

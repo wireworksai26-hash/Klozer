@@ -47,6 +47,8 @@ import * as openCtrl from "../controllers/openApiController.js";
 import * as iv from "../validation/integrationSchemas.js";
 import * as agentCtrl from "../controllers/agentController.js";
 import * as av from "../validation/agentSchemas.js";
+import * as taskCtrl from "../controllers/taskController.js";
+import * as tv from "../validation/taskSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -54,6 +56,7 @@ const h = asyncHandler;
 // Role groups
 const MANAGERS = ["owner", "supervisor"];
 const SALES = ["owner", "supervisor", "cs"];
+const TEAM = ["owner", "supervisor", "cs", "finance", "pic_warehouse"];
 const MONEY = ["owner", "supervisor", "finance", "cs"];
 const STOCK = ["owner", "supervisor", "pic_warehouse"];
 const REPORTING = ["owner", "supervisor", "finance"];
@@ -169,10 +172,25 @@ router.get("/ai/agents/settings", ...tenant, requireRole(...SALES), agentsOn, h(
 router.put("/ai/agents/settings", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ body: av.updateAgentSettingsBody }), h(agentCtrl.putSettings));
 router.post("/ai/agents/route-preview", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ body: av.routePreviewBody }), h(agentCtrl.preview));
 router.get("/ai/agents/routing-log", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ query: av.routingLogQuery }), h(agentCtrl.routingLog));
+router.get("/ai/agents/tools", ...tenant, requireRole(...MANAGERS), agentsOn, h(agentCtrl.tools));
+router.get("/ai/agents/tool-calls", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ query: av.toolCallsQuery }), h(agentCtrl.toolCalls));
 router.get("/ai/agents/:id", ...tenant, requireRole(...SALES), agentsOn, validate({ params: v.idParams }), h(agentCtrl.get));
 router.put("/ai/agents/:id", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ params: v.idParams, body: av.updateAgentBody }), h(agentCtrl.update));
 router.delete("/ai/agents/:id", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ params: v.idParams }), h(agentCtrl.remove));
 router.put("/leads/:id/agent", ...tenant, requireRole(...SALES), agentsOn, validate({ params: v.idParams, body: av.setConversationAgentBody }), h(agentCtrl.putConversationAgent));
+
+// ==================== TASKS ====================
+const tasksOn = requireFeature("tasks", "Tugas");
+router.get("/tasks", ...tenant, requireRole(...TEAM), tasksOn, validate({ query: tv.taskListQuery }), h(taskCtrl.list));
+router.post("/tasks", ...tenant, requireRole(...TEAM), tasksOn, validate({ body: tv.createTaskBody }), h(taskCtrl.create));
+router.get("/tasks/meta", ...tenant, requireRole(...TEAM), tasksOn, h(taskCtrl.meta));
+router.get("/tasks/settings", ...tenant, requireRole(...MANAGERS), tasksOn, h(taskCtrl.getSettings));
+router.put("/tasks/settings", ...tenant, requireRole(...MANAGERS), tasksOn, validate({ body: tv.taskSettingsBody }), h(taskCtrl.putSettings));
+router.get("/tasks/:id", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams }), h(taskCtrl.get));
+router.put("/tasks/:id", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams, body: tv.updateTaskBody }), h(taskCtrl.update));
+router.post("/tasks/:id/claim", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams }), h(taskCtrl.claim));
+router.post("/tasks/:id/comments", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams, body: tv.commentBody }), h(taskCtrl.comment));
+router.delete("/tasks/:id", ...tenant, requireRole(...MANAGERS), tasksOn, validate({ params: v.idParams }), h(taskCtrl.remove));
 
 // ==================== API KEYS, WEBHOOKS AND THE PUBLIC API ====================
 const apiOn = requireFeature("publicApi", "API dan Webhook");

@@ -13,6 +13,7 @@ import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
 import { onCustomerActivity } from "./followup/followupService.js";
 import { recordAdReferral } from "./ads/attribution.js";
 import { routeConversation } from "./agents/agentRouting.js";
+import { createToolSession } from "./agents/tools/toolRunner.js";
 import { emitEvent } from "./integrations/eventBus.js";
 import { loadContactPayload, messagePayload } from "./integrations/eventPayloads.js";
 import { recordOptOutFromChat } from "./broadcast/consentService.js";
@@ -195,7 +196,15 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
     return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "commerce", commerce: commerce.meta?.commerce };
   }
 
-  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType], agent });
+  // What this agent may do besides answering (look up stock or orders, make a task, ask or pass to another agent); none unless the owner allowed it.
+  const tools = agent
+    ? await createToolSession({ ctx, agent }).catch((err) => {
+        logger.error({ err: err.message, leadId: ctx.leadId }, "Agent tools unavailable; answering without them");
+        return null;
+      })
+    : null;
+
+  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType], agent, tools });
 
   if (ai.usage && (ai.usage.promptTokens !== 0 || ai.usage.completionTokens !== 0 || ai.replyText)) {
     await recordTokenUsage({
@@ -217,8 +226,11 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
     text: ai.replyText,
     tokens: (ai.usage?.promptTokens ?? 0) + (ai.usage?.completionTokens ?? 0),
     model: ai.modelUsed ?? null,
-    meta: { provider: ai.provider ?? null, fallbackUsed: Boolean(ai.fallbackUsed), sources: ai.sources ?? [], correctionIds: ai.correctionIds ?? [], agent: agent ? { id: agent.id, name: agent.name } : null },
+    meta: { provider: ai.provider ?? null, fallbackUsed: Boolean(ai.fallbackUsed), sources: ai.sources ?? [], correctionIds: ai.correctionIds ?? [], agent: agent ? { id: agent.id, name: agent.name } : null, tools: tools?.summary() ?? [] },
   });
+
+  // The agent asked for a person: the chat goes to the team now that the customer has been answered.
+  if (tools?.effects.handoffReason) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: tools.effects.handoffReason });
 
   // The model's own reply already told the customer a person will follow up; now the conversation really goes to one.
   if (ai.needsEscalation) await startHandoff({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, reason: "guardrail" });

@@ -19,6 +19,8 @@ export const DEFAULT_FEATURES = Object.freeze({
   chatCommerce: true,
   publicApi: true,
   multiAgent: true,
+  tasks: true,
+  agentTools: true,
 });
 
 export const LEAD_STATUSES = ["new", "in_progress", "closing", "repeat", "idle", "closed_lost"];
