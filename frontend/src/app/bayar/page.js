@@ -5,12 +5,15 @@ import LegalShell from "@/components/legal/LegalShell";
 import { RelatedLinks } from "@/components/legal/LegalDocument";
 import { LEGAL, whatsappUrl } from "@/utils/legal/config";
 import { PLAN_PRICES, annualBreakdown, formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
+import { fetchPaymentMethods } from "@/utils/platformPayments";
+import MethodCard from "@/components/payments/MethodCard";
 
-// Re-render hourly so a promo with an end date switches off without a redeploy.
-export const revalidate = 3600;
+// Re-render every minute: a promo with an end date switches off without a redeploy, and a payment method the team
+// adds or switches off shows up soon.
+export const revalidate = 60;
 
 export const metadata = {
-  title: "Cara Bayar Langganan — Klozer",
+  title: "Cara Bayar Langganan Klozer",
   description: "Bayar langganan Klozer lewat QRIS GoPay, lalu kirim bukti pembayaran untuk aktivasi.",
 };
 
@@ -21,12 +24,13 @@ const hasQris = Boolean(qrisFile) && fs.existsSync(path.join(process.cwd(), "pub
 
 const STEPS = [
   "Pilih paket dan periode di tabel di bawah, lalu catat nominalnya.",
-  "Scan QRIS di halaman ini dengan GoPay, GoPay Merchant, atau aplikasi bank/e-wallet apa pun, lalu bayar sesuai nominal.",
+  "Bayar sesuai nominal lewat salah satu metode di halaman ini (scan QRIS dengan aplikasi bank atau e-wallet apa pun, atau transfer).",
   "Kirim bukti pembayaran beserta email akun Klozer dan nama paket ke kontak di bawah.",
   `Kami mengaktifkan atau memperpanjang langganan Anda setelah pembayaran kami cek (jam layanan ${LEGAL.operatingHours}).`,
 ];
 
-export default function PayPage() {
+export default async function PayPage() {
+  const methods = await fetchPaymentMethods();
   const wa = whatsappUrl();
   const { gopayName, gopayNumber } = LEGAL.payment;
 
@@ -34,7 +38,7 @@ export default function PayPage() {
     <LegalShell>
       <h1 className="text-heading font-bold text-fg mb-3">Cara bayar langganan</h1>
       <p className="text-body text-fg-muted leading-relaxed mb-8">
-        Pembayaran langganan Klozer dilakukan lewat QRIS. Aktivasi dilakukan setelah bukti pembayaran Anda kami konfirmasi.
+        Pembayaran langganan Klozer dilakukan lewat QRIS atau transfer. Aktivasi dilakukan setelah bukti pembayaran Anda kami konfirmasi.
       </p>
 
       <ol className="list-decimal pl-6 mb-10 flex flex-col gap-2 text-body text-fg-muted leading-relaxed">
@@ -43,31 +47,40 @@ export default function PayPage() {
         ))}
       </ol>
 
-      <div className="rounded-xl border border-line bg-white p-6 mb-10 flex flex-col sm:flex-row gap-6 items-center">
-        {hasQris ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={qrisFile} alt={`QRIS pembayaran ${gopayName || LEGAL.brand}`} width={240} height={240} className="w-60 h-auto rounded-lg border border-line" />
-        ) : (
-          <div className="w-60 h-60 rounded-lg border border-dashed border-line-strong flex items-center justify-center text-center text-body-sm text-fg-subtle p-4">
-            QRIS belum tersedia. Hubungi kami untuk instruksi pembayaran.
+      {methods && methods.length > 0 ? (
+        <div className="flex flex-col gap-4 mb-10">
+          {methods.map((m) => (
+            <MethodCard key={m.id} method={m} />
+          ))}
+          <p className="text-body-sm text-fg-subtle">Pastikan nama penerima sesuai sebelum membayar.</p>
+        </div>
+      ) : (
+          <div className="rounded-xl border border-line bg-white p-6 mb-10 flex flex-col sm:flex-row gap-6 items-center">
+            {hasQris ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrisFile} alt={`QRIS pembayaran ${gopayName || LEGAL.brand}`} width={240} height={240} className="w-60 h-auto rounded-lg border border-line" />
+            ) : (
+              <div className="w-60 h-60 rounded-lg border border-dashed border-line-strong flex items-center justify-center text-center text-body-sm text-fg-subtle p-4">
+                QRIS belum tersedia. Hubungi kami untuk instruksi pembayaran.
+              </div>
+            )}
+            <dl className="flex flex-col gap-3 text-body w-full">
+              {gopayName && (
+                <div>
+                  <dt className="text-body-sm font-semibold text-fg">Atas nama</dt>
+                  <dd className="text-fg-muted">{gopayName}</dd>
+                </div>
+              )}
+              {gopayNumber && (
+                <div>
+                  <dt className="text-body-sm font-semibold text-fg">Nomor GoPay</dt>
+                  <dd className="text-fg-muted font-mono">{gopayNumber}</dd>
+                </div>
+              )}
+              <p className="text-body-sm text-fg-subtle">Pastikan nama penerima sesuai sebelum menekan bayar.</p>
+            </dl>
           </div>
-        )}
-        <dl className="flex flex-col gap-3 text-body w-full">
-          {gopayName && (
-            <div>
-              <dt className="text-body-sm font-semibold text-fg">Atas nama</dt>
-              <dd className="text-fg-muted">{gopayName}</dd>
-            </div>
-          )}
-          {gopayNumber && (
-            <div>
-              <dt className="text-body-sm font-semibold text-fg">Nomor GoPay</dt>
-              <dd className="text-fg-muted font-mono">{gopayNumber}</dd>
-            </div>
-          )}
-          <p className="text-body-sm text-fg-subtle">Pastikan nama penerima sesuai sebelum menekan bayar.</p>
-        </dl>
-      </div>
+      )}
 
       <h2 className="text-title font-bold text-fg mb-4">Nominal</h2>
       <div className="rounded-xl border border-line bg-white overflow-x-auto mb-3">

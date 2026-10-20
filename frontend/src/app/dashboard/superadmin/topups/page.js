@@ -6,7 +6,8 @@ import { useFormat } from "@/hooks/useFormat";
 import { api } from "@/utils/api";
 import { Async, Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, TableShell, Tabs } from "@/components/ui";
 import QuoteModal from "@/components/topup/QuoteModal";
-import { TOPUP_STATUS } from "@/components/topup/topupStatus";
+import GrantModal from "@/components/topup/GrantModal";
+import { TOPUP_STATUS, displayStatus } from "@/components/topup/topupStatus";
 
 const PAGE = 25;
 
@@ -15,17 +16,18 @@ export default function TopupQueuePage() {
   const { t, role } = useDashboard();
   const { dateTime, number, rupiah } = useFormat();
   const { run, pending } = useAction();
-  const [status, setStatus] = useState("requested");
+  const [status, setStatus] = useState("quoted");
   const [page, setPage] = useState(0);
   const [quoting, setQuoting] = useState(null);
+  const [granting, setGranting] = useState(false);
   const [crediting, setCrediting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const query = useApi("/ai/topups/admin", { query: { status, limit: PAGE, offset: page * PAGE }, enabled: role === "superadmin" });
   const { reload } = query;
 
   const tabs = [
-    { id: "requested", label: t("Menunggu harga") },
     { id: "quoted", label: t("Menunggu pembayaran") },
+    { id: "requested", label: t("Menunggu harga") },
     { id: "credited", label: t("Selesai") },
     { id: "cancelled", label: t("Dibatalkan") },
   ];
@@ -51,9 +53,22 @@ export default function TopupQueuePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("Antrean Top Up Token")} description={t("Beri harga permintaan toko, konfirmasi pembayarannya, lalu tambahkan tokennya ke kuota.")} />
+      <PageHeader
+        title={t("Antrean Top Up Token")}
+        description={t("Tagihan toko sudah berharga dari daftar harga. Cek pembayaran yang masuk, lalu tambahkan tokennya ke kuota.")}
+        actions={
+          <>
+            <Button variant="secondary" href="/dashboard/superadmin/vouchers" icon="coins">
+              {t("Voucher Diskon")}
+            </Button>
+            <Button icon="plus" onClick={() => setGranting(true)}>
+              {t("Beri token langsung")}
+            </Button>
+          </>
+        }
+      />
       <Tabs
-        label={t("Status permintaan")}
+        label={t("Status tagihan")}
         tabs={tabs}
         value={status}
         onChange={(id) => {
@@ -65,7 +80,7 @@ export default function TopupQueuePage() {
         {(data) =>
           data.topups.length === 0 ? (
             <Card>
-              <EmptyState icon="coins" title={t("Tidak ada permintaan di status ini")} body={status === "requested" ? t("Permintaan baru dari toko muncul di sini.") : undefined} />
+              <EmptyState icon="coins" title={t("Tidak ada permintaan di status ini")} body={status === "quoted" ? t("Tagihan baru dari toko muncul di sini.") : undefined} />
             </Card>
           ) : (
             <>
@@ -82,12 +97,20 @@ export default function TopupQueuePage() {
                 </thead>
                 <tbody>
                   {data.topups.map((topup) => {
-                    const state = TOPUP_STATUS[topup.status];
+                    const state = TOPUP_STATUS[displayStatus(topup)];
                     return (
                       <tr key={topup.id}>
                         <td>
                           <div className="font-semibold text-fg">{topup.institutionName}</div>
+                          {topup.isGrant ? <Badge tone="accent">{t("Diberikan tim")}</Badge> : null}
                           {topup.note ? <div className="text-caption text-fg-subtle max-w-[260px]">{topup.note}</div> : null}
+                          {topup.paymentClaimedAt ? (
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <Badge tone="warning">{t("Sudah bayar")}</Badge>
+                              <span className="text-caption text-fg-muted">{dateTime(topup.paymentClaimedAt)}</span>
+                            </div>
+                          ) : null}
+                          {topup.paymentReference ? <div className="text-caption text-fg-muted max-w-[260px]">{topup.paymentReference}</div> : null}
                         </td>
                         <td className="text-right tabular-nums font-semibold">{number(topup.tokens)}</td>
                         <td className="whitespace-nowrap text-fg-muted">
@@ -97,7 +120,10 @@ export default function TopupQueuePage() {
                         <td>
                           <Badge tone={state.tone}>{t(state.label)}</Badge>
                         </td>
-                        <td className="text-right tabular-nums">{topup.quotedAmountIdr === null ? "-" : rupiah(topup.quotedAmountIdr)}</td>
+                        <td className="text-right tabular-nums">
+                          {topup.isGrant ? t("Gratis") : topup.quotedAmountIdr === null ? "-" : rupiah(topup.quotedAmountIdr)}
+                          {topup.discountIdr > 0 ? <div className="text-caption text-success-700">{t("Voucher {code}", { code: topup.voucherCode })}</div> : null}
+                        </td>
                         <td>
                           <div className="flex flex-wrap justify-end gap-2">
                             {topup.status === "requested" || topup.status === "quoted" ? (
@@ -140,6 +166,17 @@ export default function TopupQueuePage() {
         }
       </Async>
 
+      {granting ? (
+        <GrantModal
+          onClose={() => setGranting(false)}
+          onDone={() => {
+            setGranting(false);
+            setStatus("credited");
+            setPage(0);
+            reload();
+          }}
+        />
+      ) : null}
       {quoting ? (
         <QuoteModal
           topup={quoting}

@@ -1,6 +1,7 @@
 "use client";
 import { useDashboard } from "@/context/DashboardContext";
 import { SparklesIcon } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
 import { clock, parseMeta, toolLabel } from "./chatText";
 
 const SENDER = { customer: "customer", ai_agent: "ai", cs: "cs", system: "system" };
@@ -23,7 +24,7 @@ function AgentNote({ meta }) {
 }
 
 /** One message in the thread: from the customer, the AI, a person on the team, or a system note. */
-export default function MessageBubble({ message: m }) {
+export default function MessageBubble({ message: m, onEdit }) {
   const { t, locale } = useDashboard();
   const kind = SENDER[m.sender_type] || "cs";
 
@@ -51,10 +52,17 @@ export default function MessageBubble({ message: m }) {
               <SparklesIcon className="w-3 h-3" />
               <span>{t("Balasan AI")}</span>
             </span>
+            {m.reply_path?.startsWith("fast:") ? <span className="text-caption text-fg-muted">{t("Dijawab otomatis tanpa token")}</span> : null}
           </div>
         )}
         <p className="text-body-sm leading-relaxed whitespace-pre-line break-words">{m.message_type && m.message_type !== "text" && !m.content_text ? `[${m.message_type}]` : m.content_text}</p>
         {meta ? <AgentNote meta={meta} /> : null}
+        {kind === "ai" && onEdit ? (
+          <button type="button" onClick={() => onEdit(m)} className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-lg text-caption font-semibold text-brand bg-transparent border-none cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-brand">
+            <Icon name="edit" className="w-3.5 h-3.5" />
+            {t("Edit dan kirim")}
+          </button>
+        ) : null}
         <span className="text-micro mt-1 flex items-center justify-end gap-1.5 opacity-70">
           {mine && m.is_delivered === 0 && (
             <span className="text-danger-500 font-bold" title={m.delivery_error || ""}>

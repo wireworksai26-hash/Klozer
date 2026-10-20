@@ -23,7 +23,7 @@ export default function QuoteModal({ topup, onClose, onDone }) {
       return;
     }
     setError("");
-    const result = await run(() => api.put(`/ai/topups/${topup.id}/quote`, { amountIdr: value, note: note.trim() || undefined }), { success: t("Harga disimpan. Toko melihatnya di halaman top up.") });
+    const result = await run(() => api.put(`/ai/topups/${topup.id}/quote`, { amountIdr: value, note: note.trim() || undefined }), { success: t("Harga diubah. Toko melihatnya di halaman top up.") });
     if (result.ok) onDone();
   };
 
@@ -46,7 +46,7 @@ export default function QuoteModal({ topup, onClose, onDone }) {
     >
       <form id="quote-form" onSubmit={submit} className="flex flex-col gap-4">
         <TextField label={t("Harga (Rp)")} inputMode="numeric" required value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} error={error} data-autofocus />
-        <TextAreaField label={t("Cara bayar dan catatan untuk toko")} hint={t("Tampil di halaman top up toko.")} rows={3} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
+        <TextAreaField label={t("Catatan untuk toko")} hint={t("Tampil di halaman top up toko, misalnya alasan harga diubah.")} rows={3} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
         {topup.note ? <p className="text-label text-fg-muted">{t("Catatan dari toko: {note}", { note: topup.note })}</p> : null}
       </form>
     </Modal>

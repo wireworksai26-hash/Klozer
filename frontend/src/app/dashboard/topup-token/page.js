@@ -1,12 +1,13 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { useApi } from "@/hooks/useApi";
 import { useFormat } from "@/hooks/useFormat";
 import Icon from "@/components/icons/Icon";
 import { Async, Button, EmptyState, PageHeader, Stat } from "@/components/ui";
 import TopupHistory from "@/components/topup/TopupHistory";
-import TopupRequestForm from "@/components/topup/TopupRequestForm";
+import TopupPacks from "@/components/topup/TopupPacks";
+import TopupPayModal from "@/components/topup/TopupPayModal";
 import { isRunningLow } from "@/components/topup/topupStatus";
 
 function Meter({ balance }) {
@@ -22,21 +23,22 @@ function Meter({ balance }) {
       {low ? (
         <p className="mt-2 flex items-center gap-1.5 text-label font-semibold text-danger-700">
           <Icon name="alert" className="w-4 h-4" />
-          {balance.remainingTokens <= 0 ? t("Token habis. AI berhenti membalas dan percakapan diteruskan ke tim CS.") : t("Token hampir habis. Ajukan top up agar AI tetap membalas.")}
+          {balance.remainingTokens <= 0 ? t("Token habis. Pertanyaan rutin tetap dijawab otomatis, sisanya diteruskan ke tim CS.") : t("Token hampir habis. Beli token agar AI tetap membalas.")}
         </p>
       ) : null}
     </div>
   );
 }
 
-/** The shop's token balance and the way to ask for more. */
+/** The shop's token balance and the way to buy more. */
 export default function TopupTokenPage() {
   const { t, isManager, role } = useDashboard();
   const { number } = useFormat();
   const query = useApi("/ai/topups", { enabled: isManager && role !== "superadmin" });
   const { reload } = query;
+  const [paying, setPaying] = useState(null);
 
-  // the team prices or credits a request: the list and the balance follow without a refresh
+  // the team checks a payment or credits tokens: the list and the balance follow without a refresh
   const { topupEvent } = useDashboard();
   useEffect(() => {
     if (topupEvent) reload();
@@ -53,7 +55,7 @@ export default function TopupTokenPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("Top Up Token AI")} description={t("Token dipakai setiap AI membalas pelanggan. Saat habis, AI berhenti dan percakapan diteruskan ke tim CS.")} actions={<Button variant="secondary" href="/dashboard/subscription" icon="chart">{t("Lihat paket")}</Button>} />
+      <PageHeader title={t("Top Up Token AI")} description={t("Token dipakai saat AI menjawab pelanggan. Pertanyaan rutin seperti rekening dan daftar produk dijawab Jalur Cepat tanpa token.")} actions={<Button variant="secondary" href="/dashboard/subscription" icon="chart">{t("Lihat paket")}</Button>} />
       <Async query={query} loadingLabel={t("Memuat saldo token...")}>
         {(data) => (
           <>
@@ -63,11 +65,21 @@ export default function TopupTokenPage() {
               <Stat label={t("Total kuota")} value={number(data.balance.totalQuota)} />
             </div>
             <Meter balance={data.balance} />
-            <TopupRequestForm rules={data.rules} onCreated={reload} />
-            <TopupHistory topups={data.data} onChanged={reload} />
+            <TopupPacks packs={data.packs} rules={data.rules} onCreated={(topup) => { setPaying(topup); reload(); }} />
+            <TopupHistory topups={data.data} onPay={setPaying} onChanged={reload} />
           </>
         )}
       </Async>
+      {paying ? (
+        <TopupPayModal
+          topup={paying}
+          onClose={() => setPaying(null)}
+          onChanged={() => {
+            setPaying(null);
+            reload();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

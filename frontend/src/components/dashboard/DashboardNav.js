@@ -63,6 +63,7 @@ function managerNav({ t, language, badges, planIconClass }) {
         sectionLabel: t("Percakapan dan AI"),
         sectionIcon: sectionGlyph("agents"),
         items: [
+          { label: t("Jalur Cepat"), href: "/dashboard/fast-path", icon: glyph("bolt") },
           { label: t("Agen AI"), href: "/dashboard/agents", icon: glyph("agents") },
           { label: t("Basis Pengetahuan"), href: "/dashboard/knowledge", icon: glyph("book") },
           { label: t("Evaluasi AI"), href: "/dashboard/ai-evaluation", icon: glyph("thumbUp") },
@@ -171,6 +172,8 @@ export function buildRolesConfig({ t, language, badges = {} }) {
           sectionIcon: <DollarSignIcon className="w-4 h-4" />,
           items: [
             { label: language === "en" ? "Transactions" : "Transaksi", href: "/dashboard/superadmin/transactions", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+            { label: t("Metode Pembayaran"), href: "/dashboard/superadmin/payment-methods", icon: glyph("coins") },
+            { label: t("Voucher Diskon"), href: "/dashboard/superadmin/vouchers", icon: glyph("coins") },
             { label: t("Antrean Top Up Token"), href: "/dashboard/superadmin/topups", icon: glyph("coins") },
             { label: language === "en" ? "Export Data" : "Export Data", href: "/dashboard/superadmin/exports", icon: <DownloadIcon className="w-4.5 h-4.5" /> },
           ],

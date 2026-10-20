@@ -8,6 +8,7 @@ export function handoffReasonText(t, reason) {
   const known = {
     customer_request: t("Pelanggan meminta berbicara dengan manusia"),
     guardrail: t("Pesan perlu ditangani manusia"),
+    ai_unsure: t("AI tidak yakin dan meneruskan ke tim"),
     ai_unavailable: t("AI sedang tidak tersedia"),
     payment_proof: t("Bukti pembayaran perlu dicek"),
     cs_replied: t("CS membalas langsung"),

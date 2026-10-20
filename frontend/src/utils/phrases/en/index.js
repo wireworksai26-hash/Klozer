@@ -38,6 +38,9 @@ import commerce from "./commerce.js";
 import broadcast from "./broadcast.js";
 import ads from "./ads.js";
 import integrations from "./integrations.js";
+import fastpath from "./fastpath.js";
+import payments from "./payments.js";
+import vouchers from "./vouchers.js";
 import topup from "./topup.js";
 
 export const enPhrases = {
@@ -79,5 +82,8 @@ export const enPhrases = {
   ...broadcast,
   ...ads,
   ...integrations,
+  ...fastpath,
+  ...payments,
+  ...vouchers,
   ...topup,
 };

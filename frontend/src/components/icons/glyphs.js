@@ -11,6 +11,8 @@ export const GLYPHS = {
     </>
   ),
 
+  bolt: <path d="M13 3L5 14h6l-1 7 8-11h-6z" />,
+
   // everyday controls
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M18 6L6 18M6 6l12 12" />,

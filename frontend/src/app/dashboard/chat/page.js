@@ -7,7 +7,7 @@ import { leadFromApi } from "@/utils/mappers.mjs";
 import Icon from "@/components/icons/Icon";
 import { MessageSquareIcon } from "@/components/icons";
 import { Modal } from "@/components/ui";
-import { channelName } from "@/components/chat/ChannelMark";
+import Composer from "@/components/chat/Composer";
 import ConversationHeader from "@/components/chat/ConversationHeader";
 import ConversationList, { matchesFilter } from "@/components/chat/ConversationList";
 import CustomerDetail from "@/components/chat/CustomerDetail";
@@ -20,7 +20,7 @@ import QrisModal from "@/components/chat/QrisModal";
 const LIVE_FIELDS = ["channelType", "handledBy", "handoffReason", "aiAgentId", "aiAgentPinned", "marketingConsent", "followupOptOut", "csDbId"];
 
 export default function ChatPage() {
-  const { leads, refreshLeads, chatEvent, notify, t } = useDashboard();
+  const { leads, refreshLeads, chatEvent, notify, isManager, t } = useDashboard();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -32,6 +32,10 @@ export default function ChatPage() {
   const [showContactList, setShowContactList] = useState(true);
   const [showDetail, setShowDetail] = useState(false);
   const [showQris, setShowQris] = useState(false);
+  // an AI reply being edited to be sent as the person's own, and whether the assistant should learn the edit
+  const [editing, setEditing] = useState(null);
+  const [learn, setLearn] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const bottomRef = useRef(null);
   const leadsRef = useRef(leads);
   const nested = useRef(0);
@@ -99,11 +103,11 @@ export default function ChatPage() {
     return leads.filter((l) => matchesFilter(l, filter) && (!q || l.name.toLowerCase().includes(q) || l.phone.includes(q)));
   }, [leads, search, filter]);
 
-  const send = async (text) => {
+  const send = async (text, extra = {}) => {
     if (!selectedId || !text.trim()) return false;
     setSending(true);
     try {
-      const res = await api.post("/chats/send", { lead_id: selectedId, content_text: text.trim() });
+      const res = await api.post("/chats/send", { lead_id: selectedId, content_text: text.trim(), ...extra });
       setMessages((prev) => [...prev, res.data]);
       // 202: stored, but the channel did not accept it. Say so instead of looking like success.
       if (res.success === false) {
@@ -123,11 +127,42 @@ export default function ChatPage() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     const text = inputText;
+    const edit = editing;
     setInputText("");
-    await send(text);
+    setEditing(null);
+    const sent = await send(text, edit ? { edited_from_message_id: edit.id, learn: edit.canLearn && learn ? true : undefined } : {});
+    if (!sent) setInputText(text); // nothing is lost when sending fails
+  };
+
+  const startEdit = (message) => {
+    setEditing({ id: message.id, canLearn: isManager && message.reply_path == null });
+    setLearn(false);
+    setInputText(message.content_text || "");
+  };
+  const cancelEdit = () => {
+    setEditing(null);
+    setInputText("");
+  };
+
+  /** The assistant drafts a reply into the box. Nothing is sent: the person reads it, edits it and sends it. */
+  const suggest = async () => {
+    if (!selectedId) return;
+    setSuggesting(true);
+    try {
+      const res = await api.post(`/chats/${selectedId}/suggest`);
+      setEditing(null);
+      setInputText(res.data.draft);
+      notify("success", res.data.needsPerson ? t("Draf siap. AI menilai pesan ini sebaiknya ditangani tim, baca dulu sebelum mengirim.") : t("Draf siap. Baca dan edit dulu sebelum mengirim."));
+    } catch (err) {
+      notify("error", err.message);
+    } finally {
+      setSuggesting(false);
+    }
   };
 
   const selectConversation = (id) => {
+    setEditing(null);
+    setInputText("");
     setSelectedId(id);
     setShowContactList(false);
   };
@@ -173,30 +208,24 @@ export default function ChatPage() {
                 {loadingMessages && <div className="text-center text-fg-muted text-label">{t("Memuat pesan...")}</div>}
                 {!loadingMessages && messages.length === 0 && <div className="text-center text-fg-muted text-label">{t("Belum ada pesan dalam percakapan ini.")}</div>}
                 {messages.map((m) => (
-                  <MessageBubble key={m.id} message={m} />
+                  <MessageBubble key={m.id} message={m} onEdit={startEdit} />
                 ))}
                 <div ref={bottomRef} />
               </div>
 
-              <form onSubmit={handleSendMessage} className="bg-white border-t border-line p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <input
-                  type="text"
-                  placeholder={t("Ketik balasan {channel}...", { channel: channelName(t, selected.channelType) })}
-                  aria-label={t("Ketik balasan {channel}...", { channel: channelName(t, selected.channelType) })}
-                  value={inputText}
-                  maxLength={4000}
-                  onChange={(e) => setInputText(e.target.value)}
-                  className="flex-1 bg-canvas border border-line rounded-full px-4 py-2.5 text-body lg:text-body-sm text-ink placeholder:text-fg-subtle outline-none font-medium focus:bg-white focus:border-brand min-w-0"
-                />
-                <button
-                  type="submit"
-                  disabled={sending || !inputText.trim()}
-                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-brand hover:bg-brand-hover text-white flex items-center justify-center border-none cursor-pointer flex-shrink-0 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                  aria-label={t("Kirim")}
-                >
-                  <Icon name="send" className="w-4 h-4" />
-                </button>
-              </form>
+              <Composer
+                channelType={selected.channelType}
+                value={inputText}
+                onChange={setInputText}
+                onSubmit={handleSendMessage}
+                sending={sending}
+                editing={editing}
+                onCancelEdit={cancelEdit}
+                learn={learn}
+                onLearn={setLearn}
+                suggesting={suggesting}
+                onSuggest={suggest}
+              />
             </div>
 
             {/* Wide screens: fixed third pane */}

@@ -4,39 +4,34 @@ import { useDashboard } from "@/context/DashboardContext";
 import { useAction } from "@/hooks/useApi";
 import { useFormat } from "@/hooks/useFormat";
 import { api } from "@/utils/api";
-import { whatsappUrl } from "@/utils/legal/config";
 import { Badge, Button, Card, ConfirmDialog, EmptyState, TableShell } from "@/components/ui";
-import { TOPUP_STATUS, isOpenTopup } from "./topupStatus";
+import { TOPUP_STATUS, displayStatus, isOpenTopup } from "./topupStatus";
 
-/** The shop's own requests, what the team quoted, and what it can still do about each. */
-export default function TopupHistory({ topups, onChanged }) {
-  const { t, currentUser } = useDashboard();
+/** The shop's own bills: what each costs, whether it is paid, and what it can still do about each. */
+export default function TopupHistory({ topups, onPay, onChanged }) {
+  const { t } = useDashboard();
   const { dateTime, number, rupiah } = useFormat();
   const { run, pending } = useAction();
   const [cancelling, setCancelling] = useState(null);
-  const wa = whatsappUrl();
 
   const cancel = async () => {
-    const result = await run(() => api.post(`/ai/topups/${cancelling.id}/cancel`), { success: t("Permintaan dibatalkan.") });
+    const result = await run(() => api.post(`/ai/topups/${cancelling.id}/cancel`), { success: t("Tagihan dibatalkan.") });
     if (result.ok) {
       setCancelling(null);
       onChanged();
     }
   };
 
-  const confirmLink = (topup) =>
-    `${wa}?text=${encodeURIComponent(t("Halo tim Klozer, saya {name} ingin konfirmasi pembayaran top up #{id}: {tokens} token, {amount}.", { name: currentUser?.institutionName || currentUser?.name || "", id: topup.id, tokens: number(topup.tokens), amount: rupiah(topup.quotedAmountIdr) }))}`;
-
   return (
-    <Card title={t("Permintaan Anda")} padded={false}>
+    <Card title={t("Tagihan Anda")} padded={false}>
       {topups.length === 0 ? (
-        <EmptyState icon="coins" title={t("Belum ada permintaan top up")} body={t("Ajukan di atas. Token ditambahkan ke kuota setelah pembayaran dikonfirmasi tim.")} />
+        <EmptyState icon="coins" title={t("Belum ada tagihan top up")} body={t("Pilih paket di atas. Token ditambahkan ke kuota setelah pembayaran dicek tim.")} />
       ) : (
         <div className="p-5 pt-4">
           <TableShell>
             <thead>
               <tr>
-                <th>{t("Diajukan")}</th>
+                <th>{t("Dibuat")}</th>
                 <th className="text-right">{t("Token")}</th>
                 <th>{t("Status")}</th>
                 <th className="text-right">{t("Harga")}</th>
@@ -46,7 +41,8 @@ export default function TopupHistory({ topups, onChanged }) {
             </thead>
             <tbody>
               {topups.map((topup) => {
-                const status = TOPUP_STATUS[topup.status];
+                const status = TOPUP_STATUS[displayStatus(topup)];
+                const unpaid = topup.status === "quoted" && !topup.paymentClaimedAt;
                 return (
                   <tr key={topup.id}>
                     <td className="whitespace-nowrap text-fg-muted">{dateTime(topup.createdAt)}</td>
@@ -54,16 +50,19 @@ export default function TopupHistory({ topups, onChanged }) {
                     <td>
                       <Badge tone={status.tone}>{t(status.label)}</Badge>
                     </td>
-                    <td className="text-right tabular-nums">{topup.quotedAmountIdr === null ? "-" : rupiah(topup.quotedAmountIdr)}</td>
-                    <td className="text-fg-muted max-w-[260px]">{topup.quoteNote || "-"}</td>
+                    <td className="text-right tabular-nums">
+                      {topup.isGrant ? t("Gratis") : topup.quotedAmountIdr === null ? "-" : rupiah(topup.quotedAmountIdr)}
+                      {topup.discountIdr > 0 ? <div className="text-caption text-success-700">{t("Voucher {code}", { code: topup.voucherCode })}</div> : null}
+                    </td>
+                    <td className="text-fg-muted max-w-[260px]">{topup.isGrant ? [t("Diberikan oleh tim Klozer."), topup.note].filter(Boolean).join(" ") : topup.quoteNote || "-"}</td>
                     <td>
                       <div className="flex flex-wrap justify-end gap-2">
-                        {topup.status === "quoted" && wa ? (
-                          <Button size="sm" variant="secondary" href={confirmLink(topup)} target="_blank" rel="noopener noreferrer" icon="whatsapp">
-                            {t("Konfirmasi pembayaran")}
+                        {topup.status === "quoted" ? (
+                          <Button size="sm" variant={unpaid ? "primary" : "secondary"} onClick={() => onPay(topup)}>
+                            {unpaid ? t("Bayar") : t("Lihat cara bayar")}
                           </Button>
                         ) : null}
-                        {isOpenTopup(topup.status) ? (
+                        {isOpenTopup(topup.status) && !topup.paymentClaimedAt ? (
                           <Button size="sm" variant="quietDanger" onClick={() => setCancelling(topup)}>
                             {t("Batalkan")}
                           </Button>
@@ -82,9 +81,9 @@ export default function TopupHistory({ topups, onChanged }) {
         onClose={() => setCancelling(null)}
         onConfirm={cancel}
         pending={pending}
-        title={t("Batalkan permintaan top up?")}
-        body={cancelling ? t("Permintaan {tokens} token akan dibatalkan. Anda bisa mengajukan lagi kapan saja.", { tokens: number(cancelling.tokens) }) : ""}
-        confirmLabel={t("Batalkan permintaan")}
+        title={t("Batalkan tagihan top up?")}
+        body={cancelling ? t("Tagihan {tokens} token akan dibatalkan. Anda bisa membuat lagi kapan saja.", { tokens: number(cancelling.tokens) }) : ""}
+        confirmLabel={t("Batalkan tagihan")}
       />
     </Card>
   );
