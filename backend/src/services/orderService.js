@@ -2,6 +2,8 @@ import { conflict, notFound } from "../utils/errors.js";
 import { recordCsCommission } from "./commissionService.js";
 import { sendPurchaseEvent } from "./metaCapiService.js";
 import { notifyOrderPaid } from "./orderNotifications.js";
+import { emitEvent } from "./integrations/eventBus.js";
+import { loadOrderPayload } from "./integrations/eventPayloads.js";
 
 /**
  * Move a waiting_payment order to paid inside the caller's transaction.
@@ -31,6 +33,7 @@ export async function markOrderPaid(tx, orderId, institutionId) {
  */
 export function afterPaid({ order }, { notify = true } = {}) {
   sendPurchaseEvent({ institutionId: order.institution_id, orderId: order.id });
+  emitEvent({ institutionId: order.institution_id, type: "order.paid", data: () => loadOrderPayload(order.institution_id, order.id) });
   if (notify) notifyOrderPaid(order).catch(() => {});
 }
 

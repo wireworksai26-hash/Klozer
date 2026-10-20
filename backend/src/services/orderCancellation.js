@@ -2,6 +2,8 @@ import { transaction } from "../config/db.js";
 import { emitToTenant } from "../realtime.js";
 import { releaseOrderResources } from "./orderService.js";
 import { notifyOrderCancelled } from "./orderNotifications.js";
+import { emitEvent } from "./integrations/eventBus.js";
+import { loadOrderPayload } from "./integrations/eventPayloads.js";
 
 /**
  * The system (not a person) cancels an order nobody paid for: stock goes back, the payment link stops being payable,
@@ -19,6 +21,7 @@ export async function cancelOrderSystem(institutionId, orderId, reason) {
   });
   if (!order) return false;
   emitToTenant(institutionId, "order:updated", { orderId, status: "cancelled" });
+  emitEvent({ institutionId, type: "order.status_changed", data: async () => ({ order: await loadOrderPayload(institutionId, orderId), previous_status: "waiting_payment" }) });
   notifyOrderCancelled(order, `Pesanan ${order.order_number} kami batalkan karena belum dibayar sampai batas waktu, dan stoknya sudah kami lepas. Kalau masih mau, chat aku lagi ya kak 🙏`).catch(() => {});
   return true;
 }

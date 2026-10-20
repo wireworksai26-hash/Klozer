@@ -5,6 +5,8 @@ import { badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { afterPaid, assertTransition, markOrderPaid, releaseOrderResources } from "../services/orderService.js";
 import { DuplicateOrderRequest, createOrderRecord } from "../services/orderCreationService.js";
 import { audit } from "../services/auditService.js";
+import { emitEvent } from "../services/integrations/eventBus.js";
+import { loadOrderPayload } from "../services/integrations/eventPayloads.js";
 
 const ORDER_SELECT = `
   SELECT o.*, l.name AS customer_name, l.phone_number AS customer_phone, l.city AS customer_city, u.name AS cs_name,
@@ -137,9 +139,11 @@ export async function updateOrderStatus(req, res) {
     throw forbidden("Hanya owner, supervisor, atau finance yang dapat mengonfirmasi pembayaran.");
   }
 
+  let previousStatus = null;
   const result = await transaction(async (tx) => {
     const order = await tx.queryOne("SELECT * FROM orders WHERE id = ? AND institution_id = ? FOR UPDATE", [req.params.id, req.tenantId]);
     if (!order) throw notFound("Pesanan tidak ditemukan.");
+    previousStatus = order.status;
     assertTransition(order.status, next, ORDER_TRANSITIONS);
 
     if (next === "paid") return { paid: await markOrderPaid(tx, order.id, req.tenantId) };
@@ -158,6 +162,7 @@ export async function updateOrderStatus(req, res) {
   });
 
   if (result.paid?.changed) afterPaid(result.paid);
+  emitEvent({ institutionId: req.tenantId, type: "order.status_changed", data: async () => ({ order: await loadOrderPayload(req.tenantId, Number(req.params.id)), previous_status: previousStatus }) });
   await audit(req, "order.status", { entityType: "order", entityId: req.params.id, metadata: { status: next } });
 
   const [order] = await attachItems(await query(`${ORDER_SELECT} WHERE o.id = ?`, [req.params.id]));

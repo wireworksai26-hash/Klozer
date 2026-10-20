@@ -1,5 +1,6 @@
 import { query, queryOne } from "../../config/db.js";
 import { emitToTenant, emitToUser } from "../../realtime.js";
+import { emitEvent } from "../integrations/eventBus.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { OPEN_LEAD_STATUSES, isEligible, pickAgent } from "./assignmentPolicy.js";
 import { getRoutingSettings } from "./routingSettings.js";
@@ -48,6 +49,7 @@ async function writeAssignment({ institutionId, leadId, previous, userId, reason
   const payload = { leadId, userId, reason };
   emitToTenant(institutionId, "lead:assigned", payload);
   emitToUser(userId, "lead:assigned", payload);
+  emitEvent({ institutionId, type: "conversation.assigned", data: { contact_id: leadId, user_id: userId, reason } });
   return true;
 }
 

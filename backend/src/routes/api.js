@@ -4,7 +4,8 @@ import { authenticate, requireRole, requireSuperadmin } from "../middlewares/aut
 import { tenantContext } from "../middlewares/tenantContext.js";
 import { validate } from "../middlewares/validate.js";
 import { requireFeature } from "../middlewares/featureGate.js";
-import { aiLimiter, loginLimiter, publicAiLimiter, registerLimiter, webchatPollLimiter, webchatSendLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
+import { aiLimiter, loginLimiter, openApiLimiter, publicAiLimiter, registerLimiter, webchatPollLimiter, webchatSendLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
+import { apiKeyAuth } from "../middlewares/apiKeyAuth.js";
 import { asyncHandler } from "../utils/errors.js";
 import * as v from "../validation/schemas.js";
 
@@ -41,6 +42,9 @@ import * as mv from "../validation/commerceSchemas.js";
 import * as broadcastCtrl from "../controllers/broadcastController.js";
 import * as adsCtrl from "../controllers/adsController.js";
 import * as bv from "../validation/broadcastSchemas.js";
+import * as integrationsCtrl from "../controllers/integrationsController.js";
+import * as openCtrl from "../controllers/openApiController.js";
+import * as iv from "../validation/integrationSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -153,6 +157,37 @@ router.delete("/ads/settings", ...tenant, requireRole(...MANAGERS), h(adsCtrl.di
 router.post("/ads/sync", ...tenant, requireRole(...REPORTING), aiLimiter, validate({ body: bv.syncAdsBody }), h(adsCtrl.sync));
 router.get("/ads/capi", ...tenant, requireRole(...REPORTING), capiOn, h(adsCtrl.capi));
 router.post("/ads/capi/orders/:orderId/send", ...tenant, requireRole(...REPORTING), capiOn, validate({ params: z.object({ orderId: v.idParams.shape.id }) }), h(adsCtrl.sendCapi));
+
+// ==================== API KEYS, WEBHOOKS AND THE PUBLIC API ====================
+const apiOn = requireFeature("publicApi", "API dan Webhook");
+router.get("/integrations/events", ...tenant, requireRole(...MANAGERS), apiOn, h(integrationsCtrl.events));
+router.get("/integrations/api-keys", ...tenant, requireRole(...MANAGERS), apiOn, h(integrationsCtrl.apiKeys));
+router.post("/integrations/api-keys", ...tenant, requireRole(...MANAGERS), apiOn, validate({ body: iv.createApiKeyBody }), h(integrationsCtrl.createKey));
+router.delete("/integrations/api-keys/:id", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams }), h(integrationsCtrl.revokeKey));
+router.get("/integrations/webhooks", ...tenant, requireRole(...MANAGERS), apiOn, h(integrationsCtrl.webhooks));
+router.post("/integrations/webhooks", ...tenant, requireRole(...MANAGERS), apiOn, validate({ body: iv.createWebhookBody }), h(integrationsCtrl.createWebhook));
+router.put("/integrations/webhooks/:id", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams, body: iv.updateWebhookBody }), h(integrationsCtrl.updateWebhook));
+router.delete("/integrations/webhooks/:id", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams }), h(integrationsCtrl.removeWebhook));
+router.post("/integrations/webhooks/:id/rotate-secret", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams }), h(integrationsCtrl.rotate));
+router.post("/integrations/webhooks/:id/test", ...tenant, requireRole(...MANAGERS), apiOn, aiLimiter, validate({ params: v.idParams }), h(integrationsCtrl.test));
+router.get("/integrations/webhooks/:id/deliveries", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams, query: iv.listDeliveriesQuery }), h(integrationsCtrl.deliveries));
+router.get("/integrations/deliveries/:id", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams }), h(integrationsCtrl.delivery));
+router.post("/integrations/deliveries/:id/retry", ...tenant, requireRole(...MANAGERS), apiOn, validate({ params: v.idParams }), h(integrationsCtrl.retry));
+
+// The public API: authenticated by API key (scopes per route), limited per key.
+const open = (...scopes) => [apiKeyAuth(...scopes), openApiLimiter];
+router.get("/open/contacts", ...open("contacts:read"), validate({ query: iv.openContactsQuery }), h(openCtrl.listContacts));
+router.post("/open/contacts", ...open("contacts:write"), validate({ body: iv.openUpsertContactBody }), h(openCtrl.upsertContact));
+router.get("/open/contacts/:id", ...open("contacts:read"), validate({ params: v.idParams }), h(openCtrl.getContact));
+router.patch("/open/contacts/:id", ...open("contacts:write"), validate({ params: v.idParams, body: iv.openPatchContactBody }), h(openCtrl.patchContact));
+router.put("/open/contacts/:id/consent", ...open("contacts:write"), validate({ params: v.idParams, body: iv.openConsentBody }), h(openCtrl.putConsent));
+router.get("/open/contacts/:id/messages", ...open("messages:read"), validate({ params: v.idParams, query: iv.openMessagesQuery }), h(openCtrl.listMessages));
+router.post("/open/messages", ...open("messages:send"), validate({ body: iv.openSendMessageBody }, { rawFields: ["text"] }), h(openCtrl.sendMessage));
+router.post("/open/messages/template", ...open("messages:send"), validate({ body: iv.openSendTemplateBody }), h(openCtrl.sendTemplate));
+router.get("/open/orders", ...open("orders:read"), validate({ query: iv.openOrdersQuery }), h(openCtrl.listOrders));
+router.get("/open/orders/:id", ...open("orders:read"), h(openCtrl.getOrder));
+router.post("/open/orders", ...open("orders:write"), validate({ body: iv.openCreateOrderBody }), h(openCtrl.createOrder));
+router.get("/open/products", ...open("products:read"), validate({ query: iv.openProductsQuery }), h(openCtrl.listProducts));
 
 // ==================== CHANNELS & ROUTING ====================
 router.get("/channels", ...tenant, requireRole(...SALES), h(channelCtrl.list));

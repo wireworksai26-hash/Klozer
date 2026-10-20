@@ -3,6 +3,7 @@ import { logger } from "../../config/logger.js";
 import { parseJsonColumn } from "../../utils/jsonColumn.js";
 import { emitToTenant } from "../../realtime.js";
 import { getAdapter } from "../channels/adapters/index.js";
+import { emitEvent } from "../integrations/eventBus.js";
 import { loadTransportChannel } from "../channels/channelRepository.js";
 import { nextAllowedTime } from "../followup/followupPolicy.js";
 import { getBroadcastSettings } from "./broadcastSettings.js";
@@ -158,6 +159,7 @@ async function runCampaign(campaign, now, tally) {
   } else if (stop?.outcome === "pause") {
     await query("UPDATE broadcast_campaigns SET status = 'paused', pause_reason = ? WHERE id = ?", [stop.reason, campaign.id]);
     emitToTenant(campaign.institution_id, "broadcast:paused", { campaignId: campaign.id, reason: stop.reason });
+    emitEvent({ institutionId: campaign.institution_id, type: "broadcast.paused", data: { campaign_id: campaign.id, reason: stop.reason } });
     logger.warn({ campaignId: campaign.id, reason: stop.reason, detail: stop.detail }, "Broadcast paused");
   }
 }
@@ -202,6 +204,7 @@ export async function runBroadcastTick({ now = new Date(), institutionId = null 
     if (done.affectedRows) {
       tally.completed++;
       emitToTenant(c.institution_id, "broadcast:completed", { campaignId: c.id });
+      emitEvent({ institutionId: c.institution_id, type: "broadcast.completed", data: { campaign_id: c.id } });
     }
   }
   return tally;

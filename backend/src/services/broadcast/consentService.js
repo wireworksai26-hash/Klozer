@@ -2,6 +2,8 @@ import { query, queryOne, retryOnDeadlock } from "../../config/db.js";
 import { normalizePhone } from "../../utils/helpers.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { cancelPending } from "../followup/followupService.js";
+import { emitEvent } from "../integrations/eventBus.js";
+import { loadContactPayload } from "../integrations/eventPayloads.js";
 
 /**
  * Who may be sent promotions. Marketing templates go only to contacts who said yes (`opted_in`); anyone who said
@@ -21,6 +23,7 @@ export async function setConsent({ institutionId, leadId, state, source }) {
     [state, String(source || "").slice(0, 160) || null, state, lead.id]
   );
   if (state === "opted_out") await stopEverything({ institutionId, leadId: lead.id });
+  emitEvent({ institutionId, type: "contact.consent_changed", data: async () => ({ contact: await loadContactPayload(institutionId, lead.id), state, source: String(source || "") || null }) });
   return { leadId: lead.id, state };
 }
 

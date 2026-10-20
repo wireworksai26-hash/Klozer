@@ -1,7 +1,10 @@
 import { query, queryOne } from "../../config/db.js";
 import { emitToTenant } from "../../realtime.js";
 import { notFound } from "../../utils/errors.js";
+import { emitEvent } from "../integrations/eventBus.js";
 import { reasonLabel } from "./handoffPolicy.js";
+
+const announce = (institutionId, contactId, handledBy, reason) => emitEvent({ institutionId, type: "conversation.handoff", data: { contact_id: contactId, handled_by: handledBy, reason } });
 
 /**
  * Who is answering a conversation: the AI or a person. The AI hands over (customer asked for a person, a risky
@@ -32,6 +35,7 @@ export async function startHandoff({ institutionId, leadId, channelId = null, re
 
   await addSystemNote({ institutionId, leadId, channelId, text: `Dialihkan ke tim: ${reasonLabel(reason)}.` });
   emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason });
+  announce(institutionId, leadId, "human", reason);
   if (reason !== "manual") emitToTenant(institutionId, "chat:needs_human", { leadId, reason });
   return { changed: true };
 }
@@ -51,7 +55,10 @@ export async function noteHumanReply({ institutionId, leadId, userId }) {
       WHERE id = ? AND institution_id = ?`,
     [userId, leadId, institutionId]
   );
-  if (takingOver) emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason: "cs_replied" });
+  if (takingOver) {
+    emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "human", reason: "cs_replied" });
+    announce(institutionId, leadId, "human", "cs_replied");
+  }
 }
 
 /** A person (or the hold timing out) gives the conversation back to the AI. */
@@ -63,6 +70,7 @@ export async function handBack({ institutionId, leadId, reason = "manual", note 
   if (result.affectedRows === 0) return { changed: false };
   if (note) await addSystemNote({ institutionId, leadId, text: reason === "expired" ? "AI melanjutkan percakapan (tidak ada balasan tim)." : "Percakapan dikembalikan ke AI." });
   emitToTenant(institutionId, "lead:handoff", { leadId, handledBy: "ai", reason });
+  announce(institutionId, leadId, "ai", reason);
   return { changed: true };
 }
 

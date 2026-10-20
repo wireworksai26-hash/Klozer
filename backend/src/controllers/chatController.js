@@ -5,6 +5,8 @@ import { generateAiCsResponse, generateLandingAiResponse } from "../services/aiB
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "../services/tokenService.js";
 import { sendText } from "../services/channels/channelService.js";
 import { noteHumanReply } from "../services/handoff/handoffService.js";
+import { emitEvent } from "../services/integrations/eventBus.js";
+import { messagePayload } from "../services/integrations/eventPayloads.js";
 
 /** GET /chats/:leadId — most recent 200 messages, oldest first. */
 export async function getChatMessages(req, res) {
@@ -45,6 +47,7 @@ export async function sendMessage(req, res) {
 
   const message = await queryOne("SELECT * FROM chat_messages WHERE id = ?", [result.insertId]);
   emitToTenant(req.tenantId, "chat:message", { leadId: lead.id, direction: "outbound", text: content_text, sender: "cs" });
+  emitEvent({ institutionId: req.tenantId, type: "message.sent", data: messagePayload({ contactId: lead.id, channelType: lead.channel_type, direction: "outbound", sender: "cs", text: content_text, externalId: sent.messageId ?? null }) });
 
   res.status(sent.success ? 201 : 202).json({
     success: sent.success,

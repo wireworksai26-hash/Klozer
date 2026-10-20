@@ -2,6 +2,7 @@ import { query, queryOne } from "../../config/db.js";
 import { parseJsonColumn } from "../../utils/jsonColumn.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { loadTransportChannel } from "../channels/channelRepository.js";
+import { emitEvent } from "../integrations/eventBus.js";
 import { createRemoteTemplate, deleteRemoteTemplate, listRemoteTemplates } from "./templateApi.js";
 import { buildComponents, describeComponents, mapMetaCategory, mapMetaStatus, validateTemplateInput } from "./templateModel.js";
 
@@ -144,7 +145,7 @@ export async function deleteTemplate(institutionId, id) {
  * @returns {Promise<number>} templates updated
  */
 export async function applyTemplateStatusEvent({ wabaId, metaTemplateId, name, language, event, reason }) {
-  const channels = await query("SELECT id FROM channels WHERE type = 'whatsapp' AND JSON_UNQUOTE(JSON_EXTRACT(config_json, '$.wabaId')) = ?", [String(wabaId)]);
+  const channels = await query("SELECT id, institution_id FROM channels WHERE type = 'whatsapp' AND JSON_UNQUOTE(JSON_EXTRACT(config_json, '$.wabaId')) = ?", [String(wabaId)]);
   if (!channels.length) return 0;
   const rejected = reason && reason !== "NONE" ? String(reason).slice(0, 255) : null;
   let changed = 0;
@@ -153,6 +154,7 @@ export async function applyTemplateStatusEvent({ wabaId, metaTemplateId, name, l
       ? await query("UPDATE message_templates SET status = ?, rejected_reason = ?, last_synced_at = UTC_TIMESTAMP() WHERE channel_id = ? AND meta_template_id = ?", [mapMetaStatus(event), rejected, c.id, String(metaTemplateId)])
       : await query("UPDATE message_templates SET status = ?, rejected_reason = ?, last_synced_at = UTC_TIMESTAMP() WHERE channel_id = ? AND name = ? AND language = ?", [mapMetaStatus(event), rejected, c.id, name, language]);
     changed += result.affectedRows;
+    if (result.affectedRows) emitEvent({ institutionId: c.institution_id, type: "template.status_changed", data: { name, language, meta_template_id: metaTemplateId ?? null, status: mapMetaStatus(event), reason: rejected } });
   }
   return changed;
 }

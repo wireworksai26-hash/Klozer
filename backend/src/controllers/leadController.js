@@ -1,4 +1,6 @@
 import { query, queryOne } from "../config/db.js";
+import { emitEvent } from "../services/integrations/eventBus.js";
+import { contactPayload } from "../services/integrations/eventPayloads.js";
 import { buildPagination, escapeLike, normalizePhone, parsePagination } from "../utils/helpers.js";
 import { badRequest, notFound } from "../utils/errors.js";
 
@@ -71,6 +73,7 @@ export async function createLead(req, res) {
     ]
   );
   const lead = await queryOne("SELECT * FROM leads WHERE id = ?", [result.insertId]);
+  emitEvent({ institutionId: req.tenantId, type: "contact.created", data: () => contactPayload(lead) });
   res.status(201).json({ success: true, message: "Kontak berhasil ditambahkan.", data: lead });
 }
 
@@ -91,6 +94,7 @@ export async function updateLead(req, res) {
   if (sets.length) await query(`UPDATE leads SET ${sets.join(", ")} WHERE id = ? AND institution_id = ?`, [...values, req.params.id, req.tenantId]);
 
   const updated = await queryOne("SELECT * FROM leads WHERE id = ?", [req.params.id]);
+  emitEvent({ institutionId: req.tenantId, type: "contact.updated", data: () => contactPayload(updated) });
   res.json({ success: true, message: "Kontak berhasil diperbarui.", data: updated });
 }
 

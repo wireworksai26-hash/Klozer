@@ -114,6 +114,13 @@ export const config = {
     graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
   },
 
+  webhooks: {
+    // Outgoing webhooks may only reach public addresses. This switch exists for local development and tests
+    // (a receiver on localhost) and is ignored in production.
+    allowPrivate: !isProduction && process.env.WEBHOOK_ALLOW_PRIVATE === "true",
+    timeoutMs: readInt("WEBHOOK_TIMEOUT_MS", 10000),
+  },
+
   shipping: {
     biteshipKey: process.env.BITESHIP_API_KEY || "",
   },

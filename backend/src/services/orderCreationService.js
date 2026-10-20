@@ -2,6 +2,8 @@ import { transaction } from "../config/db.js";
 import { generateOrderNumber } from "../utils/helpers.js";
 import { badRequest, conflict } from "../utils/errors.js";
 import { markOrderPaid } from "./orderService.js";
+import { emitEvent } from "./integrations/eventBus.js";
+import { loadOrderPayload } from "./integrations/eventPayloads.js";
 
 /** A concurrent request with the same idempotency key committed first. */
 export class DuplicateOrderRequest extends Error {}
@@ -36,7 +38,7 @@ export async function createOrderRecord({
   createdVia = "dashboard",
   chatDetails = null,
 }) {
-  return transaction(async (tx) => {
+  const created = await transaction(async (tx) => {
     // ---- products: lock + validate + price from DB
     const wanted = new Map();
     for (const it of items.filter((i) => i.product_id)) {
@@ -47,6 +49,12 @@ export async function createOrderRecord({
       ? await tx.query("SELECT * FROM products WHERE id IN (?) AND institution_id = ? AND is_active = 1 ORDER BY id FOR UPDATE", [productIds, tenantId])
       : [];
     const productById = new Map(products.map((p) => [p.id, p]));
+
+    // Holding the product locks means any earlier request with this key has committed: if it made the order, stop here.
+    if (idempotencyKey) {
+      const earlier = await tx.queryOne("SELECT id FROM orders WHERE institution_id = ? AND idempotency_key = ?", [tenantId, idempotencyKey]);
+      if (earlier) throw new DuplicateOrderRequest();
+    }
 
     for (const [productId, qty] of wanted) {
       const product = productById.get(productId);
@@ -140,4 +148,7 @@ export async function createOrderRecord({
     if (status === "paid") paid = await markOrderPaid(tx, orderId, tenantId);
     return { orderId, paid };
   });
+  // told only once the order really exists (the transaction has committed)
+  emitEvent({ institutionId: tenantId, type: "order.created", data: () => loadOrderPayload(tenantId, created.orderId) });
+  return created;
 }

@@ -33,6 +33,8 @@ const base = {
 
 export const globalLimiter = rateLimit({
   ...base,
+  // The public API has its own limit per API key; automations from one hosting provider share an address.
+  skip: (req) => base.skip() || req.path.startsWith("/open/"),
   windowMs: 60 * 1000,
   limit: 300,
   handler: handler("Terlalu banyak permintaan. Coba lagi sebentar."),
@@ -81,6 +83,15 @@ export const webhookLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 600,
   handler: handler("Terlalu banyak permintaan webhook."),
+});
+
+// Public API: a limit per API key, so one noisy automation cannot use up another tenant's allowance.
+export const openApiLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 1000,
+  limit: 120,
+  keyGenerator: (req) => (req.apiKey ? `k:${req.apiKey.id}` : ipKeyGenerator(req.ip)),
+  handler: handler("Terlalu banyak permintaan untuk API key ini. Coba lagi sebentar."),
 });
 
 // Public web chat widget: anonymous visitors on other people's websites. Polling is frequent, sending is not.

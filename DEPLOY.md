@@ -230,3 +230,31 @@ Bisnis hanya boleh memulai percakapan WhatsApp, atau menulis setelah jendela 24 
 - **Conversions API** (`PUT /integrations/meta-capi` mengisi dataset dan token): pembelian dari pelanggan Click-to-WhatsApp dikirim dengan format business messaging (`action_source: business_messaging`, `ctwa_clid`, dan WABA) supaya Meta bisa mengaitkannya ke iklan; pelanggan lain dicocokkan lewat hash nomor telepon. Event yang gagal dicoba lagi (2 menit, 10 menit, 1 jam, 6 jam; Meta menerima pembelian sampai 7 hari), id event = nomor pesanan sehingga pengulangan diabaikan Meta, dan `GET /ads/capi` menampilkan status tiap event.
 
 **Belum diuji dengan akun Meta sungguhan:** pembuatan dan sinkronisasi templat, status pengiriman, tarikan biaya iklan, dan format Conversions API ditulis dari dokumentasi publik Meta dan diuji dengan tiruan jaringan. Uji satu templat, satu pesan uji, satu sinkronisasi biaya, dan satu pembelian dari iklan sebelum dipakai untuk kampanye besar. Migrasi 014 jalan otomatis.
+
+## API key dan webhook keluar (n8n, Make, Zapier, atau kode sendiri)
+
+Dikelola owner dan supervisor di `/api/v1/integrations` (sakelar paket `publicApi`; batas jumlah per paket: Starter 2 key dan 2 webhook, Pro 10, Enterprise 50).
+
+### API key dan API publik (`/api/v1/open`)
+- `POST /integrations/api-keys` membuat key (`klz_live_...`) dengan **cakupan** yang dipilih: `contacts:read`, `contacts:write`, `messages:read`, `messages:send`, `orders:read`, `orders:write`, `products:read`. Key **hanya tampil sekali** di respons pembuatan; yang disimpan hanya hash-nya. Bisa diberi tanggal kedaluwarsa dan dicabut kapan saja (`DELETE /integrations/api-keys/:id`); key milik tenant yang dinonaktifkan berhenti berlaku.
+- Kirim di header `Authorization: Bearer klz_live_...` (atau `X-API-Key`). Tenant selalu ditentukan dari key, tidak pernah dari isi permintaan. Batas 120 permintaan per menit **per key**.
+- Endpoint: `GET/POST /open/contacts`, `GET/PATCH /open/contacts/:id`, `PUT /open/contacts/:id/consent`, `GET /open/contacts/:id/messages`, `POST /open/messages` (teks), `POST /open/messages/template`, `GET/POST /open/orders`, `GET /open/orders/:id` (id atau nomor pesanan), `GET /open/products`. Nama field sama dengan payload event webhook.
+- Aturan yang sama dengan dashboard: pesanan lewat API dihitung server (harga, stok terkunci, tanpa oversell) dan idempoten dengan header `Idempotency-Key` (8-60 karakter; pengiriman pesan juga). Teks hanya bisa dikirim dalam jendela chat 24 jam (`409 WINDOW_CLOSED`, pakai templat di luar itu). Kontak yang berhenti (`opted_out`) tidak menerima pesan kecuali `transactional: true` (info pesanan, bukan promosi); templat marketing hanya ke kontak `opted_in`; setiap templat memakai 1 kredit blast.
+
+### Webhook keluar
+- `POST /integrations/webhooks` mendaftarkan `url` (**https publik saja**), `events` (atau `["*"]`), dan menghasilkan **secret** (`whsec_...`, tampil sekali; `rotate-secret` menggantinya dan yang lama langsung tidak berlaku). `POST /integrations/webhooks/:id/test` mengirim event `ping` saat itu juga.
+- **Event:** `message.received`, `message.sent`, `contact.created`, `contact.updated`, `contact.consent_changed`, `conversation.handoff`, `conversation.assigned`, `order.created`, `order.paid`, `order.status_changed`, `shipment.updated`, `broadcast.completed`, `broadcast.paused`, `template.status_changed` (daftar lengkap dengan deskripsi: `GET /integrations/events`). Bentuk amplop: `{ "id": "evt_...", "type": "order.paid", "created_at": "...", "institution_id": 1, "data": { ... } }`. Nama event dan field tidak pernah diganti artinya; field baru boleh ditambah.
+- **Tanda tangan:** header `X-Klozer-Signature: t=<detik unix>,v1=<hex>`, dengan `v1 = HMAC-SHA256(secret, "<t>.<isi mentah permintaan>")`. Verifikasi dengan isi **mentah** (sebelum di-parse), tolak bila `t` selisih lebih dari 5 menit (anti-replay), dan bandingkan dengan perbandingan waktu-konstan. Header lain: `X-Klozer-Event`, `X-Klozer-Event-Id` (sama di setiap percobaan: pakai untuk de-duplikasi), `X-Klozer-Delivery`, `X-Klozer-Attempt`.
+
+```js
+// n8n "Code" node (atau Node.js biasa)
+const crypto = require("crypto");
+const [t, v1] = headers["x-klozer-signature"].split(",").map((p) => p.split("=")[1]);
+const expected = crypto.createHmac("sha256", $env.KLOZER_WEBHOOK_SECRET).update(`${t}.${rawBody}`).digest("hex");
+if (Math.abs(Date.now() / 1000 - Number(t)) > 300 || !crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected))) throw new Error("Tanda tangan tidak valid");
+```
+Di n8n, node Webhook perlu opsi **Raw Body** agar isi mentah tersedia.
+- **Pengiriman andal:** event ditulis dulu ke antrean di database, lalu worker mengirimnya (tiap 5 detik). Sukses = jawaban 2xx dalam 10 detik. Gagal dicoba lagi setelah 1 menit, 5 menit, 30 menit, 2 jam, 6 jam, 24 jam (7 percobaan), lalu berstatus `dead` dan bisa dikirim ulang (`POST /integrations/deliveries/:id/retry`). Riwayat dan isi persis yang dikirim bisa dilihat (`GET /integrations/webhooks/:id/deliveries`, `GET /integrations/deliveries/:id`) selama 30 hari. Urutan antar event tidak dijamin: gunakan `created_at` dan id.
+- Webhook yang gagal 25 kali berturut-turut, atau menjawab `410 Gone`, dimatikan otomatis (alasannya tampil; aktifkan lagi lewat `PUT` dengan `isActive: true`).
+- **Keamanan:** alamat tujuan tidak boleh internal. Alamat privat, loopback, link-local (termasuk alamat metadata cloud `169.254.169.254`), dan nama host internal ditolak saat disimpan **dan** saat tiap koneksi dibuat (nama yang kemudian menunjuk ke alamat privat juga ditolak, koneksi dilakukan ke alamat yang sudah diperiksa itu), redirect tidak diikuti, dan balasan dibatasi ukurannya. Variabel `WEBHOOK_ALLOW_PRIVATE=true` hanya untuk pengembangan lokal dan diabaikan di production; `WEBHOOK_TIMEOUT_MS` mengatur batas waktu (default 10000).
+- Contoh alur n8n: pesanan baru atau dibayar (`order.paid`) masuk ke Google Sheets atau akuntansi; `message.received` diteruskan ke alur AI sendiri lalu dijawab lewat `POST /open/messages`; `shipment.updated` memicu notifikasi di kanal lain. Migrasi 015 jalan otomatis.

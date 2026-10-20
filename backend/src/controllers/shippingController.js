@@ -3,6 +3,8 @@ import { calculateShippingRates, calculateCodRiskScore } from "../services/shipp
 import { badRequest, conflict, notFound } from "../utils/errors.js";
 import { audit } from "../services/auditService.js";
 import { notifyOrderShipped } from "../services/orderNotifications.js";
+import { emitEvent } from "../services/integrations/eventBus.js";
+import { loadOrderPayload } from "../services/integrations/eventPayloads.js";
 
 /** POST /shipping/rates — static estimates (see shippingService). */
 export async function getRates(req, res) {
@@ -105,6 +107,8 @@ export async function updateShipment(req, res) {
   const awbChanged = b.awb_number !== undefined && b.awb_number !== (shipment.previousAwb ?? null);
   const notified = awbChanged && b.notify_customer !== false ? await notifyOrderShipped({ order, courier: shipment.courier_code, service: shipment.service_name, awb: shipment.awb_number }) : { sent: false, reason: awbChanged ? "disabled_by_request" : "no_waybill_change" };
   await audit(req, "shipment.update", { entityType: "order", entityId: order.id, metadata: { fields: Object.keys(b).filter((k) => k !== "notify_customer"), notified: notified.sent } });
+
+  emitEvent({ institutionId: req.tenantId, type: "shipment.updated", data: () => loadOrderPayload(req.tenantId, order.id) });
 
   const { previousAwb, ...clean } = shipment; // eslint-disable-line no-unused-vars
   res.json({ success: true, data: clean, notified });

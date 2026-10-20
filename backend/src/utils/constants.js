@@ -17,6 +17,7 @@ export const DEFAULT_FEATURES = Object.freeze({
   knowledgeBase: true,
   aiLearning: true,
   chatCommerce: true,
+  publicApi: true,
 });
 
 export const LEAD_STATUSES = ["new", "in_progress", "closing", "repeat", "idle", "closed_lost"];

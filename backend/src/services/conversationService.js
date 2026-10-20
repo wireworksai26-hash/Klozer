@@ -12,6 +12,8 @@ import { handleCustomerPaymentProof } from "./paymentProofService.js";
 import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
 import { onCustomerActivity } from "./followup/followupService.js";
 import { recordAdReferral } from "./ads/attribution.js";
+import { emitEvent } from "./integrations/eventBus.js";
+import { loadContactPayload, messagePayload } from "./integrations/eventPayloads.js";
 import { recordOptOutFromChat } from "./broadcast/consentService.js";
 import { markBroadcastReply } from "./broadcast/deliveryStatus.js";
 import { isOptOut } from "./commerce/purchaseIntent.js";
@@ -51,6 +53,7 @@ const CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram
  */
 async function upsertLead({ institutionId, channelId, channelType, contactId, name }) {
   const phone = channelType === "whatsapp" ? contactId : null;
+  const known = await queryOne("SELECT id FROM leads WHERE institution_id = ? AND channel_type = ? AND external_id = ?", [institutionId, channelType, contactId]);
   const result = await retryOnDeadlock(() => query(
     `INSERT INTO leads (institution_id, channel_id, channel_type, external_id, phone_number, name, source, status, last_contacted_at, last_inbound_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'new', UTC_TIMESTAMP(), UTC_TIMESTAMP())
@@ -60,7 +63,7 @@ async function upsertLead({ institutionId, channelId, channelType, contactId, na
                              id = LAST_INSERT_ID(id)`,
     [institutionId, channelId, channelType, contactId, phone, name, channelType]
   ));
-  return { leadId: result.insertId, created: result.affectedRows === 1 };
+  return { leadId: result.insertId, created: !known && result.affectedRows === 1 };
 }
 
 /** A new contact on a platform that knows their name: replace the placeholder once the platform answers. */
@@ -97,6 +100,7 @@ async function reply({ ctx, text, tokens = 0, model = null, meta = null }) {
   const sent = await sendText({ institutionId: ctx.institutionId, channelId: ctx.channelId, type: ctx.channelType, to: ctx.contactId, text });
   await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta });
   emitToTenant(ctx.institutionId, "chat:message", { leadId: ctx.leadId, direction: "outbound", text, sender: "ai_agent" });
+  emitEvent({ institutionId: ctx.institutionId, type: "message.sent", data: messagePayload({ contactId: ctx.leadId, channelType: ctx.channelType, direction: "outbound", sender: "ai", text, externalId: sent.messageId ?? null }) });
   return sent;
 }
 
@@ -246,6 +250,8 @@ export async function handleInbound({ institutionId, channel = null, channelType
   }
 
   emitToTenant(institutionId, "chat:message", { leadId, direction: "inbound", text, messageType });
+  if (created) emitEvent({ institutionId, type: "contact.created", data: () => loadContactPayload(institutionId, leadId) });
+  emitEvent({ institutionId, type: "message.received", data: messagePayload({ contactId: leadId, channelType, direction: "inbound", sender: "customer", type: messageType, text: text || null, externalId: messageId }) });
   if (messageId) markRead({ institutionId, channelId, type: channelType, messageId }).catch(() => {});
 
   const lead = await queryOne("SELECT id, name, channel_id, assigned_cs_id, handled_by, handoff_at FROM leads WHERE id = ?", [leadId]);
