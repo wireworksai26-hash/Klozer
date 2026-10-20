@@ -10,14 +10,13 @@ export default function Pricing() {
   const starter = planOffer("Starter", period);
   const pro = planOffer("Pro", period);
 
-  // What a card shows for a priced plan: the first payment, what it replaces, and plain lines that say what is charged
-  // and when the regular price starts. Exact amounts: this is what the customer pays.
+  // What a card shows for a priced plan: the first payment, the regular price it replaces, and "bulan pertama" or
+  // "tahun pertama" beside it, which is all the discount needs to say. Exact amounts: this is what the customer pays.
   const priceFields = (offer) => {
     const first = offer.percent > 0;
     const unit = isAnnual ? "tahun" : "bulan";
     const notes = [];
-    if (isAnnual) notes.push(`Dibayar sekali untuk 12 bulan (Rp ${formatRupiah(offer.regularMonthly)} x ${offer.months}).`);
-    if (first) notes.push(`Diskon ${offer.percent}% ${unit} pertama, lalu Rp ${formatRupiah(offer.regularTotal)} per ${unit}.`);
+    if (isAnnual) notes.push("Dibayar sekali untuk 12 bulan.");
     return {
       price: formatRupiah(offer.firstTotal),
       original: first ? formatRupiah(offer.regularTotal) : null,
