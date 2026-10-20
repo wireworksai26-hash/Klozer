@@ -15,14 +15,13 @@ export default function Pricing() {
   const priceFields = (offer) => {
     const first = offer.percent > 0;
     const unit = isAnnual ? "tahun" : "bulan";
-    const notes = [];
-    if (isAnnual) notes.push("Dibayar sekali untuk 12 bulan.");
     return {
       price: formatRupiah(offer.firstTotal),
       original: first ? formatRupiah(offer.regularTotal) : null,
+      saving: first ? formatRupiah(offer.regularTotal - offer.firstTotal) : null,
       promoPercent: offer.percent,
       period: first ? `${unit} pertama` : `/${unit}`,
-      priceNotes: notes.length ? notes : [isAnnual ? "Ditagih tahunan" : "Ditagih bulanan"],
+      priceNotes: [],
     };
   };
 
@@ -159,42 +158,59 @@ export default function Pricing() {
                   {plan.desc}
                 </p>
 
-                {/* Price Display with Smooth Number Update */}
-                <div className={`flex flex-col py-4 border-y border-dashed mb-6 ${
-                  plan.highlight ? "border-white/15" : "border-line"
+                {/* Price: a discounted plan gets its own panel, the Rp saved and the first period beside the price */}
+                <div className={`flex flex-col mb-6 ${
+                  plan.original
+                    ? `rounded-xl px-5 py-5 border ${plan.highlight ? "bg-white/5 border-white/20" : "bg-brand-soft/60 border-brand/20"}`
+                    : `py-4 border-y border-dashed ${plan.highlight ? "border-white/15" : "border-line"}`
                 }`}>
                   {plan.original && (
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`text-body-sm line-through ${plan.highlight ? "text-line-strong" : "text-fg-subtle"}`}>
-                        Rp {plan.original}
-                      </span>
-                      <span className="text-micro font-bold bg-success-500 text-white px-2 py-0.5 rounded-full">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3">
+                      <span className="text-caption font-bold bg-success-500 text-white px-2.5 py-1 rounded-full">
                         Diskon {plan.promoPercent}%
+                      </span>
+                      <span className={`text-body-sm font-medium line-through tabular-nums ${plan.highlight ? "text-line-strong" : "text-fg-subtle"}`}>
+                        Rp {plan.original}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                     {plan.price !== "Kustom" && (
                       <span className={`text-body font-bold ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
                         Rp
                       </span>
                     )}
-                    <span className={`text-heading-lg font-bold tracking-tight leading-none transition-all duration-300 ${
+                    <span className={`text-heading-lg font-bold tracking-tight leading-none tabular-nums ${
                       plan.highlight ? "text-white" : "text-ink"
                     }`}>
                       {plan.price}
                     </span>
-                    <span className={`text-body-sm font-medium ml-1 ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
-                      {plan.period}
-                    </span>
+                    {plan.original ? (
+                      <span className={`self-center text-caption font-semibold px-2.5 py-0.5 rounded-full border ${
+                        plan.highlight ? "border-white/30 text-white" : "border-brand/30 text-brand bg-white"
+                      }`}>
+                        {plan.period}
+                      </span>
+                    ) : (
+                      <span className={`text-body-sm font-medium ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
+                        {plan.period}
+                      </span>
+                    )}
                   </div>
-                  <ul className={`mt-2 flex flex-col gap-1 text-caption leading-snug ${
-                    plan.highlight ? "text-line-strong" : "text-fg-muted"
-                  }`}>
-                    {plan.priceNotes.map((note) => (
-                      <li key={note}>{note}</li>
-                    ))}
-                  </ul>
+                  {plan.saving && (
+                    <p className={`mt-3 text-body-sm font-semibold tabular-nums ${plan.highlight ? "text-success-200" : "text-success-700"}`}>
+                      Hemat Rp {plan.saving}
+                    </p>
+                  )}
+                  {plan.priceNotes.length > 0 && (
+                    <ul className={`mt-2 flex flex-col gap-1 text-caption leading-snug ${
+                      plan.highlight ? "text-line-strong" : "text-fg-muted"
+                    }`}>
+                      {plan.priceNotes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {/* Feature Checklist */}
