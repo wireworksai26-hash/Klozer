@@ -12,6 +12,7 @@ import { handleCustomerPaymentProof } from "./paymentProofService.js";
 import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
 import { onCustomerActivity } from "./followup/followupService.js";
 import { recordAdReferral } from "./ads/attribution.js";
+import { routeConversation } from "./agents/agentRouting.js";
 import { emitEvent } from "./integrations/eventBus.js";
 import { loadContactPayload, messagePayload } from "./integrations/eventPayloads.js";
 import { recordOptOutFromChat } from "./broadcast/consentService.js";
@@ -74,10 +75,10 @@ function refreshContactName({ institutionId, channelId, channelType, contactId, 
 }
 
 /** Keep the AI's or system's outgoing message in the conversation. */
-function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderType = "ai_agent", tokens = 0, model = null, meta = null }) {
+function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderType = "ai_agent", tokens = 0, model = null, meta = null, agentId = null }) {
   return query(
-    `INSERT INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error, meta_json)
-     VALUES (?, ?, ?, ?, ?, 'text', ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO chat_messages (institution_id, lead_id, channel_id, wa_message_id, sender_type, message_type, content_text, tokens_used, model_used, is_delivered, delivery_error, meta_json, ai_agent_id)
+     VALUES (?, ?, ?, ?, ?, 'text', ?, ?, ?, ?, ?, ?, ?)`,
     [
       institutionId,
       leadId,
@@ -90,6 +91,7 @@ function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderTyp
       sent.success ? 1 : 0,
       sent.success ? null : String(sent.error).slice(0, 250),
       meta ? JSON.stringify(meta) : null,
+      agentId,
     ]
   );
 }
@@ -98,7 +100,7 @@ function storeOutgoing({ institutionId, leadId, channelId, sent, text, senderTyp
 async function reply({ ctx, text, tokens = 0, model = null, meta = null }) {
   if (!isTest) await sleep(calculateHumanPacingDelay(text, ctx.channelType));
   const sent = await sendText({ institutionId: ctx.institutionId, channelId: ctx.channelId, type: ctx.channelType, to: ctx.contactId, text });
-  await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta });
+  await storeOutgoing({ institutionId: ctx.institutionId, leadId: ctx.leadId, channelId: ctx.channelId, sent, text, tokens, model, meta, agentId: ctx.agentId ?? null });
   emitToTenant(ctx.institutionId, "chat:message", { leadId: ctx.leadId, direction: "outbound", text, sender: "ai_agent" });
   emitEvent({ institutionId: ctx.institutionId, type: "message.sent", data: messagePayload({ contactId: ctx.leadId, channelType: ctx.channelType, direction: "outbound", sender: "ai", text, externalId: sent.messageId ?? null }) });
   return sent;
@@ -168,8 +170,16 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
     .slice(0, -1) // the current message is passed separately
     .map((m) => ({ role: m.sender_type === "customer" ? "user" : "assistant", content: m.content_text }));
 
+  // Which of the shop's AI agents answers (none when the shop has not set any up: the assistant then works as it always did).
+  const routing = await routeConversation({ ctx, lead, text, history }).catch((err) => {
+    logger.error({ err: err.message, leadId: ctx.leadId }, "Agent routing failed; answering without an agent");
+    return null;
+  });
+  const agent = routing?.agent ?? null;
+  ctx.agentId = agent?.id ?? null;
+
   // Taking an order is handled by rules, not by the model: totals, shipping and payment steps are fixed (see chatCommerceService).
-  const commerce = await handleCommerceTurn({ ctx, lead, text, customerName, history }).catch((err) => {
+  const commerce = await handleCommerceTurn({ ctx, lead, text, customerName, history, mode: agent ? agent.capabilities.commerce : "full" }).catch((err) => {
     logger.error({ err: err.message, leadId: ctx.leadId }, "Order handling failed; the normal assistant answers instead");
     return null;
   });
@@ -185,7 +195,7 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
     return { success: true, leadId: ctx.leadId, replied: true, delivered: sent.success, intent: "commerce", commerce: commerce.meta?.commerce };
   }
 
-  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType] });
+  const ai = await generateAiCsResponse({ institutionId: ctx.institutionId, customerName, customerPhone: ctx.channelType === "whatsapp" ? ctx.contactId : "", messageText: text, history, channelLabel: CHANNEL_LABELS[ctx.channelType], agent });
 
   if (ai.usage && (ai.usage.promptTokens !== 0 || ai.usage.completionTokens !== 0 || ai.replyText)) {
     await recordTokenUsage({
@@ -207,7 +217,7 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
     text: ai.replyText,
     tokens: (ai.usage?.promptTokens ?? 0) + (ai.usage?.completionTokens ?? 0),
     model: ai.modelUsed ?? null,
-    meta: { provider: ai.provider ?? null, fallbackUsed: Boolean(ai.fallbackUsed), sources: ai.sources ?? [], correctionIds: ai.correctionIds ?? [] },
+    meta: { provider: ai.provider ?? null, fallbackUsed: Boolean(ai.fallbackUsed), sources: ai.sources ?? [], correctionIds: ai.correctionIds ?? [], agent: agent ? { id: agent.id, name: agent.name } : null },
   });
 
   // The model's own reply already told the customer a person will follow up; now the conversation really goes to one.
@@ -254,7 +264,7 @@ export async function handleInbound({ institutionId, channel = null, channelType
   emitEvent({ institutionId, type: "message.received", data: messagePayload({ contactId: leadId, channelType, direction: "inbound", sender: "customer", type: messageType, text: text || null, externalId: messageId }) });
   if (messageId) markRead({ institutionId, channelId, type: channelType, messageId }).catch(() => {});
 
-  const lead = await queryOne("SELECT id, name, channel_id, assigned_cs_id, handled_by, handoff_at FROM leads WHERE id = ?", [leadId]);
+  const lead = await queryOne("SELECT id, name, status, channel_id, assigned_cs_id, handled_by, handoff_at, ai_agent_id, ai_agent_pinned FROM leads WHERE id = ?", [leadId]);
   ctx.channelId = ctx.channelId ?? lead.channel_id; // replies leave from the account the conversation is on
 
   // Bookkeeping that must never get in the way of answering: which ad brought them, and whether this answers a campaign.

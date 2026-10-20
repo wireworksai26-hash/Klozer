@@ -55,7 +55,9 @@ export function handleCommerceTurn(p) {
   return withLeadLock(p.ctx.leadId, () => run(p));
 }
 
-async function run({ ctx, lead, text, customerName, history }) {
+async function run({ ctx, lead, text, customerName, history, mode = "full" }) {
+  // `mode` comes from the agent handling the chat: "full" takes orders, "service" only answers about existing ones, "off" leaves orders alone
+  if (mode === "off") return null;
   const settings = await getCommerceSettings(ctx.institutionId);
   if (!settings.enabled) return null;
   const inst = await queryOne("SELECT features_json FROM institutions WHERE id = ? AND is_active = 1", [ctx.institutionId]);
@@ -69,6 +71,7 @@ async function run({ ctx, lead, text, customerName, history }) {
     const status = await orderStatus(env);
     if (status) return status;
   }
+  if (mode === "service") return unpaidOrderHelp(env); // no new orders, no order in progress taken over
   if (draft) return continueDraft(env, draft);
 
   const help = await unpaidOrderHelp(env);

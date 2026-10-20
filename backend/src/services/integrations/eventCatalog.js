@@ -9,6 +9,7 @@ export const EVENTS = Object.freeze({
   "contact.updated": "Data kontak diubah (nama, kota, status, catatan)",
   "contact.consent_changed": "Persetujuan promosi sebuah kontak berubah (termasuk berhenti)",
   "conversation.handoff": "Chat diserahkan dari AI ke manusia atau dikembalikan ke AI",
+  "conversation.agent_changed": "Agen AI yang menangani chat berganti",
   "conversation.assigned": "Chat ditugaskan ke seorang agen",
   "order.created": "Pesanan baru (dashboard, chat AI, atau API)",
   "order.paid": "Pesanan dibayar",

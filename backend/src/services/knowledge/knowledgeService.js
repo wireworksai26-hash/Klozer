@@ -148,24 +148,25 @@ export async function deleteDocument(institutionId, id) {
  * MySQL FULLTEXT does the ranking; the interface (text in, scored passages out) is what the rest of the
  * code depends on, so a vector index can replace it later without touching callers.
  */
-export async function searchPassages({ institutionId, text, limit = 4 }) {
+export async function searchPassages({ institutionId, text, limit = 4, documentIds = null }) {
   const terms = toFulltextQuery(text);
   if (!terms) return [];
+  const scoped = Array.isArray(documentIds) && documentIds.length > 0; // an agent limited to some documents
   const rows = await query(
     `SELECT c.id, c.document_id, d.title, c.content, MATCH(c.content) AGAINST(? IN NATURAL LANGUAGE MODE) AS score
        FROM knowledge_chunks c
        JOIN knowledge_documents d ON d.id = c.document_id
-      WHERE c.institution_id = ? AND d.is_active = 1 AND MATCH(c.content) AGAINST(? IN NATURAL LANGUAGE MODE)
+      WHERE c.institution_id = ? AND d.is_active = 1 AND MATCH(c.content) AGAINST(? IN NATURAL LANGUAGE MODE) ${scoped ? "AND c.document_id IN (?)" : ""}
       ORDER BY score DESC, c.id ASC
       LIMIT ?`,
-    [terms, institutionId, terms, limit]
+    scoped ? [terms, institutionId, terms, documentIds, limit] : [terms, institutionId, terms, limit]
   );
   return rows.map((r) => ({ id: r.id, documentId: r.document_id, title: r.title, content: r.content, score: Number(r.score) }));
 }
 
 /** Passages for an AI reply plus the list of documents they came from (kept with the reply for review). */
-export async function retrieveKnowledge({ institutionId, text, limit = 4 }) {
-  const chunks = await searchPassages({ institutionId, text, limit });
+export async function retrieveKnowledge({ institutionId, text, limit = 4, documentIds = null }) {
+  const chunks = await searchPassages({ institutionId, text, limit, documentIds });
   const sources = [...new Map(chunks.map((c) => [c.documentId, { documentId: c.documentId, title: c.title }])).values()];
   return { chunks, sources };
 }

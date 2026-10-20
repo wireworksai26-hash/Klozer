@@ -45,6 +45,8 @@ import * as bv from "../validation/broadcastSchemas.js";
 import * as integrationsCtrl from "../controllers/integrationsController.js";
 import * as openCtrl from "../controllers/openApiController.js";
 import * as iv from "../validation/integrationSchemas.js";
+import * as agentCtrl from "../controllers/agentController.js";
+import * as av from "../validation/agentSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -157,6 +159,20 @@ router.delete("/ads/settings", ...tenant, requireRole(...MANAGERS), h(adsCtrl.di
 router.post("/ads/sync", ...tenant, requireRole(...REPORTING), aiLimiter, validate({ body: bv.syncAdsBody }), h(adsCtrl.sync));
 router.get("/ads/capi", ...tenant, requireRole(...REPORTING), capiOn, h(adsCtrl.capi));
 router.post("/ads/capi/orders/:orderId/send", ...tenant, requireRole(...REPORTING), capiOn, validate({ params: z.object({ orderId: v.idParams.shape.id }) }), h(adsCtrl.sendCapi));
+
+// ==================== AI AGENTS ====================
+const agentsOn = requireFeature("multiAgent", "Multi-Agen AI");
+router.get("/ai/agents", ...tenant, requireRole(...SALES), agentsOn, h(agentCtrl.list));
+router.post("/ai/agents", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ body: av.createAgentBody }), h(agentCtrl.create));
+router.post("/ai/agents/presets", ...tenant, requireRole(...MANAGERS), agentsOn, h(agentCtrl.presets));
+router.get("/ai/agents/settings", ...tenant, requireRole(...SALES), agentsOn, h(agentCtrl.getSettings));
+router.put("/ai/agents/settings", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ body: av.updateAgentSettingsBody }), h(agentCtrl.putSettings));
+router.post("/ai/agents/route-preview", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ body: av.routePreviewBody }), h(agentCtrl.preview));
+router.get("/ai/agents/routing-log", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ query: av.routingLogQuery }), h(agentCtrl.routingLog));
+router.get("/ai/agents/:id", ...tenant, requireRole(...SALES), agentsOn, validate({ params: v.idParams }), h(agentCtrl.get));
+router.put("/ai/agents/:id", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ params: v.idParams, body: av.updateAgentBody }), h(agentCtrl.update));
+router.delete("/ai/agents/:id", ...tenant, requireRole(...MANAGERS), agentsOn, validate({ params: v.idParams }), h(agentCtrl.remove));
+router.put("/leads/:id/agent", ...tenant, requireRole(...SALES), agentsOn, validate({ params: v.idParams, body: av.setConversationAgentBody }), h(agentCtrl.putConversationAgent));
 
 // ==================== API KEYS, WEBHOOKS AND THE PUBLIC API ====================
 const apiOn = requireFeature("publicApi", "API dan Webhook");

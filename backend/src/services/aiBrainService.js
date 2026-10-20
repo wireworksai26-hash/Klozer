@@ -1,4 +1,5 @@
 import { query, queryOne } from "../config/db.js";
+import { agentPersona, buildAgentBlock } from "./agents/agentModel.js";
 import { logger } from "../config/logger.js";
 import { notFound } from "../utils/errors.js";
 import { config } from "../config/env.js";
@@ -479,6 +480,7 @@ export async function generateAiCsResponse({
   address = null,
   hours = null,
   channelLabel = undefined,
+  agent = null,
 }) {
   // 1. Evaluate Guardrails on User Input
   const guardrailCheck = AiGuardrails.evaluate(messageText);
@@ -550,14 +552,15 @@ export async function generateAiCsResponse({
   const features = baseContext.features || {};
   const retrievalText = buildRetrievalQuery(messageText, history);
   const [knowledge, learning] = await Promise.all([
-    features.knowledgeBase === false ? { chunks: [], sources: [] } : safely("knowledge", () => retrieveKnowledge({ institutionId, text: retrievalText }), { chunks: [], sources: [] }),
+    features.knowledgeBase === false ? { chunks: [], sources: [] } : safely("knowledge", () => retrieveKnowledge({ institutionId, text: retrievalText, documentIds: agent?.knowledgeDocumentIds }), { chunks: [], sources: [] }),
     features.aiLearning === false ? { rules: [], examples: [] } : safely("learning", () => retrieveLearning({ institutionId, text: retrievalText }), { rules: [], examples: [] }),
   ]);
 
   const systemPrompt = buildCsSystemPrompt({
     instName,
     instSector,
-    persona: baseContext.persona || {},
+    persona: { ...(baseContext.persona || {}), ...agentPersona(agent) },
+    agentBlock: buildAgentBlock(agent),
     isInitialTurn,
     customerFirstName,
     catalogList,
