@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircleIcon } from "@/components/icons";
-import { annualBreakdown, formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
+import { formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -16,11 +16,8 @@ export default function Pricing() {
     const first = offer.percent > 0;
     const unit = isAnnual ? "tahun" : "bulan";
     const notes = [];
-    if (isAnnual) {
-      notes.push("Dibayar sekali untuk 12 bulan.");
-      notes.push(`Rincian: ${annualBreakdown(offer)}`);
-    }
-    if (first) notes.push(`Diskon ${offer.percent}% hanya untuk ${unit} pertama. ${isAnnual ? "Tahun" : "Bulan"} berikutnya Rp ${formatRupiah(offer.regularTotal)} per ${unit}.`);
+    if (isAnnual) notes.push(`Dibayar sekali untuk 12 bulan (Rp ${formatRupiah(offer.regularMonthly)} x ${offer.months}).`);
+    if (first) notes.push(`Diskon ${offer.percent}% ${unit} pertama, lalu Rp ${formatRupiah(offer.regularTotal)} per ${unit}.`);
     return {
       price: formatRupiah(offer.firstTotal),
       original: first ? formatRupiah(offer.regularTotal) : null,
