@@ -16,6 +16,6 @@ export const markWhatsAppMessageRead = ({ institutionId, channelId = null, messa
 export const downloadWhatsAppMedia = ({ institutionId, channelId = null, mediaId }) => downloadMedia({ institutionId, channelId, type: "whatsapp", mediaId });
 
 /** A WhatsApp customer wrote. `channel` is the account (phone number) that received it, when known. */
-export function processInboundMessage({ institutionId, channel = null, fromPhone, customerName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null }) {
-  return handleInbound({ institutionId, channel, channelType: "whatsapp", contactId: fromPhone, contactName: customerName, text, messageId, messageType, mediaId });
+export function processInboundMessage({ institutionId, channel = null, fromPhone, customerName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null, referral = null }) {
+  return handleInbound({ institutionId, channel, channelType: "whatsapp", contactId: fromPhone, contactName: customerName, text, messageId, messageType, mediaId, referral });
 }

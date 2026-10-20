@@ -5,6 +5,8 @@ import { verifyHmacSignature } from "../utils/hmacValidator.js";
 import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { findActiveByExternalId } from "../services/channels/channelRepository.js";
 import { processInboundMessage } from "../services/whatsappService.js";
+import { applyDeliveryStatus } from "../services/broadcast/deliveryStatus.js";
+import { applyTemplateStatusEvent } from "../services/broadcast/templateService.js";
 
 /** GET /webhooks/whatsapp and /webhooks/meta — Meta subscription handshake. */
 export function verifyWhatsAppWebhook(req, res) {
@@ -31,8 +33,33 @@ function extractMessages(body) {
           type: msg.type,
           text: msg.type === "text" ? msg.text?.body || "" : "",
           mediaId: msg.image?.id || msg.document?.id || null,
+          referral: msg.referral ?? null,
         });
       }
+    }
+  }
+  return out;
+}
+
+/** What happened to messages we sent (sent, delivered, read, failed). */
+export function extractStatuses(body) {
+  const out = [];
+  for (const entry of body?.entry || []) {
+    for (const change of entry.changes || []) {
+      for (const s of change.value?.statuses || []) out.push(s);
+    }
+  }
+  return out;
+}
+
+/** Meta finished reviewing a message template. `entry.id` is the WhatsApp Business Account. */
+export function extractTemplateEvents(body) {
+  const out = [];
+  for (const entry of body?.entry || []) {
+    for (const change of entry.changes || []) {
+      if (change.field !== "message_template_status_update") continue;
+      const v = change.value || {};
+      out.push({ wabaId: String(entry.id ?? ""), metaTemplateId: v.message_template_id, name: v.message_template_name, language: v.message_template_language, event: v.event, reason: v.reason });
     }
   }
   return out;
@@ -63,6 +90,13 @@ export async function handleWhatsAppInbound(req, res) {
 
   res.status(200).json({ status: "EVENT_RECEIVED" });
 
+  for (const status of extractStatuses(req.body)) {
+    applyDeliveryStatus(status).catch((err) => logger.error({ err: err.message, messageId: status.id }, "Delivery status not applied"));
+  }
+  for (const event of extractTemplateEvents(req.body)) {
+    applyTemplateStatusEvent(event).catch((err) => logger.error({ err: err.message, template: event.name }, "Template status not applied"));
+  }
+
   for (const msg of extractMessages(req.body)) {
     (async () => {
       const channel = await findActiveByExternalId("whatsapp", msg.phoneNumberId);
@@ -79,6 +113,7 @@ export async function handleWhatsAppInbound(req, res) {
         messageId: msg.id,
         messageType: msg.type === "text" ? "text" : msg.type === "audio" ? "voice_note" : msg.type === "image" ? "image" : msg.type === "document" ? "document_receipt" : "text",
         mediaId: msg.mediaId,
+        referral: msg.referral,
       });
     })().catch((err) => logger.error({ err: err.message, messageId: msg.id }, "Inbound WhatsApp processing failed"));
   }

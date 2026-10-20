@@ -18,7 +18,7 @@ import { analyzeOrderMessage } from "./commerceNlu.js";
 import { clearShipping, applyItemOperations, missingRecipientFields, nextStep, priceLines, subtotalOf } from "./draftModel.js";
 import { closeDraft, getActiveDraft, openDraft, saveDraft } from "./draftRepository.js";
 import * as say from "./messages.js";
-import { claimsPayment, detectPaymentChoice, isAffirmative, isBuyIntent, isCancel, isOptOut, isOrderStatusQuestion, parseChoiceNumber } from "./purchaseIntent.js";
+import { claimsPayment, detectPaymentChoice, isAffirmative, isBuyIntent, isCancel, isOrderStatusQuestion, parseChoiceNumber } from "./purchaseIntent.js";
 
 /**
  * Taking an order in chat. The conversation walks a draft through
@@ -62,8 +62,6 @@ async function run({ ctx, lead, text, customerName, history }) {
   if (!inst || parseJsonColumn(inst.features_json).chatCommerce === false) return null;
   const env = { ctx, lead, settings, text, customerName, history };
 
-  if (isOptOut(text)) return optOut(env);
-
   const draft = await getActiveDraft(ctx.institutionId, ctx.leadId);
   const confirming = draft?.status === "awaiting_confirmation";
 
@@ -80,12 +78,6 @@ async function run({ ctx, lead, text, customerName, history }) {
 }
 
 // ---------------------------------------------------------------- small answers
-
-async function optOut({ ctx }) {
-  await query("UPDATE leads SET followup_opt_out = 1 WHERE id = ? AND institution_id = ?", [ctx.leadId, ctx.institutionId]);
-  await cancelPending({ leadId: ctx.leadId, status: "cancelled" });
-  return { replyText: say.optOutText(), meta: { commerce: "opt_out" } };
-}
 
 async function orderStatus({ ctx }) {
   const order = await queryOne("SELECT * FROM orders WHERE institution_id = ? AND lead_id = ? ORDER BY id DESC LIMIT 1", [ctx.institutionId, ctx.leadId]);

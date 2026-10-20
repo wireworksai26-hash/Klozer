@@ -94,7 +94,7 @@ export function transferReminderText({ orderNumber, total, accounts }) {
 
 export const askProofText = () => "Siap kak, boleh kirim foto bukti transfernya di sini ya, nanti kami cek 🙏";
 
-export const optOutText = () => "Siap kak, aku tidak akan mengirim pengingat lagi. Kalau butuh apa-apa, chat saja ya 🙏";
+export const optOutText = () => "Siap kak, aku tidak akan mengirim pengingat lagi, termasuk promo. Kalau butuh apa-apa, chat saja ya 🙏";
 
 const ORDER_STATUS_TEXT = {
   waiting_payment: "menunggu pembayaran",

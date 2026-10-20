@@ -53,6 +53,33 @@ export const whatsappAdapter = {
     }
   },
 
+  /**
+   * Send an approved template: the only message a business may start a conversation with, or send outside the
+   * customer's 24-hour window. `errorCode` is Meta's, so callers can tell a rate limit from a bad number.
+   * @returns {Promise<{ success: boolean, messageId?: string|null, error?: string, errorCode?: number|null }>}
+   */
+  async sendTemplate({ channel, to, template }) {
+    const recipient = normalizePhone(to);
+    if (!recipient) return { success: false, error: "Nomor tujuan tidak valid." };
+    try {
+      const { ok, data } = await graphPost(channel, {
+        recipient_type: "individual",
+        to: recipient,
+        type: "template",
+        template: { name: template.name, language: { code: template.language }, ...(template.components?.length ? { components: template.components } : {}) },
+      });
+      if (!ok) {
+        const code = data?.error?.code ?? null;
+        logger.warn({ channel: channel.id, code }, "WhatsApp rejected a template message");
+        return { success: false, error: data?.error?.error_data?.details || data?.error?.message || "Ditolak oleh WhatsApp Cloud API.", errorCode: code };
+      }
+      return { success: true, messageId: data?.messages?.[0]?.id ?? null };
+    } catch (err) {
+      logger.error({ err: err.message, channel: channel.id }, "WhatsApp template send failed");
+      return { success: false, error: "Gagal menghubungi WhatsApp Cloud API.", errorCode: null, network: true };
+    }
+  },
+
   async markRead({ channel, messageId }) {
     try {
       const { ok } = await graphPost(channel, { status: "read", message_id: messageId });
@@ -94,8 +121,8 @@ export const whatsappAdapter = {
   },
 
   /** Nothing to look up when connecting: the owner gives the phone number id and token; "test" proves them later. */
-  async resolveConnection({ externalId, displayHandle = null, accessToken }) {
-    return { externalId, displayHandle, accessToken, config: null };
+  async resolveConnection({ externalId, displayHandle = null, accessToken, wabaId = null }) {
+    return { externalId, displayHandle, accessToken, config: wabaId ? { wabaId } : null };
   },
 
   /** Ask Meta about the number behind this token, to prove the credentials work. */

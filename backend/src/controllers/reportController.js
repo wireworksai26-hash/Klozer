@@ -1,9 +1,10 @@
 import { query } from "../config/db.js";
+import { recentRoas } from "../services/ads/roasReport.js";
 
 /**
  * GET /reports/summary — all figures are aggregated from the database for the
- * caller's tenant. Metrics that need data we do not collect (ad spend, response
- * time) are returned as null rather than invented.
+ * caller's tenant. Metrics that need data we do not collect (response time) are
+ * returned as null rather than invented; ad ROAS is null until ad spend exists.
  */
 export async function getSummaryReport(req, res) {
   const tenantId = req.tenantId;
@@ -45,7 +46,7 @@ export async function getSummaryReport(req, res) {
       paidOrders,
       closingRatePercent: totalOrders > 0 ? Math.round((paidOrders / totalOrders) * 100) : 0,
       totalGrossProfit: Number(totals.totalGrossProfit),
-      metaAdRoas: null,
+      metaAdRoas: await recentRoas(tenantId), // last 30 days; null until ad spend is entered or synced
       csPerformance: csPerformance.map((r) => ({
         id: r.id,
         name: r.name,

@@ -118,7 +118,7 @@ export async function createChannel({ institutionId, type, name, externalId, dis
 }
 
 /** Change a channel. A field left undefined is untouched; `accessToken` replaces the stored token. */
-export async function updateChannel({ institutionId, id, name, displayHandle, accessToken, aiEnabled, isActive, isDefault, config }) {
+export async function updateChannel({ institutionId, id, name, displayHandle, accessToken, aiEnabled, isActive, isDefault, config, wabaId }) {
   await transaction(async (tx) => {
     const row = await tx.queryOne("SELECT id, type, is_default, config_json FROM channels WHERE id = ? AND institution_id = ? FOR UPDATE", [id, institutionId]);
     if (!row) throw notFound("Kanal tidak ditemukan.");
@@ -136,7 +136,10 @@ export async function updateChannel({ institutionId, id, name, displayHandle, ac
     if (isActive !== undefined) set("is_active", isActive ? 1 : 0);
     // appearance and similar settings are merged into what is stored, so secrets kept there survive an edit
     if (config !== undefined && row.type !== "webchat") throw badRequest("Pengaturan tampilan hanya untuk live chat website.", { code: "CONFIG_NOT_SUPPORTED" });
-    if (config !== undefined) set("config_json", JSON.stringify({ ...(parseJson(row.config_json) || {}), ...config }));
+    if (wabaId !== undefined && row.type !== "whatsapp") throw badRequest("ID WhatsApp Business Account hanya untuk kanal WhatsApp.", { code: "CONFIG_NOT_SUPPORTED" });
+    if (config !== undefined || wabaId !== undefined) {
+      set("config_json", JSON.stringify({ ...(parseJson(row.config_json) || {}), ...(config ?? {}), ...(wabaId !== undefined ? { wabaId } : {}) }));
+    }
 
     if (isDefault === true) {
       await tx.query("UPDATE channels SET is_default = 0 WHERE institution_id = ? AND type = ?", [institutionId, row.type]);

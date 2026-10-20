@@ -38,6 +38,9 @@ import * as lv from "../validation/learningSchemas.js";
 import * as cv from "../validation/channelSchemas.js";
 import * as commerceCtrl from "../controllers/commerceController.js";
 import * as mv from "../validation/commerceSchemas.js";
+import * as broadcastCtrl from "../controllers/broadcastController.js";
+import * as adsCtrl from "../controllers/adsController.js";
+import * as bv from "../validation/broadcastSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -115,6 +118,41 @@ router.post("/commerce/drafts/:id/cancel", ...tenant, requireRole(...SALES), com
 router.get("/commerce/followups", ...tenant, requireRole(...MANAGERS), commerceOn, h(commerceCtrl.followups));
 router.post("/commerce/followups/:id/cancel", ...tenant, requireRole(...MANAGERS), commerceOn, validate({ params: v.idParams }), h(commerceCtrl.cancelFollowup));
 router.put("/leads/:id/followup-opt-out", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: mv.followupOptOutBody }), h(commerceCtrl.setOptOut));
+
+// ==================== BROADCAST, CONSENT AND ADS ====================
+const blastOn = requireFeature("csBlast", "Broadcast");
+const capiOn = requireFeature("metaCapi", "Meta Conversions API");
+router.get("/broadcast/templates", ...tenant, requireRole(...MANAGERS), blastOn, validate({ query: bv.listTemplatesQuery }), h(broadcastCtrl.templates));
+router.post("/broadcast/templates", ...tenant, requireRole(...MANAGERS), blastOn, validate({ body: bv.createTemplateBody }), h(broadcastCtrl.createTemplateHandler));
+router.post("/broadcast/templates/sync", ...tenant, requireRole(...MANAGERS), blastOn, validate({ body: bv.syncTemplatesBody }), h(broadcastCtrl.syncTemplatesHandler));
+router.get("/broadcast/templates/:id", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.template));
+router.delete("/broadcast/templates/:id", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.removeTemplate));
+router.get("/broadcast/settings", ...tenant, requireRole(...MANAGERS), blastOn, h(broadcastCtrl.getSettings));
+router.put("/broadcast/settings", ...tenant, requireRole(...MANAGERS), blastOn, validate({ body: bv.updateBroadcastSettingsBody }), h(broadcastCtrl.putSettings));
+router.post("/broadcast/audience/preview", ...tenant, requireRole(...MANAGERS), blastOn, validate({ body: bv.previewAudienceBody }), h(broadcastCtrl.preview));
+router.get("/broadcast/campaigns", ...tenant, requireRole(...MANAGERS), blastOn, h(broadcastCtrl.campaigns));
+router.post("/broadcast/campaigns", ...tenant, requireRole(...MANAGERS), blastOn, validate({ body: bv.createCampaignBody }), h(broadcastCtrl.createCampaignHandler));
+router.get("/broadcast/campaigns/:id", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.report));
+router.post("/broadcast/campaigns/:id/launch", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams, body: bv.launchCampaignBody }), h(broadcastCtrl.launch));
+router.post("/broadcast/campaigns/:id/pause", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.pause));
+router.post("/broadcast/campaigns/:id/resume", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.resume));
+router.post("/broadcast/campaigns/:id/cancel", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams }), h(broadcastCtrl.cancel));
+router.get("/broadcast/campaigns/:id/recipients", ...tenant, requireRole(...MANAGERS), blastOn, validate({ params: v.idParams, query: bv.listRecipientsQuery }), h(broadcastCtrl.recipients));
+router.post("/broadcast/test", ...tenant, requireRole(...MANAGERS), blastOn, aiLimiter, validate({ body: bv.testSendBody }), h(broadcastCtrl.testSend));
+router.get("/broadcast/consent/summary", ...tenant, requireRole(...MANAGERS), h(broadcastCtrl.consent));
+router.post("/broadcast/consent/import", ...tenant, requireRole(...MANAGERS), validate({ body: bv.importConsentBody }), h(broadcastCtrl.importConsentHandler));
+router.put("/leads/:id/consent", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: bv.setConsentBody }), h(broadcastCtrl.putConsent));
+
+router.get("/ads/roas", ...tenant, requireRole(...REPORTING), validate({ query: bv.roasQuery }), h(adsCtrl.roas));
+router.get("/ads/spend", ...tenant, requireRole(...REPORTING), validate({ query: bv.listSpendQuery }), h(adsCtrl.spend));
+router.post("/ads/spend", ...tenant, requireRole(...REPORTING), validate({ body: bv.upsertSpendBody }), h(adsCtrl.putSpend));
+router.delete("/ads/spend/:id", ...tenant, requireRole(...REPORTING), validate({ params: v.idParams }), h(adsCtrl.removeSpend));
+router.get("/ads/settings", ...tenant, requireRole(...REPORTING), h(adsCtrl.settings));
+router.put("/ads/settings", ...tenant, requireRole(...MANAGERS), validate({ body: bv.adsSettingsBody }, { rawFields: ["accessToken"] }), h(adsCtrl.putSettings));
+router.delete("/ads/settings", ...tenant, requireRole(...MANAGERS), h(adsCtrl.disconnect));
+router.post("/ads/sync", ...tenant, requireRole(...REPORTING), aiLimiter, validate({ body: bv.syncAdsBody }), h(adsCtrl.sync));
+router.get("/ads/capi", ...tenant, requireRole(...REPORTING), capiOn, h(adsCtrl.capi));
+router.post("/ads/capi/orders/:orderId/send", ...tenant, requireRole(...REPORTING), capiOn, validate({ params: z.object({ orderId: v.idParams.shape.id }) }), h(adsCtrl.sendCapi));
 
 // ==================== CHANNELS & ROUTING ====================
 router.get("/channels", ...tenant, requireRole(...SALES), h(channelCtrl.list));

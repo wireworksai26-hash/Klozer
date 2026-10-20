@@ -31,6 +31,7 @@ export const createChannelBody = z
     name: text(80),
     externalId: z.string().trim().regex(/^[A-Za-z0-9_.-]{3,100}$/, "ID akun tidak valid").optional(),
     pageId: z.string().trim().regex(/^\d{5,30}$/, "ID Halaman Facebook harus berupa angka").optional(),
+    wabaId: z.string().trim().regex(/^\d{5,30}$/, "ID WhatsApp Business Account harus berupa angka").optional(),
     displayHandle: text(100).nullable().optional(),
     accessToken: text(2000, 10).optional(),
     aiEnabled: z.boolean().optional(),
@@ -41,6 +42,7 @@ export const createChannelBody = z
       if (!body[field]) ctx.addIssue({ code: "custom", path: [field], message: "wajib diisi untuk jenis kanal ini" });
     }
     if (body.config && body.type !== "webchat") ctx.addIssue({ code: "custom", path: ["config"], message: "hanya untuk live chat website" });
+    if (body.wabaId && body.type !== "whatsapp") ctx.addIssue({ code: "custom", path: ["wabaId"], message: "hanya untuk WhatsApp" });
   });
 
 export const updateChannelBody = z
@@ -52,6 +54,7 @@ export const updateChannelBody = z
     isActive: z.boolean().optional(),
     isDefault: z.boolean().optional(),
     config: webchatConfig.optional(),
+    wabaId: z.string().trim().regex(/^\d{5,30}$/, "ID WhatsApp Business Account harus berupa angka").optional(),
   })
   .refine(hasChange, "tidak ada yang diubah");
 

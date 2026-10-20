@@ -11,6 +11,11 @@ import { handBack, startHandoff } from "./handoff/handoffService.js";
 import { handleCustomerPaymentProof } from "./paymentProofService.js";
 import { handleCommerceTurn } from "./commerce/chatCommerceService.js";
 import { onCustomerActivity } from "./followup/followupService.js";
+import { recordAdReferral } from "./ads/attribution.js";
+import { recordOptOutFromChat } from "./broadcast/consentService.js";
+import { markBroadcastReply } from "./broadcast/deliveryStatus.js";
+import { isOptOut } from "./commerce/purchaseIntent.js";
+import { optOutText } from "./commerce/messages.js";
 import { ensureAssigned } from "./routing/assignmentService.js";
 import { getRoutingSettings } from "./routing/routingSettings.js";
 import { assertTokenQuota, estimateTokens, recordTokenUsage } from "./tokenService.js";
@@ -215,8 +220,9 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
  * @param {string} [p.channelType]
  * @param {string} p.contactId the customer's id on that channel (a phone number for WhatsApp)
  * @param {string} [p.messageType] text | image | document_receipt | voice_note
+ * @param {object|null} [p.referral] the Click-to-WhatsApp ad this first message came from, when there is one
  */
-export async function handleInbound({ institutionId, channel = null, channelType = "whatsapp", contactId, contactName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null }) {
+export async function handleInbound({ institutionId, channel = null, channelType = "whatsapp", contactId, contactName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null, referral = null }) {
   const contact = getAdapter(channelType).normalizeContactId(contactId);
   if (!contact) return { success: false, reason: "invalid_phone" };
   const channelId = channel?.id ?? null;
@@ -245,6 +251,10 @@ export async function handleInbound({ institutionId, channel = null, channelType
   const lead = await queryOne("SELECT id, name, channel_id, assigned_cs_id, handled_by, handoff_at FROM leads WHERE id = ?", [leadId]);
   ctx.channelId = ctx.channelId ?? lead.channel_id; // replies leave from the account the conversation is on
 
+  // Bookkeeping that must never get in the way of answering: which ad brought them, and whether this answers a campaign.
+  if (referral) await recordAdReferral({ institutionId, leadId, referral, leadIsNew: created }).catch((err) => logger.warn({ err: err.message, leadId }, "Ad attribution failed"));
+  await markBroadcastReply({ leadId, institutionId }).catch((err) => logger.warn({ err: err.message, leadId }, "Broadcast reply not recorded"));
+
   // The customer is talking: reminders planned earlier are moot (and restart from now if something is still open).
   await onCustomerActivity({ institutionId, leadId }).catch((err) => logger.warn({ err: err.message, leadId }, "Reminder bookkeeping failed"));
   const settings = await getRoutingSettings(institutionId);
@@ -269,6 +279,14 @@ export async function handleInbound({ institutionId, channel = null, channelType
     }
     emitToTenant(institutionId, "chat:needs_human", { leadId, reason: "non_text_message" });
     return { success: true, leadId, replied: false, reason: "non_text" };
+  }
+
+  // "stop" ends reminders and promotions for good, whoever is answering and whatever else is going on
+  if (isOptOut(text)) {
+    await recordOptOutFromChat({ institutionId, leadId });
+    if (!aiAllowed || humanHolding) return { success: true, leadId, replied: false, reason: "opted_out" };
+    const sent = await reply({ ctx, text: optOutText() });
+    return { success: true, leadId, replied: true, delivered: sent.success, intent: "opt_out" };
   }
 
   if (!aiAllowed) return { success: true, leadId, replied: false, reason: "ai_disabled" };
