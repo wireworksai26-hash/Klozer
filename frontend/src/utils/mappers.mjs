@@ -207,6 +207,15 @@ export function leadFromApi(l, now = Date.now()) {
     totalSpent: 0,
     lastInteraction: relativeTimeId(l.last_contacted_at || l.created_at, now),
     lastInteractionAt: l.last_contacted_at || l.created_at,
+    // where the chat happens and who answers it (omnichannel, hand-off and agents)
+    channelType: l.channel_type || "whatsapp",
+    channelId: l.channel_id ?? null,
+    handledBy: l.handled_by || "ai",
+    handoffReason: l.handoff_reason || null,
+    aiAgentId: l.ai_agent_id ?? null,
+    aiAgentPinned: Boolean(l.ai_agent_pinned),
+    marketingConsent: l.marketing_consent || "unknown",
+    followupOptOut: Boolean(l.followup_opt_out),
   };
 }
 
@@ -276,6 +285,11 @@ export const DEFAULT_MODULES = Object.freeze({
   multiCs: true,
   knowledgeBase: true,
   aiLearning: true,
+  multiAgent: true,
+  agentTools: true,
+  tasks: true,
+  chatCommerce: true,
+  publicApi: true,
 });
 
 const TIER_LABELS = { starter: "Starter", pro: "Pro Plan", enterprise: "Enterprise" };

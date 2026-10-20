@@ -95,12 +95,22 @@ export function DashboardProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   // Bumps whenever a chat message arrives, so the inbox can refetch the open conversation.
   const [chatEvent, setChatEvent] = useState(null);
+  // Task counts for the menu badge, and a bump whenever a task changes so an open task list can refetch.
+  const [taskSummary, setTaskSummary] = useState(null);
+  const [taskEvent, setTaskEvent] = useState(null);
+  // Bumps when the team prices or credits a token top up, so the top up screen can refetch.
+  const [topupEvent, setTopupEvent] = useState(null);
 
   // Latest team list for handlers that run after await (kept in a ref so they never read a stale closure).
   const teamRef = useRef([]);
   useEffect(() => {
     teamRef.current = teamMembers;
   }, [teamMembers]);
+  // The same for the catalog: a stock change that arrives over the socket is compared with the number on screen.
+  const productsRef = useRef([]);
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   const notify = useCallback((type, message) => setNotice({ type, message, at: Date.now() }), []);
   const dismissNotice = useCallback(() => setNotice(null), []);
@@ -151,6 +161,7 @@ export function DashboardProvider({ children }) {
     setReportSummary(null);
     setMyPerformance(null);
     setTokenBalance(null);
+    setTaskSummary(null);
     setActiveInstitutionIdState(null);
     setNotifications([]);
   }, []);
@@ -183,6 +194,15 @@ export function DashboardProvider({ children }) {
     return () => setUnauthorizedHandler(null);
   }, [endSession]);
 
+  const refreshTaskSummary = useCallback(async () => {
+    try {
+      const res = await api.get("/tasks", { query: { limit: 1 } });
+      setTaskSummary(res.summary ?? null);
+    } catch {
+      setTaskSummary(null); // the package has no tasks, or this role cannot read them
+    }
+  }, []);
+
   // ---------------------------------------------------------------- realtime (Socket.io)
   const pushNotification = useCallback((item) => {
     setNotifications((prev) => [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, read: false, at: Date.now(), ...item }, ...prev].slice(0, 30));
@@ -205,6 +225,52 @@ export function DashboardProvider({ children }) {
         });
       }
     });
+    // Stock and orders move without anyone reloading: an order taken by the AI in chat, a cancellation, an edit by a
+    // colleague. The server says which products changed and what their stock is now, so the number on screen is the truth.
+    socket.on("stock:changed", (evt) => {
+      const changed = Array.isArray(evt?.products) ? evt.products : [];
+      if (!changed.length) return;
+      const before = new Map(productsRef.current.map((p) => [p.dbId, p.stock]));
+      setProducts((prev) => prev.map((p) => {
+        const next = changed.find((c) => c.id === p.dbId);
+        return next ? { ...p, stock: next.stock } : p;
+      }));
+      for (const c of changed) {
+        const was = before.get(c.id);
+        if (was !== undefined && was > c.lowStockThreshold && c.stock <= c.lowStockThreshold) {
+          pushNotification({ type: "security", title: c.stock <= 0 ? "Stok habis" : "Stok menipis", desc: `${c.name}: sisa ${c.stock}`, link: "/dashboard/products" });
+        }
+      }
+    });
+    let ordersTimer = null;
+    const reloadOrders = () => {
+      clearTimeout(ordersTimer);
+      ordersTimer = setTimeout(() => {
+        fetchAll("/orders").then((rows) => setOrders(rows.map(orderFromApi))).catch(() => {});
+      }, 400);
+    };
+    socket.on("order:created", (evt) => {
+      reloadOrders();
+      if (evt?.createdVia === "chat") pushNotification({ type: "chat", title: "Pesanan baru dari chat", desc: "AI mencatat pesanan pelanggan. Stok sudah dikurangi.", link: "/dashboard/orders" });
+    });
+    socket.on("order:updated", reloadOrders);
+    socket.on("topup:updated", () => {
+      setTopupEvent({ at: Date.now() });
+      api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)).catch(() => {});
+    });
+
+    const taskChanged = () => {
+      setTaskEvent({ at: Date.now() });
+      refreshTaskSummary();
+    };
+    for (const name of ["task:created", "task:updated", "task:deleted"]) socket.on(name, taskChanged);
+    socket.on("task:assigned", (task) => {
+      pushNotification({ type: "chat", title: "Tugas baru untuk Anda", desc: String(task?.title || "").slice(0, 140), link: "/dashboard/tasks" });
+    });
+    socket.on("task:overdue", (task) => {
+      taskChanged();
+      pushNotification({ type: "security", title: "Tugas melewati tenggat", desc: String(task?.title || "").slice(0, 140), link: "/dashboard/tasks" });
+    });
     socket.on("chat:needs_human", (evt) => {
       const reasons = {
         non_text_message: "Pelanggan mengirim gambar/suara. AI tidak membalas lampiran.",
@@ -216,10 +282,11 @@ export function DashboardProvider({ children }) {
     });
 
     return () => {
+      clearTimeout(ordersTimer);
       socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [status, pushNotification]);
+  }, [status, pushNotification, refreshTaskSummary]);
 
   const markNotificationRead = (id) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   const markAllNotificationsRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -262,12 +329,13 @@ export function DashboardProvider({ children }) {
         user.role === "cs" ? api.get("/reports/my-performance").then((r) => setMyPerformance(r.data)) : Promise.resolve(),
         api.get("/whatsapp/status").then((s) => setWhatsappStatus(s)),
         api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)),
+        user.role === "superadmin" ? Promise.resolve() : refreshTaskSummary(),
       ]);
       const failed = results.filter((r) => r.status === "rejected" && r.reason?.status !== 403 && r.reason?.status !== 401);
       if (failed.length) notify("error", tRef.current("Sebagian data gagal dimuat: {reason}", { reason: failed[0].reason?.message || tRef.current("kesalahan jaringan") }));
       setDataLoading(false);
     },
-    [loadTeam, loadPersona, notify]
+    [loadTeam, loadPersona, notify, refreshTaskSummary]
   );
 
   const applyUser = useCallback((user, institution) => {
@@ -814,6 +882,10 @@ export function DashboardProvider({ children }) {
     markNotificationRead,
     markAllNotificationsRead,
     chatEvent,
+    taskSummary,
+    taskEvent,
+    topupEvent,
+    refreshTaskSummary,
     // tenants
     institutions,
     activeInstitution,

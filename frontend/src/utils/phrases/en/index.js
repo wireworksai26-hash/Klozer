@@ -28,6 +28,17 @@ import server_metrics from "./server-metrics.js";
 import subscriptions from "./subscriptions.js";
 import token_usage from "./token-usage.js";
 import documentation from "./documentation.js";
+import ui from "./ui.js";
+import nav from "./nav.js";
+import tasks from "./tasks.js";
+import agents from "./agents.js";
+import knowledge from "./knowledge.js";
+import channels from "./channels.js";
+import commerce from "./commerce.js";
+import broadcast from "./broadcast.js";
+import ads from "./ads.js";
+import integrations from "./integrations.js";
+import topup from "./topup.js";
 
 export const enPhrases = {
   ...documentation,
@@ -58,4 +69,15 @@ export const enPhrases = {
   ...coming_soon,
   ...shell,
   ...common,
+  ...ui,
+  ...nav,
+  ...tasks,
+  ...agents,
+  ...knowledge,
+  ...channels,
+  ...commerce,
+  ...broadcast,
+  ...ads,
+  ...integrations,
+  ...topup,
 };

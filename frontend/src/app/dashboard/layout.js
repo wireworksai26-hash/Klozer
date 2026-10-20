@@ -14,7 +14,7 @@ import {
 // Modules whose screens are interface previews: they work on sample data held in the page and are
 // not saved to the server yet. A thin notice keeps that visible during client demos.
 const PREVIEW_ROUTES = [
-  "templates", "labels", "label-stats", "blasting", "credits", "blocked-contacts", "internal-chat", "instagram", "escalation",
+  "templates", "labels", "label-stats", "credits", "blocked-contacts", "internal-chat", "escalation",
   "bookings", "pic-roster", "warehouses", "etalase", "doa-knowledge",
   "superadmin/ai-scenarios", "superadmin/blasting", "superadmin/exports", "superadmin/leads", "superadmin/transactions",
 ].map((p) => `/dashboard/${p}`);
@@ -45,6 +45,7 @@ function DashboardContent({ children }) {
     markNotificationRead,
     markAllNotificationsRead,
     whatsappStatus,
+    taskSummary,
   } = useDashboard();
 
   // Notices auto-dismiss
@@ -77,9 +78,10 @@ function DashboardContent({ children }) {
     return pathname === itemHref && !searchParams.get("tab");
   };
 
+  const taskBadge = taskSummary?.mine || 0;
   const rolesConfig = useMemo(
-    () => buildRolesConfig({ t, language }),
-    [t, language]
+    () => buildRolesConfig({ t, language, badges: { tasks: taskBadge } }),
+    [t, language, taskBadge]
   );
   const baseRoleConfig = rolesConfig[role] || rolesConfig.agent;
 

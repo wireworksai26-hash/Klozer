@@ -1,16 +1,23 @@
-// Subscription prices in rupiah per month. Annual is billed once a year (12 x the monthly figure).
+// Subscription prices in rupiah. The regular price is per month; an annual plan is paid once for 12 months (price x 12).
 // Used by the pricing section and the /bayar page so the two never disagree.
 export const PLAN_PRICES = {
-  Starter: { monthly: 199000, annual: 159000 },
-  Pro: { monthly: 499000, annual: 399000 },
+  Starter: { monthly: 449000 },
+  Pro: { monthly: 599000 },
 };
 
-// Running promotion. To end it: set `active` to false, or set `endsAt` to an ISO date
+export const ANNUAL_MONTHS = 12;
+
+// Introductory discount in percent. It applies to the first period only: the first month of a monthly plan, the
+// first year of an annual plan. Renewals are charged the regular price.
+export const FIRST_PERIOD_DISCOUNT = {
+  Starter: { monthly: 10, annual: 15 },
+  Pro: { monthly: 30, annual: 20 },
+};
+
+// To stop offering the introductory discount: set `active` to false, or set `endsAt` to an ISO date
 // (e.g. "2026-11-30T23:59:59+07:00") and it switches off by itself after that moment.
 export const PROMO = {
   active: true,
-  plan: "Pro",
-  percent: 30,
   endsAt: null,
 };
 
@@ -21,21 +28,29 @@ export function isPromoRunning(now = new Date()) {
   return !PROMO.endsAt || now < new Date(PROMO.endsAt);
 }
 
-// Discounted prices are rounded down to the nearest Rp 1.000 so they read as clean numbers.
-const afterDiscount = (price) => Math.floor((price * (100 - PROMO.percent)) / 100 / 1000) * 1000;
-
 /**
- * Price of a plan for a billing period ("monthly" | "annual"), per month.
- * `original` is only set while a promotion applies to this plan (render it struck through).
+ * What a plan costs for a billing period ("monthly" | "annual"), exact to the rupiah (no rounding to round numbers,
+ * because this is what the customer is charged).
+ *  - regularMonthly: the monthly price
+ *  - months: how many months one payment covers (1 or 12)
+ *  - regularTotal: regularMonthly x months, the price from the second period on
+ *  - firstTotal: what the first payment is (regularTotal minus the introductory discount)
+ *  - percent: the introductory discount (0 when none applies), saving: how much it takes off
  */
-export function planPrice(name, period, now = new Date()) {
-  const base = PLAN_PRICES[name]?.[period];
-  if (base === undefined) return null;
-  if (name === PROMO.plan && isPromoRunning(now)) return { final: afterDiscount(base), original: base, percent: PROMO.percent };
-  return { final: base, original: null, percent: 0 };
+export function planOffer(name, period, now = new Date()) {
+  const regularMonthly = PLAN_PRICES[name]?.monthly;
+  if (regularMonthly === undefined || !["monthly", "annual"].includes(period)) return null;
+  const months = period === "annual" ? ANNUAL_MONTHS : 1;
+  const regularTotal = regularMonthly * months;
+  const percent = isPromoRunning(now) ? FIRST_PERIOD_DISCOUNT[name]?.[period] ?? 0 : 0;
+  const firstTotal = Math.round((regularTotal * (100 - percent)) / 100);
+  return { period, months, regularMonthly, regularTotal, firstTotal, percent, saving: regularTotal - firstTotal };
 }
 
-/** "hingga 30 November 2026" for the promo banner, or "" when the promo has no end date. */
+/** "599.000 x 12 bulan = 7.188.000": the yearly price spelled out, for the pricing section and the payment page. */
+export const annualBreakdown = (offer) => `Rp ${formatRupiah(offer.regularMonthly)} x ${offer.months} bulan = Rp ${formatRupiah(offer.regularTotal)}`;
+
+/** "hingga 30 November 2026" when the introductory discount has an end date, or "". */
 export function promoUntilText() {
   if (!PROMO.endsAt) return "";
   return `hingga ${new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date(PROMO.endsAt))}`;
@@ -58,15 +73,20 @@ export const FEATURE_LIST = [
   { key: "antiFraud", label: "Anti-Fraud Bukti Transfer", menu: [] },
   { key: "metaCapi", label: "Meta Ads CAPI Tracking", menu: [] },
   { key: "multiCs", label: "Multi-CS & Chat Internal", menu: ["/dashboard/internal-chat"] },
-  { key: "knowledgeBase", label: "Basis Pengetahuan AI (SOP & dokumen)", menu: [] },
-  { key: "aiLearning", label: "Evaluasi & Pembelajaran AI", menu: [] },
+  { key: "knowledgeBase", label: "Basis Pengetahuan AI (SOP & dokumen)", menu: ["/dashboard/knowledge"] },
+  { key: "aiLearning", label: "Evaluasi & Pembelajaran AI", menu: ["/dashboard/ai-evaluation"] },
+  { key: "multiAgent", label: "Multi-Agen AI", menu: ["/dashboard/agents"] },
+  { key: "agentTools", label: "Alat untuk Agen AI (cek stok, buat tugas, oper chat)", menu: [] },
+  { key: "tasks", label: "Tugas Tim", menu: ["/dashboard/tasks"] },
+  { key: "chatCommerce", label: "Pesanan Langsung di Chat", menu: ["/dashboard/chat-commerce"] },
+  { key: "publicApi", label: "API Key dan Webhook", menu: ["/dashboard/integrations"] },
 ];
 
 const only = (keys) => Object.fromEntries(FEATURE_LIST.map(({ key }) => [key, keys.includes(key)]));
 
 // What each package includes (follows the pricing table). The superadmin can still switch single features per tenant.
-const STARTER_FEATURES = ["personaAi", "qris", "stockManagement", "printReceipt"];
-const PRO_FEATURES = [...STARTER_FEATURES, "multiCs", "voiceAi", "antiFraud", "metaCapi", "autoLabel", "picFeature", "knowledgeBase", "aiLearning"];
+const STARTER_FEATURES = ["personaAi", "qris", "stockManagement", "printReceipt", "tasks", "chatCommerce"];
+const PRO_FEATURES = [...STARTER_FEATURES, "multiCs", "voiceAi", "antiFraud", "metaCapi", "autoLabel", "picFeature", "knowledgeBase", "aiLearning", "multiAgent", "agentTools", "publicApi"];
 export const PLAN_FEATURES = {
   Starter: only(STARTER_FEATURES),
   Pro: only(PRO_FEATURES),

@@ -1,5 +1,6 @@
 "use client";
 import { useDashboard } from "@/context/DashboardContext";
+import { Button } from "@/components/ui";
 
 const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
 
@@ -22,7 +23,7 @@ function Meter({ label, used, total }) {
 }
 
 export default function StoreSubscriptionPage() {
-  const { activeSubscription: sub, activeInstitution, tokenBalance, teamMembers, t } = useDashboard();
+  const { activeSubscription: sub, activeInstitution, tokenBalance, teamMembers, isManager, t } = useDashboard();
 
   if (!sub) return <div className="p-8 text-center text-fg-muted">{t("Memuat data paket...")}</div>;
 
@@ -57,8 +58,16 @@ export default function StoreSubscriptionPage() {
         </div>
       </div>
 
+      {isManager && (
+        <div>
+          <Button href="/dashboard/topup-token" icon="coins" variant="secondary">
+            {t("Top Up Token AI")}
+          </Button>
+        </div>
+      )}
+
       <div className="bg-white p-6 rounded-2xl border border-line text-body-sm text-fg-muted leading-relaxed">
-        {t("Kuota token dipakai setiap kali AI membalas pelanggan. Ketika kuota habis, AI berhenti membalas otomatis dan percakapan diteruskan ke tim CS Anda. Untuk menaikkan paket atau menambah kuota, hubungi admin Klozer.")}
+        {t("Kuota token dipakai setiap kali AI membalas pelanggan. Ketika kuota habis, AI berhenti membalas otomatis dan percakapan diteruskan ke tim CS Anda. Untuk menaikkan paket, hubungi admin Klozer. Untuk menambah token, pakai Top Up Token AI.")}
       </div>
     </div>
   );

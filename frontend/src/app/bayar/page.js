@@ -4,7 +4,7 @@ import Link from "next/link";
 import LegalShell from "@/components/legal/LegalShell";
 import { RelatedLinks } from "@/components/legal/LegalDocument";
 import { LEGAL, whatsappUrl } from "@/utils/legal/config";
-import { PLAN_PRICES, PROMO, formatRupiah, isPromoRunning, planPrice, promoUntilText } from "@/utils/plans";
+import { PLAN_PRICES, annualBreakdown, formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
 
 // Re-render hourly so a promo with an end date switches off without a redeploy.
 export const revalidate = 3600;
@@ -70,46 +70,54 @@ export default function PayPage() {
       </div>
 
       <h2 className="text-title font-bold text-fg mb-4">Nominal</h2>
-      <div className="rounded-xl border border-line bg-white overflow-hidden mb-3">
-        <table className="w-full text-body-sm">
+      <div className="rounded-xl border border-line bg-white overflow-x-auto mb-3">
+        <table className="w-full text-body-sm min-w-[640px]">
           <thead className="bg-sunken text-fg-muted text-left">
             <tr>
               <th className="px-4 py-3 font-semibold">Paket</th>
-              <th className="px-4 py-3 font-semibold">Bulanan</th>
-              <th className="px-4 py-3 font-semibold">Tahunan (bayar sekali)</th>
+              <th className="px-4 py-3 font-semibold">Pembayaran pertama</th>
+              <th className="px-4 py-3 font-semibold">Perpanjangan</th>
+              <th className="px-4 py-3 font-semibold">Rincian</th>
             </tr>
           </thead>
           <tbody className="text-fg-muted">
-            {Object.keys(PLAN_PRICES).map((name) => {
-              const monthly = planPrice(name, "monthly");
-              const annual = planPrice(name, "annual");
-              return (
-                <tr key={name} className="border-t border-line">
-                  <td className="px-4 py-3 font-semibold text-fg">
-                    {name}
-                    {monthly.original && (
-                      <span className="ml-2 text-micro font-bold bg-success-500 text-white px-2 py-0.5 rounded-full align-middle">Promo {monthly.percent}%</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {monthly.original && <span className="line-through text-fg-subtle mr-2">Rp {formatRupiah(monthly.original)}</span>}
-                    <span className={monthly.original ? "font-semibold text-fg" : ""}>Rp {formatRupiah(monthly.final)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {annual.original && <span className="line-through text-fg-subtle mr-2">Rp {formatRupiah(annual.original * 12)}</span>}
-                    <span className={annual.original ? "font-semibold text-fg" : ""}>Rp {formatRupiah(annual.final * 12)}</span>
-                  </td>
-                </tr>
-              );
-            })}
+            {Object.keys(PLAN_PRICES).flatMap((name) =>
+              ["monthly", "annual"].map((period) => {
+                const offer = planOffer(name, period);
+                const annual = period === "annual";
+                return (
+                  <tr key={`${name}-${period}`} className="border-t border-line align-top">
+                    <td className="px-4 py-3 font-semibold text-fg">
+                      {name}
+                      <div className="text-caption font-normal text-fg-subtle">{annual ? "Tahunan, bayar sekali" : "Bulanan"}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {offer.percent > 0 && <div className="line-through text-fg-subtle">Rp {formatRupiah(offer.regularTotal)}</div>}
+                      <div className={offer.percent > 0 ? "font-semibold text-fg" : ""}>Rp {formatRupiah(offer.firstTotal)}</div>
+                      {offer.percent > 0 && <div className="text-caption text-success-700 font-semibold">Diskon {offer.percent}%, {annual ? "tahun" : "bulan"} pertama saja</div>}
+                    </td>
+                    <td className="px-4 py-3">
+                      Rp {formatRupiah(offer.regularTotal)}
+                      <div className="text-caption text-fg-subtle">per {annual ? "tahun" : "bulan"}</div>
+                    </td>
+                    <td className="px-4 py-3">{annual ? annualBreakdown(offer) : `Rp ${formatRupiah(offer.regularMonthly)} per bulan`}</td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
-      {isPromoRunning() && (
-        <p className="text-body-sm text-success-700 font-semibold mb-3">
-          Promo diskon {PROMO.percent}% untuk Paket {PROMO.plan} sedang berlaku{promoUntilText() ? ` ${promoUntilText()}` : ""}. Bayar sesuai harga setelah diskon.
-        </p>
-      )}
+      <p className="text-body-sm text-fg-muted mb-3">
+        Diskon berlaku untuk pembayaran pertama saja{promoUntilText() ? ` (${promoUntilText()})` : ""}. Saat diperpanjang, Anda membayar harga normal. Bayar sesuai nominal pembayaran pertama.
+      </p>
+      <p className="text-body-sm text-fg-subtle mb-3">
+        Kuota AI dan pilihan top up berbeda di tiap paket. Konsultasikan dengan{" "}
+        <Link href="/kontak" className="text-brand hover:underline">
+          tim kami
+        </Link>{" "}
+        sebelum membayar.
+      </p>
       <p className="text-body-sm text-fg-subtle mb-10">
         Paket Enterprise dihitung sesuai kebutuhan; hubungi kami. Harga belum termasuk pajak bila berlaku.
       </p>

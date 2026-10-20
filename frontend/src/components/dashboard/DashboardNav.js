@@ -36,16 +36,96 @@ import {
   AlertTriangleIcon,
   CreditCardIcon,
   ShieldCheckIcon,
+  TargetIcon,
 } from "@/components/icons";
+import Icon from "@/components/icons/Icon";
+
+const glyph = (name) => <Icon name={name} className="w-4.5 h-4.5" />;
+const sectionGlyph = (name) => <Icon name={name} className="w-4 h-4" />;
+
+/**
+ * The menu for owners and supervisors. Grouped by what the person is doing (talking with customers, selling,
+ * running the team, connecting other tools, shop upkeep) so the list stays short enough to scan.
+ * `badges.tasks` is the number of tasks waiting for this person, shown next to "Tugas".
+ */
+function managerNav({ t, language, badges, planIconClass }) {
+  const en = language === "en";
+  return {
+    pinnedItems: [
+      { label: t("nav.dashboard", "Dashboard Utama"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+      { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
+      { label: t("Tugas"), href: "/dashboard/tasks", icon: glyph("task"), badge: badges.tasks || undefined },
+      { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+      { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
+    ],
+    navSections: [
+      {
+        sectionLabel: t("Percakapan dan AI"),
+        sectionIcon: sectionGlyph("agents"),
+        items: [
+          { label: t("Agen AI"), href: "/dashboard/agents", icon: glyph("agents") },
+          { label: t("Basis Pengetahuan"), href: "/dashboard/knowledge", icon: glyph("book") },
+          { label: t("Evaluasi AI"), href: "/dashboard/ai-evaluation", icon: glyph("thumbUp") },
+          { label: en ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
+          { label: "Test CS AI", href: "/dashboard/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
+        ],
+      },
+      {
+        sectionLabel: t("Penjualan dan Pemasaran"),
+        sectionIcon: <TrendingUpIcon className="w-4 h-4" />,
+        items: [
+          { label: en ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+          { label: t("Pesanan di Chat"), href: "/dashboard/chat-commerce", icon: glyph("basket") },
+          { label: en ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: glyph("megaphone") },
+          { label: t("Iklan dan ROAS"), href: "/dashboard/ads", icon: <TargetIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
+          { label: t("nav.finance", "Dynamic QRIS"), href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+        ],
+      },
+      {
+        sectionLabel: t("Saluran dan Tim"),
+        sectionIcon: sectionGlyph("inbox"),
+        items: [
+          { label: t("Saluran Chat"), href: "/dashboard/channels", icon: glyph("inbox") },
+          { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Escalation Queue" : "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
+        ],
+      },
+      {
+        sectionLabel: t("Integrasi"),
+        sectionIcon: sectionGlyph("plug"),
+        items: [{ label: t("API dan Webhook"), href: "/dashboard/integrations", icon: glyph("plug") }],
+      },
+      {
+        sectionLabel: en ? "Store Operations" : "Operasional Toko",
+        sectionIcon: <DatabaseIcon className="w-4 h-4" />,
+        items: [
+          { label: en ? "BOM & Recipes" : "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Inventory Stock" : "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Warehouse Hubs" : "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Batch Receipts" : "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Booking & Appointments" : "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
+          { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Blacklist & Anti-Spam" : "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Audit Log" : "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
+          { label: en ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className={planIconClass} /> },
+          { label: t("Top Up Token AI"), href: "/dashboard/topup-token", icon: glyph("coins") },
+        ],
+      },
+    ],
+  };
+}
 
 /**
  * Returns the full role navigation configuration object.
  * Extracted from layout.js to reduce monolith size.
  *
- * @param {{ t: Function, language: string }} options
+ * @param {{ t: Function, language: string, badges?: { tasks?: number } }} options
  * @returns {Object} rolesConfig map keyed by role slug
  */
-export function buildRolesConfig({ t, language }) {
+export function buildRolesConfig({ t, language, badges = {} }) {
   const config = {
     superadmin: {
       label: "Super Admin",
@@ -91,6 +171,7 @@ export function buildRolesConfig({ t, language }) {
           sectionIcon: <DollarSignIcon className="w-4 h-4" />,
           items: [
             { label: language === "en" ? "Transactions" : "Transaksi", href: "/dashboard/superadmin/transactions", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
+            { label: t("Antrean Top Up Token"), href: "/dashboard/superadmin/topups", icon: glyph("coins") },
             { label: language === "en" ? "Export Data" : "Export Data", href: "/dashboard/superadmin/exports", icon: <DownloadIcon className="w-4.5 h-4.5" /> },
           ],
         },
@@ -121,46 +202,7 @@ export function buildRolesConfig({ t, language }) {
       badgeColor: "bg-brand-soft text-brand border-brand/20",
       avatar: "OW",
       icon: <BriefcaseIcon className="w-4 h-4 text-brand" />,
-      pinnedItems: [
-        { label: t("nav.dashboard", "Dashboard Utama"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.finance", "Dynamic QRIS"), href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
-      ],
-      navSections: [
-        {
-          sectionLabel: language === "en" ? "Store Operations & CRM" : "Operasional Toko & CRM",
-          sectionIcon: <DatabaseIcon className="w-4 h-4" />,
-          items: [
-            { label: language === "en" ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "BOM & Recipes" : "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Inventory Stock" : "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/dashboard/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
-            { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-brand" /> },
-          ],
-        },
-        {
-          sectionLabel: language === "en" ? "Advanced Apps" : "Aplikasi Lanjutan",
-          sectionIcon: <SlidersIcon className="w-4 h-4" />,
-          items: [
-            { label: language === "en" ? "Booking & Appointments" : "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Escalation Queue" : "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
-            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Warehouse Hubs" : "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Batch Receipts" : "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
-            { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Blacklist & Anti-Spam" : "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Audit Log" : "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-      ],
+      ...managerNav({ t, language, badges, planIconClass: "w-4.5 h-4.5 text-brand" }),
       navItems: [],
     },
 
@@ -169,46 +211,7 @@ export function buildRolesConfig({ t, language }) {
       badgeColor: "bg-warning-100 text-warning-800 border-warning-200",
       avatar: "SP",
       icon: <ClipboardListIcon className="w-4 h-4 text-warning-700" />,
-      pinnedItems: [
-        { label: t("nav.dashboard", "Dashboard Toko"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.liveChat", "Inbox WA & Closing"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.finance", "Dynamic QRIS & Kas"), href: "/dashboard/finance", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
-        { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
-      ],
-      navSections: [
-        {
-          sectionLabel: language === "en" ? "Store Operations & CRM" : "Operasional Toko & CRM",
-          sectionIcon: <DatabaseIcon className="w-4 h-4" />,
-          items: [
-            { label: language === "en" ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "BOM & Recipes" : "Resep HPP & BOM", href: "/dashboard/bom", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Inventory Stock" : "Stok Inventaris", href: "/dashboard/stock", icon: <PackageIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Bank Accounts" : "Rekening Bank & QRIS", href: "/dashboard/bank-accounts", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Revenue Reports" : "Laporan Omzet & CS", href: "/dashboard/reports", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "AI Persona" : "Persona AI & Script", href: "/dashboard/persona-ai", icon: <SparklesIcon className="w-4.5 h-4.5" /> },
-            { label: "Test CS AI", href: "/dashboard/test-cs-ai", icon: <BotIcon className="w-4.5 h-4.5" /> },
-            { label: t("nav.team", "Hak Akses & Tim"), href: "/dashboard/settings?tab=team", icon: <ShieldCheckIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Store Subscription" : "Langganan & Paket Toko", href: "/dashboard/subscription", icon: <CrownIcon className="w-4.5 h-4.5 text-warning-600" /> },
-          ],
-        },
-        {
-          sectionLabel: language === "en" ? "Advanced Apps" : "Aplikasi Lanjutan",
-          sectionIcon: <SlidersIcon className="w-4 h-4" />,
-          items: [
-            { label: language === "en" ? "Booking & Appointments" : "Booking & Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Escalation Queue" : "Eskalasi & Co-Pilot", href: "/dashboard/escalation", icon: <AlertTriangleIcon className="w-4.5 h-4.5" /> },
-            { label: "Instagram Omnichannel", href: "/dashboard/instagram", icon: <InstagramIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Warehouse Hubs" : "Gudang & Hub Pengiriman", href: "/dashboard/warehouses", icon: <WarehouseIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Batch Receipts" : "Cetak Resi Massal", href: "/dashboard/finance/invoices", icon: <PrinterIcon className="w-4.5 h-4.5" /> },
-            { label: "AI Auto-Label & NLP", href: "/dashboard/labels", icon: <TagIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Blacklist & Anti-Spam" : "Blacklist & Anti-Spam", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
-            { label: language === "en" ? "Audit Log" : "Audit Log Aktivitas", href: "/dashboard/audit-log", icon: <ClipboardCheckIcon className="w-4.5 h-4.5" /> },
-          ],
-        },
-      ],
+      ...managerNav({ t, language, badges, planIconClass: "w-4.5 h-4.5 text-warning-600" }),
       navItems: [],
     },
 
@@ -226,6 +229,7 @@ export function buildRolesConfig({ t, language }) {
           sectionIcon: <MessageSquareIcon className="w-4 h-4" />,
           items: [
             { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
+            { label: t("Tugas"), href: "/dashboard/tasks", icon: glyph("task"), badge: badges.tasks || undefined },
             { label: language === "en" ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: <RadioIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Quick Replies" : "Quick Reply & Template", href: "/dashboard/templates", icon: <FileTextIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Message Credits" : "Kredit & Kuota Pesan", href: "/dashboard/credits", icon: <CreditCardIcon className="w-4.5 h-4.5" /> },

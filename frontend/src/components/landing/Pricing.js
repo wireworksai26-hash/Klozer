@@ -2,23 +2,39 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircleIcon } from "@/components/icons";
-import { formatRupiah, isPromoRunning, planPrice, PROMO, promoUntilText } from "@/utils/plans";
+import { annualBreakdown, formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
   const period = isAnnual ? "annual" : "monthly";
-  const starter = planPrice("Starter", period);
-  const pro = planPrice("Pro", period);
-  const promoOn = isPromoRunning();
+  const starter = planOffer("Starter", period);
+  const pro = planOffer("Pro", period);
+
+  // What a card shows for a priced plan: the first payment, what it replaces, and plain lines that say what is charged
+  // and when the regular price starts. Exact amounts: this is what the customer pays.
+  const priceFields = (offer) => {
+    const first = offer.percent > 0;
+    const unit = isAnnual ? "tahun" : "bulan";
+    const notes = [];
+    if (isAnnual) {
+      notes.push("Dibayar sekali untuk 12 bulan.");
+      notes.push(`Rincian: ${annualBreakdown(offer)}`);
+    }
+    if (first) notes.push(`Diskon ${offer.percent}% hanya untuk ${unit} pertama. ${isAnnual ? "Tahun" : "Bulan"} berikutnya Rp ${formatRupiah(offer.regularTotal)} per ${unit}.`);
+    return {
+      price: formatRupiah(offer.firstTotal),
+      original: first ? formatRupiah(offer.regularTotal) : null,
+      promoPercent: offer.percent,
+      period: first ? `${unit} pertama` : `/${unit}`,
+      priceNotes: notes.length ? notes : [isAnnual ? "Ditagih tahunan" : "Ditagih bulanan"],
+    };
+  };
 
   const plans = [
     {
       name: "Starter",
       badge: "UKM & Toko Baru",
-      price: formatRupiah(starter.final),
-      original: starter.original ? formatRupiah(starter.original) : null,
-      period: "/bulan",
-      subPeriod: isAnnual ? "Ditagih tahunan (Hemat 20%)" : "Ditagih bulanan",
+      ...priceFields(starter),
       desc: "Sangat cocok untuk toko online yang ingin mulai menerima pembayaran QRIS otomatis di WhatsApp.",
       features: [
         "1 Nomor WhatsApp Resmi Bisnis (Cloud API)",
@@ -34,11 +50,7 @@ export default function Pricing() {
     {
       name: "Pro",
       badge: "Paling Populer · Rekomendasi",
-      price: formatRupiah(pro.final),
-      original: pro.original ? formatRupiah(pro.original) : null,
-      promoPercent: pro.percent,
-      period: "/bulan",
-      subPeriod: isAnnual ? "Ditagih tahunan (Hemat 20%)" : "Ditagih bulanan",
+      ...priceFields(pro),
       desc: "Pilihan terbaik untuk brand & toko yang ingin otomatisasi penuh dengan AI Suara & Proteksi Struk Palsu.",
       features: [
         "Semua fitur di Paket Starter",
@@ -58,7 +70,7 @@ export default function Pricing() {
       badge: "Bisnis Besar & Lembaga Sosial",
       price: "Kustom",
       period: "",
-      subPeriod: "Sesuai kebutuhan transaksi",
+      priceNotes: ["Sesuai kebutuhan transaksi"],
       desc: "Kustomisasi penuh untuk volume transaksi tinggi, multi-cabang, atau lembaga donasi & zakat.",
       features: [
         "Semua fitur di Paket Pro",
@@ -88,12 +100,9 @@ export default function Pricing() {
             Tidak ada biaya tersembunyi. Anda bisa beralih paket kapan saja sesuai perkembangan bisnis Anda.
           </p>
 
-          {promoOn && (
-            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-success-50 border border-success-200 px-4 py-2 text-body-sm text-success-800">
-              <span className="font-bold">Promo Paket {PROMO.plan}: diskon {PROMO.percent}%</span>
-              {promoUntilText() && <span>{promoUntilText()}</span>}
-            </div>
-          )}
+          <p className="mt-4 text-body-sm text-fg-muted">
+            Diskon berlaku untuk bulan atau tahun pertama saja{promoUntilText() ? ` (${promoUntilText()})` : ""}. Perpanjangan memakai harga normal.
+          </p>
 
           {/* Interactive Monthly / Annual Billing Toggle */}
           <div className="inline-flex items-center gap-3 p-1.5 rounded-full bg-white border border-line shadow-sm mt-6">
@@ -115,10 +124,7 @@ export default function Pricing() {
                   : "bg-transparent text-fg hover:text-ink"
               }`}
             >
-              <span>Tahunan</span>
-              <span className="text-micro bg-success-100 text-success-700 px-2 py-0.5 rounded-full font-bold animate-pulse">
-                Hemat 20%
-              </span>
+              <span>Tahunan (bayar sekali)</span>
             </button>
           </div>
         </div>
@@ -167,7 +173,7 @@ export default function Pricing() {
                         Rp {plan.original}
                       </span>
                       <span className="text-micro font-bold bg-success-500 text-white px-2 py-0.5 rounded-full">
-                        Hemat {plan.promoPercent}%
+                        Diskon {plan.promoPercent}%
                       </span>
                     </div>
                   )}
@@ -186,11 +192,13 @@ export default function Pricing() {
                       {plan.period}
                     </span>
                   </div>
-                  <span className={`text-caption font-semibold mt-1.5 ${
-                    plan.highlight ? "text-success-400" : "text-success-700"
+                  <ul className={`mt-2 flex flex-col gap-1 text-caption leading-snug ${
+                    plan.highlight ? "text-line-strong" : "text-fg-muted"
                   }`}>
-                    {plan.subPeriod}
-                  </span>
+                    {plan.priceNotes.map((note) => (
+                      <li key={note}>{note}</li>
+                    ))}
+                  </ul>
                 </div>
 
                 {/* Feature Checklist */}
@@ -229,6 +237,14 @@ export default function Pricing() {
         </div>
 
         <p className="mt-8 text-center text-body-sm text-fg-muted">
+          Kuota AI dan pilihan top up berbeda di tiap paket. Konsultasikan dengan{" "}
+          <Link href="/kontak" className="text-brand font-semibold hover:underline">
+            tim kami
+          </Link>
+          .
+        </p>
+
+        <p className="mt-3 text-center text-body-sm text-fg-muted">
           Sudah memilih paket?{" "}
           <Link href="/bayar" className="text-brand font-semibold hover:underline">
             Lihat cara bayar langganan
