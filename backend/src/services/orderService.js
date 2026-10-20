@@ -38,6 +38,7 @@ export function afterPaid({ order }, { notify = true } = {}) {
 }
 
 /** Return reserved stock to inventory and drop an unsettled commission when an order is cancelled. */
+/** @returns {Promise<number[]>} the products whose stock went back up (so the caller can announce it once committed) */
 export async function releaseOrderResources(tx, order) {
   const items = await tx.query("SELECT product_id, quantity FROM order_items WHERE order_id = ? AND product_id IS NOT NULL", [order.id]);
   for (const item of items) {
@@ -49,6 +50,7 @@ export async function releaseOrderResources(tx, order) {
   }
   await tx.query("DELETE FROM cs_commission_ledgers WHERE order_id = ? AND is_settled = 0", [order.id]);
   await tx.query("UPDATE proactive_followup_jobs SET status = 'cancelled' WHERE order_id = ? AND status = 'pending'", [order.id]);
+  return items.map((i) => i.product_id);
 }
 
 export function assertTransition(from, to, transitions) {

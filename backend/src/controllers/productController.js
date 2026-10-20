@@ -2,6 +2,7 @@ import { query, queryOne, transaction } from "../config/db.js";
 import { buildPagination, escapeLike, parsePagination } from "../utils/helpers.js";
 import { badRequest, notFound } from "../utils/errors.js";
 import { audit } from "../services/auditService.js";
+import { announceStock, announceStockBySku } from "../services/stockEvents.js";
 
 const UPDATABLE = [
   "sku",
@@ -69,6 +70,7 @@ export async function createProduct(req, res) {
     ]
   );
   const product = await queryOne("SELECT * FROM products WHERE id = ?", [result.insertId]);
+  await announceStock(req.tenantId, [product.id]);
   await audit(req, "product.create", { entityType: "product", entityId: product.id });
   res.status(201).json({ success: true, message: "Produk berhasil ditambahkan.", data: product });
 }
@@ -91,6 +93,7 @@ export async function updateProduct(req, res) {
   }
 
   const product = await queryOne("SELECT * FROM products WHERE id = ?", [req.params.id]);
+  if (req.body.stock_quantity !== undefined || req.body.is_active !== undefined || req.body.selling_price !== undefined) await announceStock(req.tenantId, [product.id]);
   await audit(req, "product.update", { entityType: "product", entityId: product.id, metadata: Object.keys(req.body) });
   res.json({ success: true, message: "Produk berhasil diperbarui.", data: product });
 }
@@ -147,6 +150,7 @@ export async function bulkUpsertProducts(req, res) {
     return { created, updated, deactivated };
   });
 
+  await announceStockBySku(req.tenantId, items.map((i) => i.sku));
   await audit(req, "product.bulk_import", { metadata: { ...summary, mode } });
   res.status(201).json({ success: true, message: "Impor produk selesai.", ...summary });
 }
@@ -162,6 +166,7 @@ export async function importStock(req, res) {
       else unknown.push(item.sku);
     }
   });
+  await announceStockBySku(req.tenantId, req.body.items.map((i) => i.sku));
   await audit(req, "product.stock_import", { metadata: { updated, unknown: unknown.length } });
   res.json({ success: true, updated, unknownSkus: unknown });
 }

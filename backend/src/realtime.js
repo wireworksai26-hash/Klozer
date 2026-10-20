@@ -102,6 +102,11 @@ export function disconnectTenant(tenantId) {
     .catch((err) => logger.warn({ err: err.message }, "disconnectTenant failed"));
 }
 
+/** For tests: stand in for the socket server so what the backend announces can be inspected. */
+export function setRealtimeForTests(fake) {
+  ioInstance = fake;
+}
+
 /** For tests: forget the server so emit/disconnect become no-ops again. */
 export function resetRealtime() {
   ioInstance = null;

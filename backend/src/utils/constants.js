@@ -23,6 +23,12 @@ export const DEFAULT_FEATURES = Object.freeze({
   agentTools: true,
 });
 
+/**
+ * AI tokens that come with each plan. Enterprise is agreed per customer, so it has no fixed bundle. Extra tokens are
+ * bought separately (see services/tokenTopupService.js); the two are deliberately not shown together in the price list.
+ */
+export const TIER_TOKEN_BUNDLE = Object.freeze({ starter: 700_000, pro: 1_000_000 });
+
 export const LEAD_STATUSES = ["new", "in_progress", "closing", "repeat", "idle", "closed_lost"];
 export const ORDER_STATUSES = ["waiting_payment", "paid", "processing", "shipped", "delivered", "completed", "cancelled"];
 export const PAYMENT_METHODS = ["qris", "va", "bank_transfer", "cod", "cash"];

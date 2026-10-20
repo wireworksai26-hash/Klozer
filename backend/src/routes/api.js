@@ -49,6 +49,8 @@ import * as agentCtrl from "../controllers/agentController.js";
 import * as av from "../validation/agentSchemas.js";
 import * as taskCtrl from "../controllers/taskController.js";
 import * as tv from "../validation/taskSchemas.js";
+import * as topupCtrl from "../controllers/tokenTopupController.js";
+import * as topv from "../validation/topupSchemas.js";
 
 const router = Router();
 const h = asyncHandler;
@@ -191,6 +193,15 @@ router.put("/tasks/:id", ...tenant, requireRole(...TEAM), tasksOn, validate({ pa
 router.post("/tasks/:id/claim", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams }), h(taskCtrl.claim));
 router.post("/tasks/:id/comments", ...tenant, requireRole(...TEAM), tasksOn, validate({ params: v.idParams, body: tv.commentBody }), h(taskCtrl.comment));
 router.delete("/tasks/:id", ...tenant, requireRole(...MANAGERS), tasksOn, validate({ params: v.idParams }), h(taskCtrl.remove));
+
+// ==================== AI TOKEN TOP UP ====================
+router.get("/ai/topups", ...tenant, requireRole(...MANAGERS), h(topupCtrl.list));
+router.post("/ai/topups", ...tenant, requireRole(...MANAGERS), validate({ body: topv.createTopupBody }), h(topupCtrl.create));
+router.get("/ai/topups/admin", authenticate, requireSuperadmin, validate({ query: topv.topupListQuery }), h(topupCtrl.adminList));
+router.post("/ai/topups/:id/cancel", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(topupCtrl.cancel));
+router.put("/ai/topups/:id/quote", authenticate, requireSuperadmin, validate({ params: v.idParams, body: topv.quoteTopupBody }), h(topupCtrl.adminQuote));
+router.post("/ai/topups/:id/credit", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(topupCtrl.adminCredit));
+router.post("/ai/topups/:id/cancel-by-team", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(topupCtrl.adminCancel));
 
 // ==================== API KEYS, WEBHOOKS AND THE PUBLIC API ====================
 const apiOn = requireFeature("publicApi", "API dan Webhook");

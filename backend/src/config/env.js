@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { TIER_TOKEN_BUNDLE } from "../utils/constants.js";
 
 // Tests must be hermetic: never pick up a developer's local .env (real keys, real DB).
 if (process.env.NODE_ENV !== "test") dotenv.config({ quiet: true, path: process.env.DOTENV_CONFIG_PATH || undefined });
@@ -152,7 +153,8 @@ export const config = {
 
   trial: {
     blastCredits: readInt("TRIAL_BLAST_CREDITS", 5000),
-    aiTokens: readInt("TRIAL_AI_TOKENS", 1000000),
+    // the trial gets the bundle of the plan it trials, unless the deployment says otherwise
+    aiTokens: readInt("TRIAL_AI_TOKENS", TIER_TOKEN_BUNDLE[process.env.TRIAL_TIER || "pro"] ?? TIER_TOKEN_BUNDLE.pro),
     tier: process.env.TRIAL_TIER || "pro",
   },
 

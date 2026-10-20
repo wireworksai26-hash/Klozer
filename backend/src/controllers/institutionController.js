@@ -2,7 +2,7 @@ import { query, queryOne, transaction } from "../config/db.js";
 import { config } from "../config/env.js";
 import { generateRandomPassword, hashPassword } from "../utils/crypto.js";
 import { buildPagination, escapeLike, parsePagination, slugify } from "../utils/helpers.js";
-import { DEFAULT_FEATURES } from "../utils/constants.js";
+import { DEFAULT_FEATURES, TIER_TOKEN_BUNDLE } from "../utils/constants.js";
 import { conflict, forbidden, notFound } from "../utils/errors.js";
 import { audit } from "../services/auditService.js";
 import { disconnectTenant, disconnectUser } from "../realtime.js";
@@ -74,7 +74,7 @@ export async function createInstitution(req, res) {
         email,
         address ?? null,
         config.trial.blastCredits * 2,
-        config.trial.aiTokens * 2,
+        TIER_TOKEN_BUNDLE.pro, // created as a Pro shop: it gets the Pro bundle
         JSON.stringify({ ...DEFAULT_FEATURES, ...(features || {}) }),
       ]
     );
@@ -135,6 +135,14 @@ export async function updateInstitution(req, res) {
   if (req.body.features) {
     sets.push("features_json = JSON_MERGE_PATCH(COALESCE(features_json, JSON_OBJECT()), ?)");
     values.push(JSON.stringify(req.body.features));
+  }
+  // Moving a shop to another plan brings that plan's bundle: the quota is raised so the shop has at least the bundle left.
+  // Tokens already bought or granted are never taken away, and a quota the superadmin sets by hand wins.
+  const newTier = req.body.subscription_tier;
+  const bundle = newTier && newTier !== inst.subscription_tier ? TIER_TOKEN_BUNDLE[newTier] : undefined;
+  if (bundle && req.body.ai_token_quota === undefined) {
+    sets.push("ai_token_quota = GREATEST(ai_token_quota, ai_tokens_used + ?)");
+    values.push(bundle);
   }
   if (sets.length) await query(`UPDATE institutions SET ${sets.join(", ")} WHERE id = ?`, [...values, id]);
 

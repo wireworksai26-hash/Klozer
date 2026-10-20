@@ -4,6 +4,7 @@ import { ORDER_TRANSITIONS } from "../utils/constants.js";
 import { badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { afterPaid, assertTransition, markOrderPaid, releaseOrderResources } from "../services/orderService.js";
 import { DuplicateOrderRequest, createOrderRecord } from "../services/orderCreationService.js";
+import { announceOrder, announceStock } from "../services/stockEvents.js";
 import { audit } from "../services/auditService.js";
 import { emitEvent } from "../services/integrations/eventBus.js";
 import { loadOrderPayload } from "../services/integrations/eventPayloads.js";
@@ -140,6 +141,7 @@ export async function updateOrderStatus(req, res) {
   }
 
   let previousStatus = null;
+  let releasedProducts = [];
   const result = await transaction(async (tx) => {
     const order = await tx.queryOne("SELECT * FROM orders WHERE id = ? AND institution_id = ? FOR UPDATE", [req.params.id, req.tenantId]);
     if (!order) throw notFound("Pesanan tidak ditemukan.");
@@ -153,7 +155,7 @@ export async function updateOrderStatus(req, res) {
       if (open && req.user.role !== "superadmin") {
         throw conflict("Pesanan sudah dibayar melalui gateway. Lakukan refund terlebih dulu sebelum membatalkan.");
       }
-      await releaseOrderResources(tx, order);
+      releasedProducts = await releaseOrderResources(tx, order);
       await tx.query("UPDATE payments SET status = 'expired' WHERE order_id = ? AND status = 'pending'", [order.id]);
     }
 
@@ -162,6 +164,8 @@ export async function updateOrderStatus(req, res) {
   });
 
   if (result.paid?.changed) afterPaid(result.paid);
+  announceOrder(req.tenantId, "order:updated", { orderId: Number(req.params.id), status: next });
+  await announceStock(req.tenantId, releasedProducts); // a cancelled order gives its stock back
   emitEvent({ institutionId: req.tenantId, type: "order.status_changed", data: async () => ({ order: await loadOrderPayload(req.tenantId, Number(req.params.id)), previous_status: previousStatus }) });
   await audit(req, "order.status", { entityType: "order", entityId: req.params.id, metadata: { status: next } });
 

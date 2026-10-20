@@ -4,6 +4,7 @@ import { badRequest, conflict } from "../utils/errors.js";
 import { markOrderPaid } from "./orderService.js";
 import { emitEvent } from "./integrations/eventBus.js";
 import { loadOrderPayload } from "./integrations/eventPayloads.js";
+import { announceOrder, announceStock } from "./stockEvents.js";
 
 /** A concurrent request with the same idempotency key committed first. */
 export class DuplicateOrderRequest extends Error {}
@@ -146,9 +147,12 @@ export async function createOrderRecord({
 
     let paid = null;
     if (status === "paid") paid = await markOrderPaid(tx, orderId, tenantId);
-    return { orderId, paid };
+    return { orderId, paid, productIds: [...wanted.keys()] };
   });
-  // told only once the order really exists (the transaction has committed)
+  // told only once the order really exists (the transaction has committed): webhooks, and every open dashboard
+  // (the order appears and the stock it took is shown straight away, whoever created the order)
+  announceOrder(tenantId, "order:created", { orderId: created.orderId, status: created.paid ? "paid" : "waiting_payment", createdVia });
+  await announceStock(tenantId, created.productIds);
   emitEvent({ institutionId: tenantId, type: "order.created", data: () => loadOrderPayload(tenantId, created.orderId) });
   return created;
 }
