@@ -28,3 +28,5 @@ export const createMethodBody = z.object({
 export const updateMethodBody = z.object(fields).partial().refine(hasChange, "tidak ada yang diubah");
 
 export const qrisImageBody = z.object({ fileBase64: z.string().min(40, "gambar kosong"), fileName: z.string().trim().max(120).optional() });
+
+export const qrisCodeBody = z.object({ payload: z.string().trim().min(40, "kode terlalu pendek").max(700, "kode terlalu panjang") });

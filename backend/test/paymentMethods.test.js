@@ -137,6 +137,6 @@ describe("how Klozer is paid", () => {
     const actions = (await query("SELECT action FROM audit_logs WHERE entity_type = 'platform_payment_method' AND entity_id = ? ORDER BY id", [String(bank.id)])).map((r) => r.action);
     assert.deepEqual(actions, ["platform_payment.create", "platform_payment.update", "platform_payment.delete"]);
     const sample = (await publicList())[0];
-    if (sample) assert.deepEqual(Object.keys(sample).sort(), ["accountName", "accountNumber", "hasQris", "id", "instructions", "isActive", "kind", "label", "qrisUrl", "sortOrder", "updatedAt"]);
+    if (sample) assert.deepEqual(Object.keys(sample).sort(), ["accountName", "accountNumber", "dynamicQris", "hasQris", "id", "instructions", "isActive", "kind", "label", "merchantName", "qrisUrl", "sortOrder", "updatedAt"]);
   });
 });

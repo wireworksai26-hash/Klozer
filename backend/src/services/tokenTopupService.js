@@ -4,6 +4,8 @@ import { badRequest, conflict, notFound } from "../utils/errors.js";
 import { TOPUP_PACKS, topupPrice } from "../utils/constants.js";
 import { getTokenBalance } from "./tokenService.js";
 import { evaluateVoucher } from "./platformVoucherService.js";
+import { reservePayAmount } from "./billing/payAmounts.js";
+import { dynamicQrisFor } from "./platformPaymentService.js";
 
 /**
  * Top up of AI tokens. The shop picks an amount and gets the price from the price list at once (the team can still set a
@@ -34,6 +36,9 @@ const toTopup = (r) => ({
   listPriceIdr: r.list_price_idr === null ? null : Number(r.list_price_idr),
   discountIdr: Number(r.discount_idr ?? 0),
   isGrant: Boolean(r.is_grant),
+  payAmountIdr: r.pay_amount_idr === null || r.pay_amount_idr === undefined ? null : Number(r.pay_amount_idr),
+  uniqueCode: Number(r.unique_code ?? 0),
+  paidVia: r.paid_via ?? null,
   requestedBy: r.requested_by,
   requestedByName: r.requested_by_name ?? undefined,
   quotedAt: r.quoted_at,
@@ -105,6 +110,9 @@ export async function createTopup({ institutionId, userId, tokens, note = null, 
       "INSERT INTO token_topups (institution_id, requested_by, tokens, note, status, quoted_amount_idr, quote_note, voucher_id, voucher_code, list_price_idr, discount_idr, quoted_at) VALUES (?, ?, ?, ?, 'quoted', ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())",
       [institutionId, userId, tokens, note, charge, quoteNote, voucherId, voucherCode, quote.priceIdr, discount]
     );
+    // the amount this bill waits for: the price plus a unique code, so the payment can be matched to it
+    const reserved = await reservePayAmount(tx, { baseIdr: charge, refType: "topup", refId: result.insertId });
+    await tx.query("UPDATE token_topups SET pay_amount_idr = ?, unique_code = ? WHERE id = ?", [reserved.amount, reserved.code, result.insertId]);
     return result.insertId;
   });
   const topup = toTopup(await load(id));
@@ -144,34 +152,60 @@ export async function listAllTopups({ status = null, limit = 50, offset = 0 } = 
   return { topups: rows.map(toTopup), total: Number(total.n), open: Number(open.n) };
 }
 
-/** Set (or change) the price and how to pay, while the request is still open. */
+/** Set (or change) the price and how to pay, while the request is still open. The amount to pay gets a fresh unique code. */
 export async function quoteTopup({ id, amountIdr, note = null, userId }) {
   const row = await load(id);
-  const result = await query(
-    "UPDATE token_topups SET status = 'quoted', quoted_amount_idr = ?, quote_note = ?, quoted_by = ?, quoted_at = UTC_TIMESTAMP() WHERE id = ? AND status IN (?)",
-    [amountIdr, note, userId, id, OPEN]
-  );
-  if (!result.affectedRows) throw conflict("Permintaan ini sudah selesai atau dibatalkan.", { code: "TOPUP_CLOSED" });
+  await transaction(async (tx) => {
+    const result = await tx.query(
+      "UPDATE token_topups SET status = 'quoted', quoted_amount_idr = ?, quote_note = ?, quoted_by = ?, quoted_at = UTC_TIMESTAMP() WHERE id = ? AND status IN (?)",
+      [amountIdr, note, userId, id, OPEN]
+    );
+    if (!result.affectedRows) throw conflict("Permintaan ini sudah selesai atau dibatalkan.", { code: "TOPUP_CLOSED" });
+    const reserved = await reservePayAmount(tx, { baseIdr: amountIdr, refType: "topup", refId: id });
+    await tx.query("UPDATE token_topups SET pay_amount_idr = ?, unique_code = ? WHERE id = ?", [reserved.amount, reserved.code, id]);
+  });
   const topup = toTopup(await load(id));
   tell(row.institution_id, topup);
   return topup;
 }
 
+/**
+ * Add a paid bill's tokens to the shop's quota, inside the caller's transaction. Happens once: a bill that is already
+ * credited, or not open, is refused. `via` says how the payment was confirmed: by the team ("manual") or by a payment
+ * notice that matched its amount ("auto").
+ */
+export async function settleTopupInTx(tx, id, { userId = null, via = "manual" } = {}) {
+  const row = await tx.queryOne("SELECT * FROM token_topups WHERE id = ? FOR UPDATE", [id]);
+  if (!row) throw notFound("Permintaan top up tidak ditemukan.");
+  if (row.status === "credited") throw conflict("Token untuk permintaan ini sudah ditambahkan.", { code: "TOPUP_ALREADY_CREDITED" });
+  if (row.status !== "quoted") throw conflict("Beri harga dulu sebelum menambahkan token.", { code: "TOPUP_NOT_QUOTED" });
+  await tx.query("UPDATE institutions SET ai_token_quota = ai_token_quota + ? WHERE id = ?", [row.tokens, row.institution_id]);
+  await tx.query("UPDATE token_topups SET status = 'credited', credited_by = ?, credited_at = UTC_TIMESTAMP(), paid_via = ? WHERE id = ?", [userId, via, id]);
+  return row;
+}
+
 /** The payment is confirmed: add the tokens to the shop's quota. Happens once; a second call is refused. */
 export async function creditTopup({ id, userId }) {
-  const outcome = await transaction(async (tx) => {
-    const row = await tx.queryOne("SELECT * FROM token_topups WHERE id = ? FOR UPDATE", [id]);
-    if (!row) throw notFound("Permintaan top up tidak ditemukan.");
-    if (row.status === "credited") throw conflict("Token untuk permintaan ini sudah ditambahkan.", { code: "TOPUP_ALREADY_CREDITED" });
-    if (row.status !== "quoted") throw conflict("Beri harga dulu sebelum menambahkan token.", { code: "TOPUP_NOT_QUOTED" });
-    await tx.query("UPDATE institutions SET ai_token_quota = ai_token_quota + ? WHERE id = ?", [row.tokens, row.institution_id]);
-    await tx.query("UPDATE token_topups SET status = 'credited', credited_by = ?, credited_at = UTC_TIMESTAMP() WHERE id = ?", [userId, id]);
-    return row;
-  });
+  const outcome = await transaction((tx) => settleTopupInTx(tx, id, { userId, via: "manual" }));
   const topup = toTopup(await load(id));
   tell(outcome.institution_id, topup);
   return { topup, balance: await getTokenBalance(outcome.institution_id) };
 }
+
+/** What a shop needs to pay one bill: the exact amount, and the dynamic QRIS for it when the team has set one up. */
+export async function topupPayInfo({ id, institutionId }) {
+  const row = await load(id, institutionId);
+  const topup = toTopup(row);
+  const amount = topup.payAmountIdr ?? (topup.quotedAmountIdr === null ? null : Math.round(topup.quotedAmountIdr));
+  const open = topup.status === "quoted" && amount !== null && amount > 0;
+  return { status: topup.status, paid: topup.status === "credited", amountIdr: amount, uniqueCode: topup.uniqueCode, qris: open ? await dynamicQrisFor(amount) : null };
+}
+
+/** After a notice-matched payment: tell the shop's screens. */
+export const announceTopup = async (id) => {
+  const row = await load(id);
+  tell(row.institution_id, toTopup(row));
+};
 
 /**
  * The team adds tokens to a client directly (a gift, a goodwill credit, or a correction), without a bill to pay. It is kept

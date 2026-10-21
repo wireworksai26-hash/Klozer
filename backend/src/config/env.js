@@ -122,6 +122,11 @@ export const config = {
     timeoutMs: readInt("WEBHOOK_TIMEOUT_MS", 10000),
   },
 
+  // Payments to Klozer itself (package and token top up bills). A payment notice from outside is accepted only with this secret.
+  platformPay: {
+    notifySecret: process.env.PLATFORM_PAYMENT_NOTIFY_SECRET || "",
+  },
+
   shipping: {
     biteshipKey: process.env.BITESHIP_API_KEY || "",
   },

@@ -1,6 +1,6 @@
 import { audit } from "../services/auditService.js";
 import { badRequest } from "../utils/errors.js";
-import { adminQris, createMethod, deleteMethod, listMethods, publicQris, removeQrisImage, setQrisImage, updateMethod } from "../services/platformPaymentService.js";
+import { adminQris, createMethod, deleteMethod, listMethods, publicQris, removeQrisImage, removeQrisPayload, setQrisImage, setQrisPayload, updateMethod } from "../services/platformPaymentService.js";
 
 const idOf = (req) => Number(req.params.id);
 
@@ -31,8 +31,21 @@ export async function remove(req, res) {
 export async function uploadQris(req, res) {
   const raw = String(req.body.fileBase64).replace(/^data:[^;]+;base64,/, "");
   if (!/^[A-Za-z0-9+/=\s]+$/.test(raw)) throw badRequest("Isi gambar tidak valid.", { code: "INVALID_BASE64" });
-  const method = await setQrisImage(idOf(req), { buffer: Buffer.from(raw, "base64"), fileName: req.body.fileName });
-  await audit(req, "platform_payment.qris_upload", { entityType: "platform_payment_method", entityId: method.id });
+  const { qrisRead, ...method } = await setQrisImage(idOf(req), { buffer: Buffer.from(raw, "base64"), fileName: req.body.fileName });
+  await audit(req, "platform_payment.qris_upload", { entityType: "platform_payment_method", entityId: method.id, metadata: { dynamic: method.dynamicQris } });
+  res.json({ success: true, data: method, qrisRead });
+}
+
+/** PUT /platform/payment-methods/:id/qris-code: the text of the merchant's static QRIS, when it cannot be read from the picture. */
+export async function setQrisCode(req, res) {
+  const method = await setQrisPayload(idOf(req), req.body.payload);
+  await audit(req, "platform_payment.qris_code_set", { entityType: "platform_payment_method", entityId: method.id, metadata: { merchantName: method.merchantName } });
+  res.json({ success: true, data: method });
+}
+
+export async function deleteQrisCode(req, res) {
+  const method = await removeQrisPayload(idOf(req));
+  await audit(req, "platform_payment.qris_code_remove", { entityType: "platform_payment_method", entityId: method.id });
   res.json({ success: true, data: method });
 }
 

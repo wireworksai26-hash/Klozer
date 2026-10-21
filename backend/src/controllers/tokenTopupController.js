@@ -1,5 +1,5 @@
 import { audit } from "../services/auditService.js";
-import { cancelTopup, claimPayment, createTopup, grantTokens, quoteWithVoucher, creditTopup, listAllTopups, listTopups, quoteTopup, TOPUP_MAX, TOPUP_MIN, TOPUP_STEP, MAX_OPEN_PER_SHOP } from "../services/tokenTopupService.js";
+import { cancelTopup, claimPayment, createTopup, grantTokens, quoteWithVoucher, topupPayInfo, creditTopup, listAllTopups, listTopups, quoteTopup, TOPUP_MAX, TOPUP_MIN, TOPUP_STEP, MAX_OPEN_PER_SHOP } from "../services/tokenTopupService.js";
 
 const idOf = (req) => Number(req.params.id);
 
@@ -66,4 +66,9 @@ export async function adminGrant(req, res) {
   const { topup, balance } = await grantTokens({ ...req.body, userId: req.user.id });
   await audit(req, "token_topup.grant", { entityType: "token_topup", entityId: topup.id, institutionId: topup.institutionId, metadata: { tokens: topup.tokens, reason: req.body.reason } });
   res.status(201).json({ success: true, message: "Token ditambahkan ke kuota toko.", data: topup, balance });
+}
+
+/** GET /ai/topups/:id/pay: what to pay for one bill, with the dynamic QRIS for its exact amount. */
+export async function pay(req, res) {
+  res.json({ success: true, ...(await topupPayInfo({ id: idOf(req), institutionId: req.tenantId })) });
 }
