@@ -27,7 +27,7 @@ export const translations = {
       aiConfig: "Konfigurasi AI",
       settings: "Pengaturan",
       team: "Hak Akses & Tim",
-      doc: "Buku Panduan",
+      doc: "Dokumentasi",
       logout: "Keluar (Logout)",
       connected: "WA Cloud API Terhubung",
       notifications: "Notifikasi",

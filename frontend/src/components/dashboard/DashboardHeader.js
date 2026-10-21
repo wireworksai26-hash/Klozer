@@ -153,7 +153,7 @@ export default function DashboardHeader({
                   onClick={() => setRoleDropdownOpen(false)}
                   className="p-2 rounded-xl hover:bg-sunken transition-colors flex items-center justify-between"
                 >
-                  <span>{t("Buku Panduan")}</span>
+                  <span>{t("Dokumentasi")}</span>
                   <span className="text-caption text-fg-subtle">→</span>
                 </Link>
 

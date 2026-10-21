@@ -29,7 +29,6 @@ import {
   PrinterIcon,
   FileTextIcon,
   PackageIcon,
-  HelpCircleIcon,
   BanIcon,
   ShoppingCartIcon,
   WarehouseIcon,
@@ -266,13 +265,17 @@ export function buildRolesConfig({ t, language, badges = {} }) {
           sectionIcon: <SettingsIcon className="w-4 h-4" />,
           items: [
             { label: "Simulator Latihan AI", href: "/dashboard/test-cs-ai", icon: <ZapIcon className="w-4.5 h-4.5" /> },
-            { label: t("nav.doc", "Buku Panduan CS"), href: "/dashboard/documentation", icon: <HelpCircleIcon className="w-4.5 h-4.5" /> },
           ],
         },
       ],
       navItems: [],
     },
   };
+
+  // One place to learn every feature, for every role, always in reach at the end of the pinned items
+  for (const roleConfig of Object.values(config)) {
+    roleConfig.pinnedItems = [...(roleConfig.pinnedItems ?? []), { label: t("Dokumentasi"), href: "/dashboard/documentation", icon: glyph("book") }];
+  }
 
   return markUnavailableItems(config, language);
 }
