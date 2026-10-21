@@ -10,3 +10,5 @@ process.env.JWT_SECRET = "test-jwt-secret-that-is-long-enough-for-hs256-01234567
 process.env.DB_ENCRYPTION_KEY = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
 process.env.CORS_ORIGINS = "http://localhost:3000";
 process.env.PLATFORM_PAYMENT_NOTIFY_SECRET = "test-notify-secret";
+process.env.META_APP_ID = "1234567890123";
+process.env.META_ES_CONFIG_ID = "998877665544";

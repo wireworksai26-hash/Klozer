@@ -121,8 +121,10 @@ export const whatsappAdapter = {
   },
 
   /** Nothing to look up when connecting: the owner gives the phone number id and token; "test" proves them later. */
-  async resolveConnection({ externalId, displayHandle = null, accessToken, wabaId = null }) {
-    return { externalId, displayHandle, accessToken, config: wabaId ? { wabaId } : null };
+  async resolveConnection({ externalId, displayHandle = null, accessToken, wabaId = null, registrationPin = null }) {
+    // the registration PIN (set when a number is connected through Embedded Signup) is kept encrypted and never shown
+    const settings = { ...(wabaId ? { wabaId } : {}), ...(registrationPin ? { registrationPin } : {}) };
+    return { externalId, displayHandle, accessToken, config: Object.keys(settings).length ? settings : null };
   },
 
   /** Ask Meta about the number behind this token, to prove the credentials work. */

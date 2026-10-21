@@ -26,7 +26,11 @@
 		respond 404
 	}
 
+	# Uploads (QRIS picture, transfer proofs, knowledge documents) travel as base64 JSON; the backend sets the real limit per route.
 	handle /api/* {
+		request_body {
+			max_size 9MB
+		}
 		reverse_proxy backend:5000
 	}
 

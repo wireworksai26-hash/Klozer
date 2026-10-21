@@ -5,6 +5,7 @@ Platform penjualan lewat WhatsApp untuk bisnis retail, kuliner, fesyen, jasa, da
 ## Yang sudah berfungsi
 
 - **Multi-tenant**: setiap query dibatasi `institution_id` dari token sesi, bukan dari input klien. Peran: superadmin, owner, supervisor, finance, CS, PIC gudang.
+- **Klien menyambung WhatsApp sendiri (Embedded Signup)**: setelah tim menyiapkan aplikasi Meta sekali, klien menekan satu tombol, login Facebook, dan memasukkan nomornya di jendela Meta. Klozer menukar kodenya, memeriksa kepemilikan nomor, mendaftarkannya, dan menyimpan kanalnya. Lihat DEPLOY.md.
 - **Live Chat WhatsApp** (Meta Cloud API): pesan masuk tampil realtime (Socket.io), balasan CS dikirim lewat nomor tenant. Tanda tangan webhook diperiksa dan pesan ganda dari retry Meta diabaikan.
 - **Balasan AI**: NVIDIA NIM dengan failover Gemini. AI hanya memakai katalog aktif, stok, rekening terdaftar, dan persona tenant. Kuota token per tenant dicatat. Jika AI tidak tersedia, kuota habis, atau pelanggan mengirim gambar/suara, percakapan diteruskan ke CS dan muncul notifikasi.
 - **API dan webhook**: API key bercakupan untuk kontak, chat, pesanan, dan produk; webhook keluar bertanda tangan untuk n8n, Make, atau kode sendiri, dengan antrean yang mencoba ulang, riwayat pengiriman, dan perlindungan agar webhook tidak bisa menjangkau jaringan internal. Lihat DEPLOY.md.

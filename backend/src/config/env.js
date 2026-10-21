@@ -108,6 +108,9 @@ export const config = {
   },
 
   meta: {
+    appId: process.env.META_APP_ID || "",
+    // the Embedded Signup configuration made in the Meta app (Facebook Login for Business); lets clients connect their own number
+    embeddedSignupConfigId: process.env.META_ES_CONFIG_ID || "",
     appSecret: read("META_APP_SECRET", { devDefault: "" }),
     verifyToken: read("META_WEBHOOK_VERIFY_TOKEN", { devDefault: "klozer-dev-verify-token" }),
     pixelId: process.env.META_PIXEL_ID || "",

@@ -7,7 +7,7 @@ import { CONNECTABLE_CHANNEL_TYPES, channelLimitFor } from "./channelPlans.js";
 const parseJson = (v) => (typeof v === "string" ? JSON.parse(v) : v ?? null);
 
 // Settings that authenticate the platform to us (a webhook secret). They are stored with the channel but never leave the server.
-const PRIVATE_CONFIG_KEYS = ["webhookSecret"];
+const PRIVATE_CONFIG_KEYS = ["webhookSecret", "registrationPin"];
 
 function publicConfig(row) {
   const config = { ...(parseJson(row.config_json) || {}) };

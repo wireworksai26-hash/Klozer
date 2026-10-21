@@ -84,3 +84,11 @@ export const webchatMessageBody = z.object({
 });
 
 export const webchatPollQuery = z.object({ after: z.coerce.number().int().min(0).optional() });
+
+/** The result of Meta's Embedded Signup window: a one-time code and the ids it reported. */
+export const whatsappSignupBody = z.object({
+  code: z.string().trim().min(10, "kode dari Meta tidak valid").max(2000, "kode dari Meta tidak valid"),
+  wabaId: z.string().trim().regex(/^\d{5,30}$/, "ID WhatsApp Business Account harus berupa angka"),
+  phoneNumberId: z.string().trim().regex(/^\d{5,30}$/, "ID nomor harus berupa angka"),
+  name: z.string().trim().min(1).max(80).optional(),
+});

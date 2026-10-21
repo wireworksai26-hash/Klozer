@@ -4,6 +4,7 @@ import { supportedChannelTypes } from "../services/channels/adapters/index.js";
 import { channelLimitFor } from "../services/channels/channelPlans.js";
 import { getChannel, listChannels, updateChannel } from "../services/channels/channelRepository.js";
 import { connectChannel, disconnectChannel, verifyChannel } from "../services/channels/channelService.js";
+import { completeSignup, signupConfig } from "../services/channels/whatsappSignup.js";
 
 /** GET /channels: connected accounts (no tokens) and how many the plan allows. */
 export async function list(req, res) {
@@ -38,4 +39,16 @@ export async function test(req, res) {
   await getChannel(req.tenantId, Number(req.params.id)); // 404 for another tenant's channel
   const result = await verifyChannel({ institutionId: req.tenantId, id: Number(req.params.id) });
   res.json({ success: result.ok, ...result });
+}
+
+/** GET /channels/whatsapp/signup-config: what the browser needs to open Meta's Embedded Signup window (no secrets). */
+export async function signupConfigHandler(req, res) {
+  res.json({ success: true, data: signupConfig() });
+}
+
+/** POST /channels/whatsapp/signup: the client gave its number in Meta's window; finish connecting it. */
+export async function signup(req, res) {
+  const { channel, verifiedName } = await completeSignup({ institutionId: req.tenantId, ...req.body });
+  await audit(req, "channel.signup", { entityType: "channel", entityId: channel.id, metadata: { type: "whatsapp", via: "embedded_signup" } });
+  res.status(201).json({ success: true, message: "WhatsApp terhubung.", data: channel, verifiedName });
 }

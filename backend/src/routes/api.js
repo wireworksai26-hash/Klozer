@@ -286,6 +286,8 @@ router.get("/open/products", ...open("products:read"), validate({ query: iv.open
 
 // ==================== CHANNELS & ROUTING ====================
 router.get("/channels", ...tenant, requireRole(...SALES), h(channelCtrl.list));
+router.get("/channels/whatsapp/signup-config", ...tenant, requireRole(...MANAGERS), h(channelCtrl.signupConfigHandler));
+router.post("/channels/whatsapp/signup", ...tenant, requireRole(...MANAGERS), aiLimiter, validate({ body: cv.whatsappSignupBody }, { rawFields: ["code"] }), h(channelCtrl.signup));
 router.post("/channels", ...tenant, requireRole(...MANAGERS), validate({ body: cv.createChannelBody }, { rawFields: ["accessToken"] }), h(channelCtrl.create));
 router.put("/channels/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: cv.updateChannelBody }, { rawFields: ["accessToken"] }), h(channelCtrl.update));
 router.delete("/channels/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(channelCtrl.remove));
