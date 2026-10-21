@@ -7,6 +7,7 @@ import { api } from "@/utils/api";
 import { Async, Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, TableShell, Tabs } from "@/components/ui";
 import QuoteModal from "@/components/topup/QuoteModal";
 import GrantModal from "@/components/topup/GrantModal";
+import BillDetailModal from "@/components/billing/BillDetailModal";
 import { TOPUP_STATUS, displayStatus } from "@/components/topup/topupStatus";
 
 const PAGE = 25;
@@ -20,6 +21,7 @@ export default function TopupQueuePage() {
   const [page, setPage] = useState(0);
   const [quoting, setQuoting] = useState(null);
   const [granting, setGranting] = useState(false);
+  const [detail, setDetail] = useState(null);
   const [crediting, setCrediting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const query = useApi("/ai/topups/admin", { query: { status, limit: PAGE, offset: page * PAGE }, enabled: role === "superadmin" });
@@ -111,6 +113,7 @@ export default function TopupQueuePage() {
                             </div>
                           ) : null}
                           {topup.paymentReference ? <div className="text-caption text-fg-muted max-w-[260px]">{topup.paymentReference}</div> : null}
+                          {!topup.isGrant && topup.status === "quoted" ? <div className="text-caption text-fg-muted">{topup.proofCount > 0 ? t("{n} bukti transfer", { n: topup.proofCount }) : t("Belum ada bukti transfer")}</div> : null}
                         </td>
                         <td className="text-right tabular-nums font-semibold">{number(topup.tokens)}</td>
                         <td className="whitespace-nowrap text-fg-muted">
@@ -126,6 +129,11 @@ export default function TopupQueuePage() {
                         </td>
                         <td>
                           <div className="flex flex-wrap justify-end gap-2">
+                            {!topup.isGrant ? (
+                              <Button size="sm" variant="secondary" onClick={() => setDetail({ type: "topup", id: topup.id })}>
+                                {t("Detail")}
+                              </Button>
+                            ) : null}
                             {topup.status === "requested" || topup.status === "quoted" ? (
                               <Button size="sm" variant="secondary" onClick={() => setQuoting(topup)}>
                                 {topup.status === "quoted" ? t("Ubah harga") : t("Beri harga")}
@@ -166,6 +174,7 @@ export default function TopupQueuePage() {
         }
       </Async>
 
+      {detail ? <BillDetailModal type={detail.type} id={detail.id} onClose={() => setDetail(null)} /> : null}
       {granting ? (
         <GrantModal
           onClose={() => setGranting(false)}

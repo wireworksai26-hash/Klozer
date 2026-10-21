@@ -7,6 +7,8 @@ import { api } from "@/utils/api";
 import { Async, Badge, Button, Card, ConfirmDialog, EmptyState, PageHeader, TableShell, Tabs } from "@/components/ui";
 import { ORDER_STATUS } from "@/components/billing/OrderHistory";
 import PaymentNotices from "@/components/billing/PaymentNotices";
+import PaymentSummary from "@/components/billing/PaymentSummary";
+import BillDetailModal from "@/components/billing/BillDetailModal";
 
 const PAGE = 25;
 
@@ -20,6 +22,7 @@ export default function BillingQueuePage() {
   const [confirming, setConfirming] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const [noticeKey, setNoticeKey] = useState(0);
+  const [detail, setDetail] = useState(null);
   const query = useApi("/billing/orders/admin", { query: { status, limit: PAGE, offset: page * PAGE }, enabled: role === "superadmin" });
   const { reload } = query;
 
@@ -62,6 +65,7 @@ export default function BillingQueuePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("Pembayaran Langganan")} description={t("Toko yang memilih paket mendapat tagihan dengan nominal unik. Pembayaran yang cocok mengaktifkan paket, fitur, dan token otomatis. Yang tidak cocok bisa Anda konfirmasi manual.")} />
+      <PaymentSummary refreshKey={noticeKey} />
       <Tabs
         label={t("Status tagihan")}
         tabs={tabs}
@@ -109,6 +113,7 @@ export default function BillingQueuePage() {
                         <td>
                           <Badge tone={state.tone}>{t(state.label)}</Badge>
                           {o.status === "paid" ? <div className="text-caption text-fg-muted mt-0.5">{o.paidVia === "auto" ? t("Otomatis dari notifikasi") : t("Dikonfirmasi manual")}</div> : null}
+                          <div className="mt-1 text-caption text-fg-muted">{o.proofCount > 0 ? t("{n} bukti transfer", { n: o.proofCount }) : t("Belum ada bukti transfer")}</div>
                           {o.paymentClaimedAt ? (
                             <div className="mt-1 flex flex-wrap items-center gap-2">
                               <Badge tone="warning">{t("Sudah bayar")}</Badge>
@@ -118,6 +123,9 @@ export default function BillingQueuePage() {
                         </td>
                         <td>
                           <div className="flex flex-wrap justify-end gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => setDetail({ type: "order", id: o.id })}>
+                              {t("Detail")}
+                            </Button>
                             {open ? (
                               <Button size="sm" icon="check" onClick={() => setConfirming(o)}>
                                 {t("Aktifkan paket")}
@@ -154,6 +162,7 @@ export default function BillingQueuePage() {
       </Async>
 
       <PaymentNotices refreshKey={noticeKey} />
+      {detail ? <BillDetailModal type={detail.type} id={detail.id} onClose={() => setDetail(null)} /> : null}
 
       <ConfirmDialog
         open={Boolean(confirming)}

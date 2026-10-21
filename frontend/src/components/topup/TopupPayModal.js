@@ -6,6 +6,7 @@ import { useFormat } from "@/hooks/useFormat";
 import { api } from "@/utils/api";
 import { whatsappUrl } from "@/utils/legal/config";
 import PayPanel from "@/components/payments/PayPanel";
+import ProofUpload from "@/components/billing/ProofUpload";
 import { Badge, Button, Modal, TextAreaField } from "@/components/ui";
 
 const POLL_MS = 5000;
@@ -21,6 +22,7 @@ export default function TopupPayModal({ topup, onClose, onChanged }) {
   const { run, pending } = useAction();
   const [reference, setReference] = useState("");
   const [claimedAt, setClaimedAt] = useState(topup.paymentClaimedAt);
+  const [uploaded, setUploaded] = useState(null); // proof count after an upload here
   const announced = useRef(false);
   const wa = whatsappUrl();
 
@@ -44,6 +46,7 @@ export default function TopupPayModal({ topup, onClose, onChanged }) {
   }, [pay?.paid, onChanged]);
 
   const claimed = Boolean(claimedAt);
+  const proofCount = uploaded ?? pay?.proofCount ?? topup.proofCount ?? 0;
   const amount = pay?.amountIdr ?? topup.payAmountIdr ?? topup.quotedAmountIdr;
 
   const paid = async (e) => {
@@ -91,6 +94,8 @@ export default function TopupPayModal({ topup, onClose, onChanged }) {
 
         <section className="flex flex-col gap-3">
           <h3 className="card-title">{t("Sudah membayar tapi belum masuk?")}</h3>
+          <p className="text-body-sm text-fg-muted">{t("Unggah bukti transfer supaya tim bisa mengecek pembayaran Anda.")}</p>
+          <ProofUpload kind="topup" id={topup.id} count={proofCount} onUploaded={setUploaded} />
           {claimed ? (
             <div className="flex flex-wrap items-center gap-2 text-body-sm text-fg-muted">
               <Badge tone="warning">{t("Menunggu dicek tim")}</Badge>

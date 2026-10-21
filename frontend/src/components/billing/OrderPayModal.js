@@ -5,6 +5,7 @@ import { useAction, useApi } from "@/hooks/useApi";
 import { useFormat } from "@/hooks/useFormat";
 import { api } from "@/utils/api";
 import PayPanel from "@/components/payments/PayPanel";
+import ProofUpload from "./ProofUpload";
 import { Badge, Button, Modal, TextAreaField } from "@/components/ui";
 
 const POLL_MS = 5000;
@@ -18,6 +19,7 @@ export default function OrderPayModal({ orderId, initial, onClose, onChanged }) 
   const { number, rupiah, date, dateTime } = useFormat();
   const { run, pending } = useAction();
   const [reference, setReference] = useState("");
+  const [uploaded, setUploaded] = useState(null); // proof count after an upload here
   const announced = useRef(false);
 
   // the bill and its dynamic QRIS; asked again every few seconds while it is open. `initial` is what creating it returned.
@@ -109,6 +111,8 @@ export default function OrderPayModal({ orderId, initial, onClose, onChanged }) 
 
         <section className="flex flex-col gap-3">
           <h3 className="card-title">{t("Sudah membayar tapi belum aktif?")}</h3>
+          <p className="text-body-sm text-fg-muted">{t("Unggah bukti transfer supaya tim bisa mengecek pembayaran Anda.")}</p>
+          <ProofUpload kind="order" id={order.id} count={uploaded ?? order.proofCount ?? 0} onUploaded={setUploaded} />
           {order.paymentClaimedAt ? (
             <div className="flex flex-wrap items-center gap-2 text-body-sm text-fg-muted">
               <Badge tone="warning">{t("Menunggu dicek tim")}</Badge>
