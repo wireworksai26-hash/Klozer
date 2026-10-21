@@ -216,10 +216,14 @@ router.get("/billing/orders", ...tenant, requireRole(...MANAGERS), h(billingCtrl
 router.post("/billing/orders", ...tenant, requireRole(...MANAGERS), validate({ body: billv.createOrderBody }), h(billingCtrl.create));
 router.get("/billing/orders/admin", authenticate, requireSuperadmin, validate({ query: billv.orderListQuery }), h(billingCtrl.adminList));
 router.get("/billing/orders/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(billingCtrl.show));
+router.post("/billing/orders/:id/proof", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: billv.proofBody }, { rawFields: ["fileBase64"] }), h(billingCtrl.uploadProof("order")));
 router.post("/billing/orders/:id/paid", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: billv.paidOrderBody }), h(billingCtrl.paid));
 router.post("/billing/orders/:id/cancel", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(billingCtrl.cancel));
 router.post("/billing/orders/:id/confirm", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(billingCtrl.adminConfirm));
 router.post("/billing/orders/:id/cancel-by-team", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(billingCtrl.adminCancel));
+router.get("/billing/summary", authenticate, requireSuperadmin, validate({ query: billv.summaryQuery }), h(billingCtrl.summary));
+router.get("/billing/detail/:type/:id", authenticate, requireSuperadmin, validate({ params: billv.detailParams }), h(billingCtrl.detail));
+router.get("/platform/payment-proofs/:id", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(billingCtrl.proofImage));
 router.get("/platform/payment-notifications", authenticate, requireSuperadmin, validate({ query: billv.notificationsQuery }), h(billingCtrl.notifications));
 router.post("/payments/platform-notify", webhookLimiter, validate({ body: billv.paymentNoticeBody }), h(billingCtrl.paymentNotice));
 router.get("/platform/payment-methods", authenticate, requireSuperadmin, h(payCtrl.adminList));
@@ -242,6 +246,7 @@ router.post("/ai/topups", ...tenant, requireRole(...MANAGERS), validate({ body: 
 router.get("/ai/topups/admin", authenticate, requireSuperadmin, validate({ query: topv.topupListQuery }), h(topupCtrl.adminList));
 router.post("/ai/topups/grant", authenticate, requireSuperadmin, validate({ body: topv.grantTokensBody }), h(topupCtrl.adminGrant));
 router.get("/ai/topups/:id/pay", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(topupCtrl.pay));
+router.post("/ai/topups/:id/proof", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: billv.proofBody }, { rawFields: ["fileBase64"] }), h(billingCtrl.uploadProof("topup")));
 router.post("/ai/topups/:id/paid", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: topv.paidTopupBody }), h(topupCtrl.paid));
 router.post("/ai/topups/:id/cancel", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(topupCtrl.cancel));
 router.put("/ai/topups/:id/quote", authenticate, requireSuperadmin, validate({ params: v.idParams, body: topv.quoteTopupBody }), h(topupCtrl.adminQuote));

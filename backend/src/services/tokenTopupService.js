@@ -39,6 +39,8 @@ const toTopup = (r) => ({
   payAmountIdr: r.pay_amount_idr === null || r.pay_amount_idr === undefined ? null : Number(r.pay_amount_idr),
   uniqueCode: Number(r.unique_code ?? 0),
   paidVia: r.paid_via ?? null,
+  proofCount: Number(r.proof_count ?? 0),
+  creditedBy: r.credited_by ?? null,
   requestedBy: r.requested_by,
   requestedByName: r.requested_by_name ?? undefined,
   quotedAt: r.quoted_at,
@@ -50,7 +52,8 @@ const toTopup = (r) => ({
   createdAt: r.created_at,
 });
 
-const SELECT = `SELECT t.*, i.name AS institution_name, u.name AS requested_by_name
+const SELECT = `SELECT t.*, i.name AS institution_name, u.name AS requested_by_name,
+  (SELECT COUNT(*) FROM platform_payment_proofs p WHERE p.ref_type = 'topup' AND p.ref_id = t.id) AS proof_count
   FROM token_topups t JOIN institutions i ON i.id = t.institution_id LEFT JOIN users u ON u.id = t.requested_by`;
 
 async function load(id, institutionId = null) {
@@ -198,7 +201,7 @@ export async function topupPayInfo({ id, institutionId }) {
   const topup = toTopup(row);
   const amount = topup.payAmountIdr ?? (topup.quotedAmountIdr === null ? null : Math.round(topup.quotedAmountIdr));
   const open = topup.status === "quoted" && amount !== null && amount > 0;
-  return { status: topup.status, paid: topup.status === "credited", amountIdr: amount, uniqueCode: topup.uniqueCode, qris: open ? await dynamicQrisFor(amount) : null };
+  return { status: topup.status, paid: topup.status === "credited", amountIdr: amount, uniqueCode: topup.uniqueCode, proofCount: topup.proofCount, qris: open ? await dynamicQrisFor(amount) : null };
 }
 
 /** After a notice-matched payment: tell the shop's screens. */
@@ -228,4 +231,10 @@ export async function grantTokens({ institutionId, tokens, reason, userId }) {
   const topup = toTopup(await load(id));
   tell(institutionId, topup);
   return { topup, balance: await getTokenBalance(institutionId) };
+}
+
+/** One bill as the team sees it (the detail screen reads it, with the shop and the history around it). */
+export async function getTopupForTeam(id) {
+  const row = await load(id);
+  return { topup: toTopup(row), shopId: row.institution_id };
 }

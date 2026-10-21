@@ -42,11 +42,15 @@ const toOrder = (r) => {
     paidVia: r.paid_via,
     activatedUntil: r.activated_until,
     tokensGranted: r.tokens_granted === null ? null : Number(r.tokens_granted),
+    proofCount: Number(r.proof_count ?? 0),
+    paidBy: r.paid_by ?? null,
+    cancelledAt: r.cancelled_at,
     createdAt: r.created_at,
   };
 };
 
-const SELECT = `SELECT o.*, i.name AS institution_name, u.name AS requested_by_name
+const SELECT = `SELECT o.*, i.name AS institution_name, u.name AS requested_by_name,
+    (SELECT COUNT(*) FROM platform_payment_proofs p WHERE p.ref_type = 'order' AND p.ref_id = o.id) AS proof_count
   FROM platform_orders o JOIN institutions i ON i.id = o.institution_id LEFT JOIN users u ON u.id = o.requested_by`;
 
 async function load(id, institutionId = null) {
@@ -193,4 +197,10 @@ export async function listAllOrders({ status = null, limit = 50, offset = 0 } = 
     queryOne("SELECT COUNT(*) AS n FROM platform_orders WHERE status = 'pending' AND expires_at > UTC_TIMESTAMP()"),
   ]);
   return { orders: rows.map(toOrder), total: Number(total.n), open: Number(open.n) };
+}
+
+/** One order as the team sees it. */
+export async function getOrderForTeam(id) {
+  const row = await load(id);
+  return { order: toOrder(row), shopId: row.institution_id };
 }

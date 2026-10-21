@@ -4,6 +4,8 @@ import { audit } from "../services/auditService.js";
 import { AppError } from "../utils/errors.js";
 import { cancelOrder, claimOrderPayment, confirmOrder, createOrder, listAllOrders, listOrders, listPlans, orderPayInfo } from "../services/billing/subscriptionOrderService.js";
 import { listNotifications, receivePayment } from "../services/billing/paymentNotificationService.js";
+import { addProof, decodeProofBase64, proofFile } from "../services/billing/billProofs.js";
+import { billDetail, paymentSummary } from "../services/billing/billDetail.js";
 
 const idOf = (req) => Number(req.params.id);
 
@@ -78,4 +80,28 @@ export async function paymentNotice(req, res) {
   const result = await receivePayment({ amountIdr: req.body.amount, reference: req.body.reference ?? null, source: req.body.source ?? null, payer: req.body.payer ?? null });
   if (result.status === "matched") await audit(req, "billing.payment_matched", { entityType: result.matchedType === "topup" ? "token_topup" : "platform_order", entityId: result.matchedId, institutionId: result.institutionId, metadata: { amountIdr: req.body.amount, source: req.body.source } });
   res.status(result.status === "duplicate" ? 200 : 201).json({ success: true, ...result });
+}
+
+/** POST /ai/topups/:id/proof and POST /billing/orders/:id/proof: the shop uploads a picture of its transfer proof. */
+export const uploadProof = (refType) => async (req, res) => {
+  const result = await addProof({ refType, refId: idOf(req), institutionId: req.tenantId, userId: req.user.id, buffer: decodeProofBase64(req.body.fileBase64), fileName: req.body.fileName, note: req.body.note ?? null });
+  await audit(req, "billing.proof_upload", { entityType: refType === "topup" ? "token_topup" : "platform_order", entityId: idOf(req), metadata: { proofId: result.id } });
+  res.status(201).json({ success: true, message: "Bukti pembayaran terunggah.", proofCount: result.count });
+};
+
+/** GET /billing/detail/:type/:id (superadmin): one payment with its shop, proofs, notices, history and signals. */
+export async function detail(req, res) {
+  res.json({ success: true, data: await billDetail(req.params.type, Number(req.params.id)) });
+}
+
+/** GET /billing/summary (superadmin): money received in a period, what waits, what deserves a look. */
+export async function summary(req, res) {
+  res.json({ success: true, data: await paymentSummary(req.query.days) });
+}
+
+/** GET /platform/payment-proofs/:id (superadmin): the picture. */
+export async function proofImage(req, res) {
+  const { buffer, mime } = await proofFile(Number(req.params.id));
+  res.set({ "Content-Type": mime, "Content-Length": buffer.length, "X-Content-Type-Options": "nosniff", "Content-Disposition": 'inline; filename="bukti"', "Cache-Control": "private, no-store" });
+  res.end(buffer);
 }

@@ -38,3 +38,7 @@ export const paymentNoticeBody = z.object({
   source: z.string().trim().max(40).optional(),
   payer: z.string().trim().max(120).optional(),
 });
+
+export const proofBody = z.object({ fileBase64: z.string().min(40, "gambar kosong"), fileName: z.string().trim().max(120).optional(), note: z.string().trim().max(300).optional() });
+export const detailParams = z.object({ type: z.enum(["topup", "order"]), id: z.coerce.number().int().positive() });
+export const summaryQuery = z.object({ days: z.coerce.number().int().min(1).max(365).default(30) });
