@@ -155,6 +155,15 @@ const phrases = {
   "Menunggu CS": "Waiting for an agent",
   "Tidak ada chat yang menunggu dibagikan.": "No chats are waiting to be assigned.",
   "Menunggu sejak {time}": "Waiting since {time}",
+  "Meta belum mengirim data nomor Anda. Ulangi dan selesaikan semua langkah di jendela Meta.": "Meta has not sent your number's details. Try again and finish every step in the Meta window.",
+  "WhatsApp {name} terhubung.": "WhatsApp {name} is connected.",
+  "Gagal menghubungkan WhatsApp.": "Could not connect WhatsApp.",
+  "Hubungkan WhatsApp Anda": "Connect your WhatsApp",
+  "Klik tombolnya, login Facebook, lalu masukkan nomor WhatsApp bisnis Anda di jendela Meta. Tidak perlu membuat token atau aplikasi sendiri.": "Click the button, log in to Facebook, then enter your business WhatsApp number in Meta's window. There is no token or app of your own to make.",
+  "Menyelesaikan penyambungan...": "Finishing the connection...",
+  "Menunggu jendela Meta...": "Waiting for the Meta window...",
+  "Hubungkan WhatsApp": "Connect WhatsApp",
+  "Nomor yang dipakai tidak boleh sedang aktif di aplikasi WhatsApp biasa. Bila perlu, hapus akun WhatsApp-nya dari aplikasi dulu.": "The number must not be active in the regular WhatsApp app. If needed, delete its WhatsApp account from the app first.",
 };
 
 export default phrases;

@@ -7,6 +7,7 @@ import { Async, Badge, Button, Card, ConfirmDialog, EmptyState, IconButton, Moda
 import EmbedCode from "./EmbedCode";
 import TypeIcon from "./TypeIcon";
 import ChannelFormModal from "./ChannelFormModal";
+import WhatsappConnect from "./WhatsappConnect";
 import { TOKEN_TYPES, TYPE_ORDER, channelTypes } from "./channelTypes";
 
 /** Short lines from a successful platform answer (name, account, quality), only what the platform sent. */
@@ -139,6 +140,8 @@ export default function ChannelsTab() {
               </div>
               {addButton}
             </div>
+
+            {isManager ? <WhatsappConnect disabled={full} onConnected={query.reload} /> : null}
 
             {channels.length === 0 ? (
               <Card>
