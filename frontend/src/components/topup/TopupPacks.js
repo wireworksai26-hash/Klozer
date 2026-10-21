@@ -6,52 +6,47 @@ import { useFormat } from "@/hooks/useFormat";
 import { api } from "@/utils/api";
 import { Button, Card, TextAreaField, TextField } from "@/components/ui";
 
-/** Pick a pack (or another amount), see the price, and create the bill. The price comes from the server's price list. */
-export default function TopupPacks({ packs, rules, onCreated }) {
+/** Pick a pack, optionally enter a voucher code, and create the bill. Tokens are sold by the pack; the price comes from the server. */
+export default function TopupPacks({ packs, onCreated }) {
   const { t } = useDashboard();
   const { number, rupiah } = useFormat();
   const { run, pending } = useAction();
   const [chosen, setChosen] = useState(packs[1]?.tokens ?? packs[0]?.tokens);
-  const [custom, setCustom] = useState("");
   const [note, setNote] = useState("");
   const [voucher, setVoucher] = useState("");
-  const [asked, setAsked] = useState(null); // the server's answer for one amount and code: { key, priceIdr, discountIdr, chargeIdr } or { key, error, code }
+  const [asked, setAsked] = useState(null); // the server's answer for one pack and code: { key, priceIdr, discountIdr, chargeIdr } or { key, error }
 
-  const customTokens = custom ? Number(custom) : null;
-  const tokens = customTokens ?? chosen;
-  const pack = packs.find((p) => p.tokens === tokens);
+  const pack = packs.find((p) => p.tokens === chosen);
   const code = voucher.trim();
-  const key = `${tokens}|${code}`;
+  const key = `${chosen}|${code}`;
 
-  // another amount, or a voucher code: ask the server what it costs, so the price shown is the price charged
+  // a voucher code: ask the server what the pack costs with it, so the price shown is the price charged
   useEffect(() => {
-    if (!customTokens && !code) return undefined;
+    if (!code) return undefined;
     let live = true;
     const timer = setTimeout(() => {
       api
-        .get("/ai/topups/price", { query: { tokens, voucher: code } })
+        .get("/ai/topups/price", { query: { tokens: chosen, voucher: code } })
         .then((res) => live && setAsked({ key, ...res.data }))
-        .catch((err) => live && setAsked({ key, error: err.message, code: err.code }));
+        .catch((err) => live && setAsked({ key, error: err.message }));
     }, 350);
     return () => {
       live = false;
       clearTimeout(timer);
     };
-  }, [tokens, customTokens, code, key]);
+  }, [chosen, code, key]);
 
   const answer = asked?.key === key ? asked : null;
-  const quote = !customTokens && !code ? (pack ? { priceIdr: pack.priceIdr, discountIdr: 0, chargeIdr: pack.priceIdr } : null) : answer;
-  const voucherError = answer?.error && String(answer.code || "").startsWith("VOUCHER_") ? answer.error : undefined;
-  const amountError = answer?.error && !voucherError ? answer.error : undefined;
+  const quote = code ? answer : pack ? { priceIdr: pack.priceIdr, discountIdr: 0, chargeIdr: pack.priceIdr } : null;
+  const voucherError = answer?.error;
   const canCreate = Boolean(quote && !quote.error);
 
   const create = async (e) => {
     e.preventDefault();
     if (!canCreate) return;
-    const result = await run(() => api.post("/ai/topups", { tokens, voucher: code || undefined, note: note.trim() || undefined }));
+    const result = await run(() => api.post("/ai/topups", { tokens: chosen, voucher: code || undefined, note: note.trim() || undefined }));
     if (result.ok) {
       setNote("");
-      setCustom("");
       setVoucher("");
       setAsked(null);
       onCreated(result.data.data);
@@ -63,17 +58,14 @@ export default function TopupPacks({ packs, rules, onCreated }) {
       <form onSubmit={create} className="flex flex-col gap-5">
         <div role="radiogroup" aria-label={t("Paket token")} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {packs.map((p) => {
-            const on = !customTokens && chosen === p.tokens;
+            const on = chosen === p.tokens;
             return (
               <button
                 key={p.id}
                 type="button"
                 role="radio"
                 aria-checked={on}
-                onClick={() => {
-                  setChosen(p.tokens);
-                  setCustom("");
-                }}
+                onClick={() => setChosen(p.tokens)}
                 className={`text-left min-h-11 px-4 py-3.5 rounded-xl border cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${on ? "bg-brand-soft border-brand/40" : "bg-white border-line-strong hover:bg-sunken"}`}
               >
                 <div className="text-body font-bold text-fg tabular-nums">{t("{tokens} token", { tokens: number(p.tokens) })}</div>
@@ -84,18 +76,8 @@ export default function TopupPacks({ packs, rules, onCreated }) {
           })}
         </div>
 
-        <TextField
-          label={t("Jumlah lain (token)")}
-          hint={customTokens ? undefined : t("Kelipatan {step}. Kosongkan untuk memakai paket di atas.", { step: number(rules.step) })}
-          inputMode="numeric"
-          value={custom}
-          onChange={(e) => {
-            setCustom(e.target.value.replace(/\D/g, ""));
-          }}
-          error={amountError}
-        />
         <TextField label={t("Kode voucher (opsional)")} value={voucher} maxLength={30} autoCapitalize="characters" onChange={(e) => setVoucher(e.target.value.toUpperCase())} error={voucherError} />
-        {quote && !quote.error && (customTokens || code) ? (
+        {quote && !quote.error && code ? (
           <div className="text-body-sm tabular-nums -mt-2 flex flex-col gap-0.5">
             {quote.discountIdr > 0 ? (
               <>

@@ -65,7 +65,7 @@ export default function TopupTokenPage() {
               <Stat label={t("Total kuota")} value={number(data.balance.totalQuota)} />
             </div>
             <Meter balance={data.balance} />
-            <TopupPacks packs={data.packs} rules={data.rules} onCreated={(topup) => { setPaying(topup); reload(); }} />
+            <TopupPacks packs={data.packs} onCreated={(topup) => { setPaying(topup); reload(); }} />
             <TopupHistory topups={data.data} onPay={setPaying} onChanged={reload} />
           </>
         )}
