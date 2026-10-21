@@ -103,10 +103,12 @@ function DashboardContent({ children }) {
   };
   const lockedFeature = featureOff(pathname) ? FEATURE_LIST.find((f) => f.key === featureForPath(pathname)) : null;
   const isPreview = PREVIEW_ROUTES.includes(pathname);
+  // The chat fills the space under the header exactly (its lists scroll inside it); other pages scroll as a whole.
+  const fillScreen = pathname === "/dashboard/chat";
 
   return (
     <RoleGuard>
-      <div className="flex h-screen bg-canvas overflow-hidden">
+      <div className="relative flex h-screen bg-canvas overflow-hidden">
         {/* Atomic Sidebar Navigation */}
         <SidebarNav
           isOpen={sidebarOpen}
@@ -138,10 +140,10 @@ function DashboardContent({ children }) {
 
           {/* Scrollable Viewport */}
           <main
-            className="flex-1 overflow-y-auto p-5 sm:p-7 md:p-10"
+            className={fillScreen ? "flex-1 min-h-0 flex flex-col overflow-hidden p-3 sm:p-4 md:p-6" : "flex-1 overflow-y-auto p-5 sm:p-7 md:p-10"}
             style={{ backgroundColor: "var(--dash-bg)" }}
           >
-            <div className="max-w-[1240px] mx-auto">
+            <div className={fillScreen ? "w-full max-w-[1240px] mx-auto flex-1 min-h-0 flex flex-col" : "max-w-[1240px] mx-auto"}>
               {notice && (
                 <div
                   role="status"

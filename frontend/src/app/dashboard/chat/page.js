@@ -95,7 +95,9 @@ export default function ChatPage() {
   }, [chatEvent]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    // scroll the thread itself to its end; scrollIntoView would also move every scrollable box around it
+    const thread = bottomRef.current?.parentElement;
+    if (thread) thread.scrollTop = thread.scrollHeight;
   }, [messages]);
 
   const visible = useMemo(() => {
@@ -175,9 +177,9 @@ export default function ChatPage() {
 
   return (
     <ModalGuardContext.Provider value={guard}>
-      <div className="flex h-[calc(100dvh-120px)] -m-4 sm:-m-6 md:-m-8 bg-canvas rounded-2xl overflow-hidden border border-line shadow-md">
+      <div className="flex flex-1 min-h-0 bg-canvas rounded-2xl overflow-hidden border border-line shadow-md">
         {/* Contact list */}
-        <div className={`w-full lg:w-[280px] min-[1360px]:w-[320px] bg-white border-r border-line flex-col flex-shrink-0 ${!showContactList ? "hidden lg:flex" : "flex"}`}>
+        <div className={`w-full lg:w-[300px] min-[1360px]:w-[320px] bg-white border-r border-line flex-col flex-shrink-0 ${!showContactList ? "hidden lg:flex" : "flex"}`}>
           <ConversationList leads={leads} visible={visible} search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} selectedId={selectedId} onSelect={selectConversation} />
         </div>
 

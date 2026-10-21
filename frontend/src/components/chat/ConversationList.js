@@ -35,10 +35,10 @@ export default function ConversationList({ leads, visible, search, onSearch, fil
             className="bg-transparent border-none outline-none text-body lg:text-label flex-1 text-ink placeholder:text-fg-subtle"
           />
         </div>
-        <Tabs tabs={tabs} value={filter} onChange={onFilter} label={t("Saring percakapan")} />
+        <Tabs tabs={tabs} value={filter} onChange={onFilter} label={t("Saring percakapan")} compact />
       </div>
 
-      <div className="flex-1 overflow-y-auto divide-y divide-line">
+      <div className="relative flex-1 min-h-0 overflow-y-auto divide-y divide-line">
         {visible.length === 0 ? (
           <div className="p-8 text-center text-fg-muted text-label flex flex-col items-center">
             <div className="w-10 h-10 rounded-full bg-line flex items-center justify-center mb-2">

@@ -77,7 +77,9 @@ export default function AiSandboxPage() {
   const fileInput = useRef(null);
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "end" });
+    // scroll the thread itself to its end; scrollIntoView would also move every scrollable box around it
+    const thread = bottom.current?.parentElement;
+    if (thread) thread.scrollTop = thread.scrollHeight;
   }, [messages, busy]);
 
   const ask = async (content) => {

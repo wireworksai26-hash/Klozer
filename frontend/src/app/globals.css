@@ -319,6 +319,14 @@
     border-radius: 8px;
   }
 
+  /* A row that scrolls sideways by swipe or keys without a visible scrollbar (tabs in a narrow list). */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Dashboard modal widths: sm (confirm) / md (form) / lg (wide form) */
   .modal-sm { width: 100%; max-width: 25rem; }
   .modal-md { width: 100%; max-width: 30rem; }
