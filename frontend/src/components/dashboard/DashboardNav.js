@@ -174,6 +174,7 @@ export function buildRolesConfig({ t, language, badges = {} }) {
             { label: language === "en" ? "Transactions" : "Transaksi", href: "/dashboard/superadmin/transactions", icon: <DollarSignIcon className="w-4.5 h-4.5" /> },
             { label: t("Metode Pembayaran"), href: "/dashboard/superadmin/payment-methods", icon: glyph("coins") },
             { label: t("Voucher Diskon"), href: "/dashboard/superadmin/vouchers", icon: glyph("coins") },
+            { label: t("Pembayaran Langganan"), href: "/dashboard/superadmin/billing", icon: glyph("coins") },
             { label: t("Antrean Top Up Token"), href: "/dashboard/superadmin/topups", icon: glyph("coins") },
             { label: language === "en" ? "Export Data" : "Export Data", href: "/dashboard/superadmin/exports", icon: <DownloadIcon className="w-4.5 h-4.5" /> },
           ],

@@ -66,6 +66,13 @@ export default function PaymentMethodsPage() {
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge tone={method.isActive ? "success" : "neutral"}>{method.isActive ? t("Tampil") : t("Disembunyikan")}</Badge>
                       {method.kind === "qris" && !method.hasQris ? <span className="text-label text-warning-800">{t("Belum ada gambar QRIS. Unggah dulu agar bisa ditampilkan.")}</span> : null}
+                      {method.kind === "qris" ? (
+                        method.dynamicQris ? (
+                          <Badge tone="success">{t("QRIS dinamis aktif")}</Badge>
+                        ) : (
+                          <span className="text-label text-fg-muted">{t("QRIS statis: nominal belum otomatis.")}</span>
+                        )
+                      ) : null}
                       <Switch checked={method.isActive} onChange={(on) => toggle(method, on)} label={t("Tampilkan")} disabled={pending || (method.kind === "qris" && !method.hasQris)} />
                     </div>
                     <div className="flex flex-wrap items-center gap-2">

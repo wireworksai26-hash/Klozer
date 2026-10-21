@@ -1,6 +1,12 @@
 "use client";
+import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { Button } from "@/components/ui";
+import { useApi } from "@/hooks/useApi";
+import { useFormat } from "@/hooks/useFormat";
+import { Async, Badge, Button } from "@/components/ui";
+import OrderHistory from "@/components/billing/OrderHistory";
+import OrderPayModal from "@/components/billing/OrderPayModal";
+import PlanPicker from "@/components/billing/PlanPicker";
 
 const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
 
@@ -23,7 +29,26 @@ function Meter({ label, used, total }) {
 }
 
 export default function StoreSubscriptionPage() {
-  const { activeSubscription: sub, activeInstitution, tokenBalance, teamMembers, isManager, t } = useDashboard();
+  const { activeSubscription: sub, activeInstitution, tokenBalance, teamMembers, isManager, role, billingEvent, t } = useDashboard();
+  const { date } = useFormat();
+  const canBuy = isManager && role !== "superadmin";
+  const plans = useApi("/billing/plans", { enabled: canBuy });
+  const orders = useApi("/billing/orders", { enabled: canBuy });
+  const { reload: reloadPlans } = plans;
+  const { reload: reloadOrders } = orders;
+  const [paying, setPaying] = useState(null); // { id, initial } while a pay screen is open
+
+  // a payment settled, or a bill changed: the plan and the list follow without a refresh
+  useEffect(() => {
+    if (billingEvent) {
+      reloadPlans();
+      reloadOrders();
+    }
+  }, [billingEvent, reloadPlans, reloadOrders]);
+  const settled = useCallback(() => {
+    reloadPlans();
+    reloadOrders();
+  }, [reloadPlans, reloadOrders]);
 
   if (!sub) return <div className="p-8 text-center text-fg-muted">{t("Memuat data paket...")}</div>;
 
@@ -46,8 +71,33 @@ export default function StoreSubscriptionPage() {
           <div className="text-label font-bold text-fg-muted uppercase">{t("Paket saat ini")}</div>
           <div className="text-heading font-bold text-ink">{sub.plan}</div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-caption font-bold ${blocked ? "bg-line-strong text-fg" : "bg-success-100 text-success-800"}`}>{blocked ? t("Nonaktif") : t("Aktif")}</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`px-3 py-1 rounded-full text-caption font-bold ${blocked ? "bg-line-strong text-fg" : "bg-success-100 text-success-800"}`}>{blocked ? t("Nonaktif") : t("Aktif")}</span>
+          {plans.data?.current?.expiresAt ? <span className="text-caption text-fg-muted">{plans.data.current.active ? t("Berlaku sampai {date}", { date: date(plans.data.current.expiresAt) }) : t("Berakhir {date}", { date: date(plans.data.current.expiresAt) })}</span> : null}
+        </div>
       </div>
+
+      {canBuy ? (
+        <>
+          <Async query={plans} loadingLabel={t("Memuat paket...")}>
+            {(data) => <PlanPicker data={data} onOrder={(res) => setPaying({ id: res.order.id, initial: res })} />}
+          </Async>
+          <Async query={orders} loadingLabel={t("Memuat tagihan...")}>
+            {(data) => <OrderHistory orders={data.data} onPay={(order) => setPaying({ id: order.id, initial: null })} />}
+          </Async>
+          {paying ? (
+            <OrderPayModal
+              orderId={paying.id}
+              initial={paying.initial}
+              onClose={() => {
+                setPaying(null);
+                settled();
+              }}
+              onChanged={settled}
+            />
+          ) : null}
+        </>
+      ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Meter label={t("Token AI terpakai")} used={used} total={total} />
@@ -67,7 +117,7 @@ export default function StoreSubscriptionPage() {
       )}
 
       <div className="bg-white p-6 rounded-2xl border border-line text-body-sm text-fg-muted leading-relaxed">
-        {t("Kuota token dipakai setiap kali AI membalas pelanggan. Ketika kuota habis, AI berhenti membalas otomatis dan percakapan diteruskan ke tim CS Anda. Untuk menaikkan paket, hubungi admin Klozer. Untuk menambah token, pakai Top Up Token AI.")}
+        {t("Kuota token dipakai setiap kali AI membalas pelanggan. Pertanyaan rutin dijawab Jalur Cepat tanpa token. Ketika kuota habis, AI berhenti membalas dan sisanya diteruskan ke tim CS Anda. Untuk menambah token, pakai Top Up Token AI.")}
       </div>
     </div>
   );

@@ -100,6 +100,8 @@ export function DashboardProvider({ children }) {
   const [taskEvent, setTaskEvent] = useState(null);
   // Bumps when the team prices or credits a token top up, so the top up screen can refetch.
   const [topupEvent, setTopupEvent] = useState(null);
+  const [billingEvent, setBillingEvent] = useState(null);
+  const loadInstitutionsRef = useRef(null);
 
   // Latest team list for handlers that run after await (kept in a ref so they never read a stale closure).
   const teamRef = useRef([]);
@@ -254,6 +256,12 @@ export function DashboardProvider({ children }) {
       if (evt?.createdVia === "chat") pushNotification({ type: "chat", title: "Pesanan baru dari chat", desc: "AI mencatat pesanan pelanggan. Stok sudah dikurangi.", link: "/dashboard/orders" });
     });
     socket.on("order:updated", reloadOrders);
+    // a package payment settled (or a bill changed): the plan, features and tokens behind every screen follow without a refresh
+    socket.on("billing:updated", () => {
+      setBillingEvent({ at: Date.now() });
+      api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)).catch(() => {});
+      if (currentUserRef.current) loadInstitutionsRef.current?.(currentUserRef.current)?.catch(() => {});
+    });
     socket.on("topup:updated", () => {
       setTopupEvent({ at: Date.now() });
       api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)).catch(() => {});
@@ -296,6 +304,10 @@ export function DashboardProvider({ children }) {
     const list = user.role === "superadmin" ? await fetchAll("/institutions") : (await api.get("/institutions")).items;
     setInstitutions((list || []).map(institutionFromApi));
   }, []);
+
+  useEffect(() => {
+    loadInstitutionsRef.current = loadInstitutions;
+  }, [loadInstitutions]);
 
   const loadTeam = useCallback(async (user) => {
     if (!["owner", "supervisor", "finance", "superadmin"].includes(user.role)) {
@@ -885,6 +897,7 @@ export function DashboardProvider({ children }) {
     taskSummary,
     taskEvent,
     topupEvent,
+    billingEvent,
     refreshTaskSummary,
     // tenants
     institutions,

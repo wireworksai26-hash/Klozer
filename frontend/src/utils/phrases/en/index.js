@@ -41,6 +41,7 @@ import integrations from "./integrations.js";
 import fastpath from "./fastpath.js";
 import payments from "./payments.js";
 import vouchers from "./vouchers.js";
+import billing from "./billing.js";
 import topup from "./topup.js";
 
 export const enPhrases = {
@@ -85,5 +86,6 @@ export const enPhrases = {
   ...fastpath,
   ...payments,
   ...vouchers,
+  ...billing,
   ...topup,
 };

@@ -73,11 +73,11 @@ export default function TopupTokenPage() {
       {paying ? (
         <TopupPayModal
           topup={paying}
-          onClose={() => setPaying(null)}
-          onChanged={() => {
+          onClose={() => {
             setPaying(null);
             reload();
           }}
+          onChanged={reload}
         />
       ) : null}
     </div>

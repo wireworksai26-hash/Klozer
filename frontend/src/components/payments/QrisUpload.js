@@ -4,6 +4,7 @@ import { useDashboard } from "@/context/DashboardContext";
 import { useAction } from "@/hooks/useApi";
 import { api } from "@/utils/api";
 import { Button } from "@/components/ui";
+import QrisCodeForm from "./QrisCodeForm";
 
 const MAX_BYTES = 1_500_000;
 const TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -14,6 +15,7 @@ export default function QrisUpload({ method, onChanged }) {
   const { run, pending } = useAction();
   const input = useRef(null);
   const [reading, setReading] = useState(false);
+  const [pasting, setPasting] = useState(false);
 
   const pick = (e) => {
     const file = e.target.files?.[0];
@@ -35,8 +37,13 @@ export default function QrisUpload({ method, onChanged }) {
     };
     reader.onload = async () => {
       setReading(false);
-      const result = await run(() => api.put(`/platform/payment-methods/${method.id}/qris`, { fileBase64: String(reader.result), fileName: file.name }), { success: t("Gambar QRIS disimpan.") });
-      if (result.ok) onChanged();
+      const result = await run(() => api.put(`/platform/payment-methods/${method.id}/qris`, { fileBase64: String(reader.result), fileName: file.name }));
+      if (result.ok) {
+        // the code inside the picture is read so each bill can get a QRIS with its own amount; say whether that worked
+        if (result.data.qrisRead?.ok) notify("success", t("Gambar QRIS disimpan. Kode dinamis aktif untuk {name}.", { name: result.data.data.merchantName }));
+        else notify("error", t("Gambar QRIS disimpan, tetapi kodenya belum terbaca. Tempel kode QRIS agar nominal otomatis."));
+        onChanged();
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -56,6 +63,19 @@ export default function QrisUpload({ method, onChanged }) {
         <Button size="sm" variant="quietDanger" onClick={remove} disabled={pending}>
           {t("Hapus gambar")}
         </Button>
+      ) : null}
+      <Button size="sm" variant="secondary" onClick={() => setPasting(true)}>
+        {method.dynamicQris ? t("Ganti kode QRIS") : t("Tempel kode QRIS")}
+      </Button>
+      {pasting ? (
+        <QrisCodeForm
+          method={method}
+          onClose={() => setPasting(false)}
+          onSaved={() => {
+            setPasting(false);
+            onChanged();
+          }}
+        />
       ) : null}
     </div>
   );
