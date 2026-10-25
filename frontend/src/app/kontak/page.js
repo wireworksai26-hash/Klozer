@@ -4,7 +4,7 @@ import { LEGAL, whatsappUrl } from "@/utils/legal/config";
 
 export const metadata = {
   title: "Kontak | Klozer",
-  description: "Hubungi Klozer lewat email, WhatsApp, atau Instagram.",
+  description: "Hubungi Klozer lewat email atau Instagram.",
 };
 
 function Row({ label, children }) {

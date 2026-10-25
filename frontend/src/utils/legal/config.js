@@ -7,9 +7,9 @@ export const LEGAL = {
   // business that signs the payment-gateway contract once it is final.
   operator: "Pengelola Klozer",
   contactEmail: "wireworksai26@gmail.com",
-  // How a customer reaches the team: email above, this WhatsApp number, and Instagram. The contact page, footer, FAQ,
-  // payment page and the dashboard's help places only show what is set here.
-  phone: "+62 851-6613-8590",
+  // How a customer reaches the team: email above, a WhatsApp number (empty for now, so no WhatsApp link shows anywhere), and
+  // Instagram. The contact page, footer, FAQ, payment page and the dashboard's help places only show what is set here.
+  phone: "",
   instagramUrl: "https://www.instagram.com/ethermind.agency/",
   instagramHandle: "@ethermind.agency",
   address: "", // full business address as it appears on the gateway application; the contact page shows it once filled
