@@ -15,6 +15,7 @@ export const PAUSE_REASON = {
   manual: { label: "Dijeda oleh tim", help: "Lanjutkan kapan saja bila sudah siap." },
   template_problem: { label: "Templat bermasalah", help: "Templat tidak lagi disetujui Meta, atau Meta menolak isinya. Periksa statusnya di tab Templat, lalu lanjutkan." },
   channel_auth: { label: "Akun WhatsApp bermasalah", help: "Token kanal kedaluwarsa atau akun dikunci. Perbarui kanal di Saluran Chat, lalu lanjutkan." },
+  payment_problem: { label: "Pembayaran Meta bermasalah", help: "Meta menolak pesan karena akun WhatsApp Business Anda belum punya metode pembayaran yang valid. Pasang atau perbaiki di WhatsApp Manager milik Anda di Meta, lalu lanjutkan." },
   out_of_credits: { label: "Kredit blast habis", help: "Tambah kredit, lalu lanjutkan. Pesan yang belum terkirim tetap menunggu." },
 };
 

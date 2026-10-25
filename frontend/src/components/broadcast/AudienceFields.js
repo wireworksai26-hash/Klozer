@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { api } from "@/utils/api";
 import { ChipPicker, SelectField, Switch, TagInput, TextField } from "@/components/ui";
+import { formatRupiah } from "@/utils/plans";
 import { LEAD_STATUS_OPTIONS, ORDER_FILTER_OPTIONS } from "./broadcastModel";
 
 export const EMPTY_AUDIENCE = { statuses: [], orders: "", cities: [], sources: [], adIds: [], quietForDays: "", activeWithinDays: "", onlyThisNumber: true };
@@ -96,7 +97,7 @@ export function AudienceCount({ preview, marketing }) {
   const { t } = useDashboard();
   if (preview.loading) return <p role="status" className="text-label text-fg-muted">{t("Menghitung kontak...")}</p>;
   if (preview.error) return <p role="alert" className="text-label text-danger-700">{preview.error.message}</p>;
-  const { count, sample = [], matchingFilterBeforeConsent } = preview.data;
+  const { count, sample = [], matchingFilterBeforeConsent, metaCost } = preview.data;
   const held = marketing && typeof matchingFilterBeforeConsent === "number" ? matchingFilterBeforeConsent - count : 0;
   return (
     <div role="status" className="rounded-xl bg-sunken border border-line p-4 flex flex-col gap-2">
@@ -105,6 +106,11 @@ export function AudienceCount({ preview, marketing }) {
       </div>
       {held > 0 ? <p className="text-label text-fg-muted">{t("{count} kontak lain cocok dengan filter, tetapi belum setuju menerima promosi atau baru saja dikirimi kampanye.", { count: held })}</p> : null}
       {marketing ? <p className="text-label text-fg-muted">{t("Templat promosi hanya dikirim ke kontak yang sudah setuju menerima promosi.")}</p> : null}
+      {metaCost && count > 0 ? (
+        <p className="text-label text-fg-muted">
+          {t("Perkiraan biaya Meta: Rp {total} (sekitar Rp {rate} per pesan, belum termasuk PPN 11%). Ditagih Meta langsung ke akun WhatsApp Business Anda, bukan ke Klozer.", { total: formatRupiah(metaCost.total), rate: formatRupiah(Math.round(metaCost.perMessage)) })}
+        </p>
+      ) : null}
       {sample.length ? (
         <p className="text-caption text-fg-subtle">
           {t("Contoh")}: {sample.map((s) => `${s.name} (${s.phone})`).join(", ")}

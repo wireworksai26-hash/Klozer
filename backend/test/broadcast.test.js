@@ -357,6 +357,9 @@ describe("audience", () => {
     assert.equal(m.matchingFilterBeforeConsent, 3, "the owner is shown how many the consent rule is holding back");
     assert.equal((await previewFor(t, utility)).count, 3, "an order update can go to contacts who never said yes to promotions, but not to opted-out ones");
     assert.ok(m.sample.every((s) => /^\d{5}\*\*\*\*\d{3}$/.test(s.phone)), "phones are masked in the preview");
+    assert.equal(m.metaCost.category, "marketing");
+    assert.equal(m.metaCost.total, Math.round(586.33 * 2), "the owner sees roughly what Meta will charge");
+    assert.equal((await previewFor(t, utility)).metaCost.perMessage, 356.65);
   });
 
   test("filters narrow the audience", async () => {

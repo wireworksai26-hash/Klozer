@@ -164,6 +164,16 @@ const phrases = {
   "Menunggu jendela Meta...": "Waiting for the Meta window...",
   "Hubungkan WhatsApp": "Connect WhatsApp",
   "Nomor yang dipakai tidak boleh sedang aktif di aplikasi WhatsApp biasa. Bila perlu, hapus akun WhatsApp-nya dari aplikasi dulu.": "The number must not be active in the regular WhatsApp app. If needed, delete its WhatsApp account from the app first.",
+  "Meta menolak pesan dari nomor ini karena pembayaran": "Meta is refusing messages from this number because of payment",
+  "Akun WhatsApp Business Anda belum punya metode pembayaran yang valid. Pasang di WhatsApp Manager milik Anda di Meta. Peringatan ini hilang sendiri setelah satu pesan berhasil terkirim.": "Your WhatsApp Business account has no valid payment method. Add one in your WhatsApp Manager on Meta. This warning goes away by itself once a message is delivered.",
+  "Baca caranya": "Read how",
+  "Balasan bulan ini": "Replies this month",
+  "{used} dari {free} gratis": "{used} of {free} free",
+  "Jatah balasan gratis terpakai": "Free replies used",
+  "{count} balasan berbayar, perkiraan Rp {cost} (belum termasuk PPN 11%). Ditagih Meta ke akun WhatsApp Business Anda.": "{count} paid replies, about Rp {cost} (before 11% VAT). Billed by Meta to your WhatsApp Business account.",
+  "Sisa {left} balasan gratis. Perkiraan dari pesan yang tercatat di Klozer; angka resmi ada di tagihan Meta.": "{left} free replies left. An estimate from the messages Klozer recorded; the official figure is on your Meta bill.",
+  "Biaya pesan WhatsApp ditagih Meta langsung ke akun Anda. Pasang metode pembayaran di Meta sebelum mulai, kalau tidak pesan bisa berhenti terkirim.": "Meta bills WhatsApp message fees directly to your account. Add a payment method on Meta before you start, or messages may stop being delivered.",
+  "Lihat rincian biaya": "See the fee details",
 };
 
 export default phrases;

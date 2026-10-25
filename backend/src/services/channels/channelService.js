@@ -5,6 +5,7 @@ import { queryOne } from "../../config/db.js";
 import { getAdapter } from "./adapters/index.js";
 import { assertWithinLimit, createChannel, deleteChannel, loadDefaultChannel, loadTransportChannel, loadTransportChannelAny } from "./channelRepository.js";
 import { splitText } from "./textUtils.js";
+import { noteSendOutcome } from "./paymentFlag.js";
 
 /**
  * Sending through a tenant's connected accounts, whatever the channel type. Callers say who to write to and on
@@ -57,6 +58,7 @@ export async function sendText({ institutionId, channelId = null, type = "whatsa
   let first = null;
   for (const part of parts) {
     const result = await adapter.send({ channel, to: recipient, text: part });
+    if (type === "whatsapp") await noteSendOutcome(channel, result);
     if (!result.success) return first ? { ...first, partial: true, error: result.error } : result;
     first ??= result;
   }

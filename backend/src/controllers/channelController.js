@@ -4,11 +4,15 @@ import { supportedChannelTypes } from "../services/channels/adapters/index.js";
 import { channelLimitFor } from "../services/channels/channelPlans.js";
 import { getChannel, listChannels, updateChannel } from "../services/channels/channelRepository.js";
 import { connectChannel, disconnectChannel, verifyChannel } from "../services/channels/channelService.js";
+import { whatsappServiceUsage } from "../services/channels/metaUsage.js";
 import { completeSignup, signupConfig } from "../services/channels/whatsappSignup.js";
 
 /** GET /channels: connected accounts (no tokens) and how many the plan allows. */
 export async function list(req, res) {
-  const [channels, inst] = await Promise.all([listChannels(req.tenantId), queryOne("SELECT subscription_tier FROM institutions WHERE id = ?", [req.tenantId])]);
+  const [listed, inst] = await Promise.all([listChannels(req.tenantId), queryOne("SELECT subscription_tier FROM institutions WHERE id = ?", [req.tenantId])]);
+  // Meta bills each WhatsApp number for replies past the free monthly allowance: show where every number stands
+  const usage = await whatsappServiceUsage(req.tenantId, listed.filter((c) => c.type === "whatsapp").map((c) => c.id));
+  const channels = listed.map((c) => (usage.has(c.id) ? { ...c, metaUsage: usage.get(c.id) } : c));
   res.json({ success: true, data: channels, limit: channelLimitFor(inst?.subscription_tier), supportedTypes: supportedChannelTypes() });
 }
 

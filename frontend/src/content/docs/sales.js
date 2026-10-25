@@ -206,6 +206,8 @@ export const salesGuides = [
         "Ada jeda minimum sebelum orang yang sama dikirimi promosi lagi.",
         "Tiap pesan yang diterima Meta memakai satu kredit blast. Kredit dikembalikan kalau pesan gagal.",
       ]),
+      h("Biaya dari Meta"),
+      p("Selain kredit blast, Meta menagih tiap templat yang terkirim langsung ke akun WhatsApp Business Anda: sekitar Rp 586 per pesan promosi dan sekitar Rp 357 per pesan info pesanan, belum termasuk PPN. Saat Anda menjalankan kampanye, perkiraan totalnya tampil di bawah jumlah penerima. Kalau metode pembayaran di Meta bermasalah, kampanye berhenti sendiri dengan alasan pembayaran. Lihat panduan **Biaya WhatsApp dari Meta**."),
       h("Hasil"),
       p("Detail kampanye menampilkan berapa yang diterima, sampai, dibaca, dan gagal beserta alasannya, jumlah yang membalas, serta pesanan berbayar dari penerima dalam 7 hari."),
       tip("Kirim templat uji ke diri sendiri sebelum kampanye besar. Dan kumpulkan persetujuan dengan jujur: kontak yang tidak setuju tidak akan menerima apa pun."),

@@ -248,7 +248,7 @@ export const aiGuides = [
         "Setelah selesai, jendela menutup sendiri dan nomor Anda muncul di daftar saluran. Anda tidak perlu membuat token.",
       ]),
       warn("Nomor yang dipakai tidak boleh sedang aktif di aplikasi WhatsApp biasa. Kalau perlu, hapus dulu akun WhatsApp-nya dari aplikasi."),
-      p("Biaya percakapan WhatsApp ditagih Meta ke akun WhatsApp Business milik Anda."),
+      p("Biaya pesan WhatsApp ditagih Meta ke akun WhatsApp Business milik Anda, jadi pasang metode pembayaran di Meta sebelum mulai. Rinciannya ada di panduan **Biaya WhatsApp dari Meta**."),
       h("Menghubungkan secara manual"),
       steps([
         "Klik **Tambah saluran** dan pilih jenisnya.",

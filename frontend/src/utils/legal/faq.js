@@ -35,6 +35,10 @@ export const faqItems = [
     a: "Untuk transfer manual, sistem dapat mencocokkan bukti dengan mutasi rekening bank Anda (fitur paket Pro). Bila dana belum benar-benar masuk, pesanan tidak disetujui untuk dikirim.",
   },
   {
+    q: "Apakah ada biaya WhatsApp dari Meta di luar harga paket Klozer?",
+    a: "Ada. Meta menagih biaya pesan WhatsApp langsung ke akun WhatsApp Business Anda, terpisah dari paket Klozer. Balasan dalam 24 jam setelah pelanggan chat gratis untuk 1.000 pesan pertama per nomor tiap bulan, sisanya sekitar Rp 357 per pesan. Pesan promosi lewat broadcast berbayar sekitar Rp 586 per pesan. Angka belum termasuk PPN dan bisa berubah mengikuti tarif Meta. Instagram, Messenger, Telegram, dan chat di website tidak dikenai biaya ini.",
+  },
+  {
     q: "Apakah data saya dan data pelanggan saya aman?",
     a: "Data dipisahkan antar akun, kata sandi disimpan sebagai hash, dan token integrasi WhatsApp disimpan terenkripsi. Penjelasan lengkap ada di halaman Kebijakan Privasi.",
   },

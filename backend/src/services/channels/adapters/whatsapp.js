@@ -44,7 +44,7 @@ export const whatsappAdapter = {
       const { ok, data } = await graphPost(channel, { recipient_type: "individual", to: recipient, type: "text", text: { preview_url: false, body: text } });
       if (!ok) {
         logger.error({ channel: channel.id, error: data?.error }, "WhatsApp Cloud API rejected message");
-        return { success: false, error: data?.error?.message || "Ditolak oleh WhatsApp Cloud API." };
+        return { success: false, error: data?.error?.message || "Ditolak oleh WhatsApp Cloud API.", errorCode: data?.error?.code ?? null };
       }
       return { success: true, to: recipient, messageId: data?.messages?.[0]?.id ?? null };
     } catch (err) {

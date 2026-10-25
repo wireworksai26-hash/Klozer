@@ -26,7 +26,7 @@ function PauseNotice({ campaign, onGoTemplates }) {
             {t("Buka halaman kredit")}
           </Button>
         ) : null}
-        {campaign.pauseReason === "channel_auth" ? (
+        {campaign.pauseReason === "channel_auth" || campaign.pauseReason === "payment_problem" ? (
           <Button variant="secondary" size="sm" href="/dashboard/channels">
             {t("Buka Saluran Chat")}
           </Button>

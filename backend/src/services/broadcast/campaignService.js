@@ -1,6 +1,7 @@
 import { query, queryOne } from "../../config/db.js";
 import { parseJsonColumn } from "../../utils/jsonColumn.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
+import { estimateMetaCost } from "../../utils/metaPricing.js";
 import { loadTransportChannel } from "../channels/channelRepository.js";
 import { getAdapter } from "../channels/adapters/index.js";
 import { fetchAudiencePage, previewAudience } from "./audience.js";
@@ -66,7 +67,9 @@ export async function createCampaign({ institutionId, userId, name, channelId, t
 export async function previewForCampaign({ institutionId, channelId, templateId, audience }) {
   const template = await getTemplateRow(institutionId, templateId);
   const settings = await getBroadcastSettings(institutionId);
-  return previewAudience({ institutionId, audience, category: template.category, channelId, frequencyCapDays: settings.frequencyCapDays });
+  const preview = await previewAudience({ institutionId, audience, category: template.category, channelId, frequencyCapDays: settings.frequencyCapDays });
+  // Meta bills the client's own WhatsApp account for every template delivered; show the owner roughly how much
+  return { ...preview, metaCost: estimateMetaCost(template.category, preview.count) };
 }
 
 /** Freeze the recipient list: one row per contact, variables already resolved. @returns {Promise<number>} recipients */

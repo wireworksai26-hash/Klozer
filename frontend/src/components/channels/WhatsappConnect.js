@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { api } from "@/utils/api";
 import { useApi } from "@/hooks/useApi";
 import { useDashboard } from "@/context/DashboardContext";
@@ -60,6 +61,12 @@ export default function WhatsappConnect({ disabled, onConnected }) {
           </p>
         ) : null}
         <p className="text-label text-fg-muted">{t("Nomor yang dipakai tidak boleh sedang aktif di aplikasi WhatsApp biasa. Bila perlu, hapus akun WhatsApp-nya dari aplikasi dulu.")}</p>
+        <p className="text-label text-fg-muted">
+          {t("Biaya pesan WhatsApp ditagih Meta langsung ke akun Anda. Pasang metode pembayaran di Meta sebelum mulai, kalau tidak pesan bisa berhenti terkirim.")}{" "}
+          <Link href="/dashboard/documentation?topik=biaya-whatsapp-meta" className="text-brand font-medium hover:underline">
+            {t("Lihat rincian biaya")}
+          </Link>
+        </p>
       </div>
     </Card>
   );

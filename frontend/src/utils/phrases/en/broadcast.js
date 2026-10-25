@@ -316,6 +316,9 @@ const phrases = {
   "gambar": "image",
   "video": "video",
   "dokumen": "document",
+  "Perkiraan biaya Meta: Rp {total} (sekitar Rp {rate} per pesan, belum termasuk PPN 11%). Ditagih Meta langsung ke akun WhatsApp Business Anda, bukan ke Klozer.": "Estimated Meta cost: Rp {total} (about Rp {rate} per message, before 11% VAT). Meta bills this directly to your WhatsApp Business account, not to Klozer.",
+  "Pembayaran Meta bermasalah": "Meta payment problem",
+  "Meta menolak pesan karena akun WhatsApp Business Anda belum punya metode pembayaran yang valid. Pasang atau perbaiki di WhatsApp Manager milik Anda di Meta, lalu lanjutkan.": "Meta refused the messages because your WhatsApp Business account has no valid payment method. Add or fix one in your WhatsApp Manager on Meta, then resume.",
 };
 
 export default phrases;

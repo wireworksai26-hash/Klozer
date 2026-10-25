@@ -5,6 +5,7 @@ import { emitToTenant } from "../../realtime.js";
 import { getAdapter } from "../channels/adapters/index.js";
 import { emitEvent } from "../integrations/eventBus.js";
 import { loadTransportChannel } from "../channels/channelRepository.js";
+import { noteSendOutcome } from "../channels/paymentFlag.js";
 import { nextAllowedTime } from "../followup/followupPolicy.js";
 import { getBroadcastSettings } from "./broadcastSettings.js";
 import { startNow } from "./campaignService.js";
@@ -70,6 +71,7 @@ async function sendOne({ campaign, template, channel, recipient, now }) {
     },
   });
 
+  await noteSendOutcome(channel, result);
   if (result.success) {
     await query("UPDATE broadcast_recipients SET status = 'sent', sent_at = ?, wa_message_id = ?, error_code = NULL, error_message = NULL WHERE id = ?", [now, result.messageId, recipient.id]);
     const text = renderBody(describeComponents(parseJsonColumn(template.components_json, [])).bodyText, values);

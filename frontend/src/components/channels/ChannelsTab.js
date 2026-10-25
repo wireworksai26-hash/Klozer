@@ -7,6 +7,7 @@ import { Async, Badge, Button, Card, ConfirmDialog, EmptyState, IconButton, Moda
 import EmbedCode from "./EmbedCode";
 import TypeIcon from "./TypeIcon";
 import ChannelFormModal from "./ChannelFormModal";
+import MetaBilling from "./MetaBilling";
 import WhatsappConnect from "./WhatsappConnect";
 import { TOKEN_TYPES, TYPE_ORDER, channelTypes } from "./channelTypes";
 
@@ -65,6 +66,8 @@ function ChannelRow({ channel, canManage, testResult, testing, toggling, onTest,
           </div>
         ) : null}
       </div>
+
+      {channel.type === "whatsapp" ? <MetaBilling channel={channel} /> : null}
 
       {testResult ? (
         <p role="status" className={`text-label rounded-xl px-3.5 py-2.5 border ${testResult.ok ? "bg-success-50 text-success-700 border-success-200" : "bg-danger-50 text-danger-700 border-danger-200"}`}>

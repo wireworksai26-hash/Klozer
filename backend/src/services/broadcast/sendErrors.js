@@ -22,6 +22,7 @@ const SETUP_PROBLEM = new Map([
   [131008, "template_problem"],
   [131009, "template_problem"],
   [131031, "channel_auth"], // account locked
+  [131042, "payment_problem"], // no valid payment method on the WhatsApp account
 ]);
 /** This one person cannot be reached; the others can. */
 const RECIPIENT_PROBLEM = new Map([

@@ -29,6 +29,10 @@ export const helpGuides = [
           "Itu artinya datanya memang belum diisi. Lengkapi produk, rekening, alamat, atau jam buka di **Jalur Cepat**.",
         ],
         [
+          "Di Saluran Chat muncul peringatan pembayaran Meta, atau AI tidak terkirim padahal token ada.",
+          "Meta menolak pesan karena akun WhatsApp Business Anda belum punya metode pembayaran yang valid. Pasang atau perbaiki di WhatsApp Manager milik Anda di Meta. Peringatannya hilang sendiri begitu pesan berhasil terkirim. Detailnya ada di panduan **Biaya WhatsApp dari Meta**.",
+        ],
+        [
           "Saya tidak bisa membalas di luar 24 jam.",
           "Aturan WhatsApp: pesan bebas hanya sampai 24 jam setelah pesan terakhir pelanggan. Gunakan templat lewat **Smart Broadcast**.",
         ],

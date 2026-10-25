@@ -288,6 +288,10 @@ export default function Pricing() {
           </div>
         </div>
 
+        <p className="mt-6 text-center text-body-sm text-fg-muted max-w-[800px] mx-auto">
+          Biaya pesan WhatsApp ditagih Meta langsung ke akun WhatsApp Business Anda, di luar harga paket. 1.000 balasan pertama per nomor tiap bulan gratis, sisanya sekitar Rp 357 per pesan, dan pesan promosi sekitar Rp 586 per pesan (belum termasuk PPN).
+        </p>
+
       </div>
     </section>
   );
