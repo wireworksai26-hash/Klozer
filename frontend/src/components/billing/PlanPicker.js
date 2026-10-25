@@ -1,4 +1,5 @@
 "use client";
+import ContactTeam from "@/components/common/ContactTeam";
 import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { useAction } from "@/hooks/useApi";
@@ -72,7 +73,10 @@ export default function PlanPicker({ data, onOrder }) {
             <PlanCard key={plan.plan} plan={plan} offer={plan[period]} period={period} current={data.current} onChoose={choose} busy={pending && choosing === plan.plan} />
           ))}
         </div>
-        <p className="text-label text-fg-muted">{t("Butuh paket Enterprise atau jumlah token khusus? Hubungi tim kami.")}</p>
+        <p className="text-label text-fg-muted">
+          {t("Butuh paket Enterprise atau jumlah token khusus? Hubungi tim kami.")}{" "}
+          <ContactTeam message="Halo tim Klozer, saya tertarik dengan paket Enterprise." />
+        </p>
       </div>
     </Card>
   );

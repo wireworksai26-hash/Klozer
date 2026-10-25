@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircleIcon } from "@/components/icons";
 import { formatRupiah, planOffer, promoUntilText } from "@/utils/plans";
+import { whatsappUrl } from "@/utils/legal/config";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -233,7 +234,8 @@ export default function Pricing() {
               {/* Action Button */}
               <div className="pt-2">
                 <Link
-                  href="/register"
+                  href={plan.name === "Enterprise" ? whatsappUrl("Halo tim Klozer, saya tertarik dengan paket Enterprise.") || "/kontak" : "/register"}
+                  {...(plan.name === "Enterprise" && whatsappUrl() ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className={`w-full text-center py-3.5 px-6 rounded-full font-bold text-body-sm sm:text-body transition-all no-underline block justify-center ${
                     plan.highlight
                       ? "btn-primary !shadow-brand-lg"

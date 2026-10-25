@@ -67,6 +67,8 @@ const phrases = {
   "Lama langganan": "Subscription length",
   "Bulanan": "Monthly",
   "Tahunan (bayar sekali)": "Annual (pay once)",
+  WhatsApp: "WhatsApp",
+  Instagram: "Instagram",
   "Butuh paket Enterprise atau jumlah token khusus? Hubungi tim kami.": "Need the Enterprise plan or a custom amount of tokens? Contact our team.",
   "Tempel isi kode QRIS lengkap, dimulai dengan 000201.": "Paste the whole QRIS code, starting with 000201.",
   "Kode QRIS disimpan. Nominal sekarang otomatis di tiap tagihan.": "QRIS code saved. The amount is now automatic on every bill.",

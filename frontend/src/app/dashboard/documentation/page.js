@@ -1,4 +1,5 @@
 "use client";
+import ContactTeam from "@/components/common/ContactTeam";
 import { Suspense, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
@@ -132,7 +133,10 @@ function DocumentationContent() {
                     </Button>
                   ) : null}
                 </div>
-                <p className="text-label text-fg-muted m-0">{t("Belum menemukan jawabannya? Buka panduan Masalah umum, atau hubungi tim Klozer.")}</p>
+                <p className="text-label text-fg-muted m-0">
+                  {t("Belum menemukan jawabannya? Buka panduan Masalah umum, atau hubungi tim Klozer.")}{" "}
+                  <ContactTeam message="Halo tim Klozer, saya butuh bantuan." />
+                </p>
               </footer>
             </>
           ) : (

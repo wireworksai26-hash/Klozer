@@ -3,8 +3,8 @@ import { RelatedLinks } from "@/components/legal/LegalDocument";
 import { LEGAL, whatsappUrl } from "@/utils/legal/config";
 
 export const metadata = {
-  title: "Kontak — Klozer",
-  description: "Hubungi Klozer: email, nomor telepon, dan alamat usaha.",
+  title: "Kontak | Klozer",
+  description: "Hubungi Klozer lewat email, WhatsApp, atau Instagram.",
 };
 
 function Row({ label, children }) {
@@ -35,7 +35,7 @@ export default function ContactPage() {
           </a>
         </Row>
         {LEGAL.phone && (
-          <Row label="Telepon / WhatsApp">
+          <Row label="WhatsApp">
             <a href={`tel:${LEGAL.phone.replace(/[^\d+]/g, "")}`} className="text-brand hover:underline">
               {LEGAL.phone}
             </a>
@@ -43,11 +43,18 @@ export default function ContactPage() {
               <>
                 {" "}
                 &middot;{" "}
-                <a href={wa} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                <a href={whatsappUrl("Halo tim Klozer, saya ingin bertanya tentang Klozer.")} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
                   Chat WhatsApp
                 </a>
               </>
             )}
+          </Row>
+        )}
+        {LEGAL.instagramUrl && (
+          <Row label="Instagram">
+            <a href={LEGAL.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+              {LEGAL.instagramHandle}
+            </a>
           </Row>
         )}
         {LEGAL.address && (

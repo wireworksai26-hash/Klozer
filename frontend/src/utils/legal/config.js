@@ -7,9 +7,12 @@ export const LEGAL = {
   // business that signs the payment-gateway contract once it is final.
   operator: "Pengelola Klozer",
   contactEmail: "wireworksai26@gmail.com",
-  // Fill both before going live: the contact page, footer and FAQ only show what is set here.
-  phone: "", // e.g. "+62 812-3456-7890"
-  address: "", // full business address as it appears on the gateway application
+  // How a customer reaches the team: email above, this WhatsApp number, and Instagram. The contact page, footer, FAQ,
+  // payment page and the dashboard's help places only show what is set here.
+  phone: "+62 851-6613-8590",
+  instagramUrl: "https://www.instagram.com/ethermind.agency/",
+  instagramHandle: "@ethermind.agency",
+  address: "", // full business address as it appears on the gateway application; the contact page shows it once filled
   // Where customers pay for a subscription. The QRIS image is the static QR from the GoPay Merchant app,
   // saved as frontend/public/qris-gopay.png. Leave qrisImage empty to hide it.
   payment: {
@@ -28,10 +31,10 @@ export const LEGAL = {
   },
 };
 
-/** wa.me link built from `phone`, or null while no phone is configured. */
-export function whatsappUrl() {
+/** wa.me link built from `phone`, or null while no phone is configured. `text` opens the chat with that message ready to send. */
+export function whatsappUrl(text) {
   let digits = LEGAL.phone.replace(/\D/g, "");
   if (!digits) return null;
   if (digits.startsWith("0")) digits = `62${digits.slice(1)}`;
-  return `https://wa.me/${digits}`;
+  return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }

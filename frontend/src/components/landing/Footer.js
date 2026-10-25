@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/common/Logo";
-import { whatsappUrl } from "@/utils/legal/config";
+import { LEGAL, whatsappUrl } from "@/utils/legal/config";
 
 export default function Footer() {
   return (
@@ -71,7 +71,9 @@ export default function Footer() {
                 <li><Link href="/bayar" className="hover:text-white transition-colors no-underline">Cara Bayar</Link></li>
                 <li><Link href="/kontak" className="hover:text-white transition-colors no-underline">Kontak</Link></li>
                 <li><Link href="/kebijakan-refund" className="hover:text-white transition-colors no-underline">Kebijakan Refund</Link></li>
-                {whatsappUrl() && <li><a href={whatsappUrl()} target="_blank" rel="noreferrer" className="hover:text-white transition-colors no-underline">WhatsApp Support</a></li>}
+                {whatsappUrl() && <li><a href={whatsappUrl("Halo tim Klozer, saya ingin bertanya tentang Klozer.")} target="_blank" rel="noreferrer" className="hover:text-white transition-colors no-underline">WhatsApp: {LEGAL.phone}</a></li>}
+                <li><a href={`mailto:${LEGAL.contactEmail}`} className="hover:text-white transition-colors no-underline break-all">{LEGAL.contactEmail}</a></li>
+                {LEGAL.instagramUrl && <li><a href={LEGAL.instagramUrl} target="_blank" rel="noreferrer" className="hover:text-white transition-colors no-underline">Instagram {LEGAL.instagramHandle}</a></li>}
               </ul>
             </div>
 

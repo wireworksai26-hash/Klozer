@@ -151,6 +151,14 @@ export default async function PayPage() {
             </a>
           </li>
         )}
+        {LEGAL.instagramUrl && (
+          <li>
+            Instagram:{" "}
+            <a href={LEGAL.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+              {LEGAL.instagramHandle}
+            </a>
+          </li>
+        )}
       </ul>
       <p className="text-body-sm text-fg-subtle mt-6">
         Ketentuan pengembalian dana ada di{" "}
