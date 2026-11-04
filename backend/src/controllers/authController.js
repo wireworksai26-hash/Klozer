@@ -52,6 +52,7 @@ const INSTITUTION_PUBLIC_FIELDS = [
   "is_active",
   "created_at",
   "updated_at",
+  "owner_name", // the superadmin list adds it with a subquery
 ];
 
 export function institutionPublic(inst) {

@@ -107,7 +107,8 @@ describe("login lockout under concurrency", () => {
     const user = await createUser(inst, "cs");
     await Promise.all(Array.from({ length: 8 }, () => api().post("/api/v1/auth/login").send({ email: user.email, password: "wrong-wrong-1" })));
     const [row] = await query("SELECT failed_login_count, locked_until FROM users WHERE id = ?", [user.id]);
-    assert.equal(row.failed_login_count, 8);
+    // the 5th miss sets the lock and clears the counter, so the 3 later misses leave 8 - 5 = 3
+    assert.equal(row.failed_login_count, 3);
     assert.ok(row.locked_until, "account must be locked");
     const correct = await api().post("/api/v1/auth/login").send({ email: user.email, password: PASSWORD });
     assert.equal(correct.status, 429);
