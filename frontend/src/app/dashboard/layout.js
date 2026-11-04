@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+import Toast from "@/components/ui/Toast";
 import { FEATURE_LIST, featureForPath } from "@/utils/plans";
 import {
   SidebarNav,
@@ -47,13 +48,6 @@ function DashboardContent({ children }) {
     whatsappStatus,
     taskSummary,
   } = useDashboard();
-
-  // Notices auto-dismiss
-  useEffect(() => {
-    if (!notice) return undefined;
-    const timer = setTimeout(dismissNotice, notice.type === "error" ? 9000 : 4500);
-    return () => clearTimeout(timer);
-  }, [notice, dismissNotice]);
 
   // Precise Active Navigation Detector (fixes multi-active button highlight bug)
   const isItemActive = (itemHref) => {
@@ -109,6 +103,7 @@ function DashboardContent({ children }) {
   return (
     <RoleGuard>
       <div className="relative flex h-screen bg-canvas overflow-hidden">
+        <Toast notice={notice && { ...notice, message: t(notice.message) }} onClose={dismissNotice} label={t("Tutup")} />
         {/* Atomic Sidebar Navigation */}
         <SidebarNav
           isOpen={sidebarOpen}
@@ -144,26 +139,6 @@ function DashboardContent({ children }) {
             style={{ backgroundColor: "var(--dash-bg)" }}
           >
             <div className={fillScreen ? "w-full max-w-[1240px] mx-auto flex-1 min-h-0 flex flex-col" : "max-w-[1240px] mx-auto"}>
-              {notice && (
-                <div
-                  role="status"
-                  className={`mb-5 p-3.5 rounded-xl border flex items-start gap-2.5 text-body-sm font-semibold ${
-                    notice.type === "error"
-                      ? "bg-danger-50 border-danger-200 text-danger-700"
-                      : "bg-success-50 border-success-200 text-success-800"
-                  }`}
-                >
-                  <span className="flex-1">{t(notice.message)}</span>
-                  <button
-                    type="button"
-                    onClick={dismissNotice}
-                    className="bg-transparent border-none cursor-pointer text-current font-bold"
-                    aria-label={t("Tutup")}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
               {isPreview && (
                 <div className="mb-5 px-3.5 py-2 rounded-xl border border-warning-200 bg-warning-50 text-warning-800 text-caption font-semibold">
                   {t("Pratinjau fitur: tampilan ini memakai data contoh dan belum menyimpan ke server.")}

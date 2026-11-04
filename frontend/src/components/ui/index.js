@@ -5,6 +5,7 @@ export { default as PageHeader } from "./PageHeader";
 export { default as Card, Stat, TableShell } from "./Card";
 export { EmptyState, ErrorState, LoadingState, Async } from "./States";
 export { default as Modal } from "./Modal";
+export { default as Toast } from "./Toast";
 export { default as ConfirmDialog } from "./ConfirmDialog";
 export { default as Tabs } from "./Tabs";
 export { default as CopyButton } from "./CopyButton";
