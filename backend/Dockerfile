@@ -12,6 +12,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
 
+RUN mkdir -p /app/data/baileys && chown -R node:node /app/data
+
 # Run as the unprivileged user that ships with the image.
 USER node
 EXPOSE 5000

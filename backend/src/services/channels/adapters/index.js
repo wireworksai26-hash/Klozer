@@ -4,6 +4,7 @@ import { messengerAdapter } from "./messenger.js";
 import { telegramAdapter } from "./telegram.js";
 import { webchatAdapter } from "./webchat.js";
 import { whatsappAdapter } from "./whatsapp.js";
+import { whatsappWebAdapter } from "./whatsappWeb.js";
 
 /**
  * Channel type -> transport. A new channel type is one adapter listed here; conversations, routing and hand-off do
@@ -20,6 +21,7 @@ const ADAPTERS = {
   instagram: instagramAdapter,
   telegram: telegramAdapter,
   webchat: webchatAdapter,
+  whatsapp_web: whatsappWebAdapter,
 };
 
 export function getAdapter(type) {

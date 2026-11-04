@@ -6,6 +6,7 @@ import { getChannel, listChannels, updateChannel } from "../services/channels/ch
 import { connectChannel, disconnectChannel, verifyChannel } from "../services/channels/channelService.js";
 import { whatsappServiceUsage } from "../services/channels/metaUsage.js";
 import { completeSignup, signupConfig } from "../services/channels/whatsappSignup.js";
+import { getWhatsAppWebStatus, reconnectWhatsAppWeb, startWhatsAppWeb } from "../services/channels/whatsappWebService.js";
 
 /** GET /channels: connected accounts (no tokens) and how many the plan allows. */
 export async function list(req, res) {
@@ -43,6 +44,34 @@ export async function test(req, res) {
   await getChannel(req.tenantId, Number(req.params.id)); // 404 for another tenant's channel
   const result = await verifyChannel({ institutionId: req.tenantId, id: Number(req.params.id) });
   res.json({ success: result.ok, ...result });
+}
+
+/** POST /channels/whatsapp-web: start the linked-device session and return the QR code to scan. */
+export async function startWhatsappWeb(req, res) {
+  const result = await startWhatsAppWeb({ institutionId: req.tenantId, ...req.body });
+  await audit(req, "channel.whatsapp_web.start", { entityType: "channel", entityId: result.channel.id, metadata: { created: result.created } });
+  res.status(result.created ? 201 : 200).json({
+    success: true,
+    message: result.status === "open" ? "WhatsApp sudah terhubung." : "Pindai kode QR dengan WhatsApp di ponsel Anda.",
+    data: result,
+  });
+}
+
+/** GET /channels/:id/whatsapp-web: QR code or connection state for the polling dashboard. */
+export async function whatsappWebStatus(req, res) {
+  const data = await getWhatsAppWebStatus({ institutionId: req.tenantId, id: Number(req.params.id) });
+  res.json({ success: true, data });
+}
+
+/** POST /channels/:id/whatsapp-web/reconnect: replace the socket and show a new QR code. */
+export async function reconnectWhatsappWeb(req, res) {
+  const data = await reconnectWhatsAppWeb({ institutionId: req.tenantId, id: Number(req.params.id) });
+  await audit(req, "channel.whatsapp_web.reconnect", { entityType: "channel", entityId: data.channel.id });
+  res.json({
+    success: true,
+    message: data.status === "open" ? "WhatsApp sudah terhubung." : "Pindai kode QR dengan WhatsApp di ponsel Anda.",
+    data,
+  });
 }
 
 /** GET /channels/whatsapp/signup-config: what the browser needs to open Meta's Embedded Signup window (no secrets). */

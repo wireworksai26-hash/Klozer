@@ -113,3 +113,7 @@ brag-output/
 
 # Database dumps contain customer data
 backups/
+
+# WhatsApp Web linked-device sessions (credentials)
+data/
+backend/data/

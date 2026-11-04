@@ -88,6 +88,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-Klozer <no-reply@klozer.id>}
+      BAILEYS_AUTH_DIR: /app/data/baileys
+    volumes:
+      - baileys_auth:/app/data/baileys
     networks: [internal]
     logging: *default-logging
 
@@ -145,6 +148,7 @@ services:
 
 volumes:
   mysql_data:
+  baileys_auth:
   caddy_data:
   caddy_config:
 

@@ -49,7 +49,7 @@ export function calculateHumanPacingDelay(text = "", channelType = "whatsapp") {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** How the assistant refers to the place it is chatting on. */
-const CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram: "Instagram", telegram: "Telegram", webchat: "live chat website" };
+const CHANNEL_LABELS = { whatsapp: "WhatsApp", whatsapp_web: "WhatsApp", messenger: "Messenger", instagram: "Instagram", telegram: "Telegram", webchat: "live chat website" };
 
 /** Contact names come from the channel (a customer can choose their own display name), so store text only. */
 function cleanContactName(name) {
@@ -62,7 +62,7 @@ function cleanContactName(name) {
  * @returns {Promise<{ leadId: number, created: boolean }>}
  */
 async function upsertLead({ institutionId, channelId, channelType, contactId, name }) {
-  const phone = channelType === "whatsapp" ? contactId : null;
+  const phone = (channelType === "whatsapp" || channelType === "whatsapp_web") && /^\d{6,20}$/.test(contactId) ? contactId : null;
   const safeName = cleanContactName(name);
   const known = await queryOne("SELECT id FROM leads WHERE institution_id = ? AND channel_type = ? AND external_id = ?", [institutionId, channelType, contactId]);
   const result = await retryOnDeadlock(() => query(

@@ -1,7 +1,10 @@
 // What each channel type needs to be connected, in the words a shop owner uses.
 // Field names match backend/src/validation/channelSchemas.js (createChannelBody).
 
-export const TYPE_ORDER = ["whatsapp", "instagram", "messenger", "telegram", "webchat"];
+export const TYPE_ORDER = ["whatsapp", "whatsapp_web", "instagram", "messenger", "telegram", "webchat"];
+
+/** Types connected from the "add channel" form. WhatsApp QR has its own scanning flow. */
+export const MANUAL_TYPES = TYPE_ORDER.filter((id) => id !== "whatsapp_web");
 
 /** Types whose connection depends on a token the owner pastes. */
 export const TOKEN_TYPES = ["whatsapp", "instagram", "messenger", "telegram"];
@@ -21,6 +24,11 @@ export function channelTypes(t) {
         { name: "accessToken", label: t("Access token"), hint: t("Token permanen dari System User di Meta Business. Disimpan terenkripsi dan tidak pernah ditampilkan lagi."), required: true, secret: true },
         { name: "displayHandle", label: t("Nomor yang ditampilkan"), hint: t("Opsional. Membantu tim mengenali nomor ini di daftar.") },
       ],
+    },
+    whatsapp_web: {
+      label: t("WhatsApp (QR)"),
+      about: t("Nomor WhatsApp biasa yang ditautkan dengan memindai kode QR, tanpa Meta Business."),
+      fields: [],
     },
     instagram: {
       label: "Instagram",

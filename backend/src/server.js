@@ -11,6 +11,8 @@ import { startCommerceWorker } from "./services/followup/followupWorker.js";
 import { startBroadcastWorker } from "./services/broadcast/broadcastWorker.js";
 import { startWebhookWorker } from "./services/integrations/webhookWorker.js";
 import { startTaskWorker } from "./services/tasks/taskWorker.js";
+import { listActiveChannelsByType } from "./services/channels/channelRepository.js";
+import { getWhatsAppWebManager } from "./services/channels/whatsappWebManager.js";
 
 const app = createApp();
 const server = http.createServer(app);
@@ -47,6 +49,7 @@ async function shutdown(signal, exitCode = 0) {
   try {
     io.close();
     await new Promise((resolve) => server.close(resolve));
+    await getWhatsAppWebManager().stopAll();
     await closeDb();
   } catch (err) {
     logger.error({ err: err.message }, "Error during shutdown");
@@ -66,6 +69,19 @@ process.on("uncaughtException", (err) => {
   shutdown("uncaughtException", 1);
 });
 
+async function restoreWhatsAppWebSessions() {
+  try {
+    const channels = await listActiveChannelsByType("whatsapp_web");
+    for (const channel of channels) {
+      getWhatsAppWebManager().start(channel, { waitForQr: false }).catch((err) => {
+        logger.warn({ err: err.message, channelId: channel.id }, "WhatsApp Web session could not be restored");
+      });
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, "WhatsApp Web sessions could not be restored");
+  }
+}
+
 async function start() {
   await initDb();
   if (process.env.RUN_MIGRATIONS_ON_START !== "false") await runMigrations();
@@ -80,6 +96,7 @@ async function start() {
   startBroadcastWorker();
   startWebhookWorker();
   startTaskWorker();
+  restoreWhatsAppWebSessions();
   pruneOldRows();
   setInterval(pruneOldRows, 24 * 60 * 60 * 1000).unref();
 }

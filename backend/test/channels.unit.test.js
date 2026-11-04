@@ -10,7 +10,7 @@ import { instagramAdapter } from "../src/services/channels/adapters/instagram.js
 import { telegramAdapter } from "../src/services/channels/adapters/telegram.js";
 import { webchatAdapter } from "../src/services/channels/adapters/webchat.js";
 import { getAdapter, supportedChannelTypes } from "../src/services/channels/adapters/index.js";
-import { createChannelBody, updateChannelBody, webchatMessageBody } from "../src/validation/channelSchemas.js";
+import { createChannelBody, updateChannelBody, webchatMessageBody, whatsappWebStartBody } from "../src/validation/channelSchemas.js";
 
 // Channel pieces that need neither a database nor a network: text shaping, payload parsing, visitor tokens,
 // adapters against a faked fetch, and request validation.
@@ -354,7 +354,7 @@ describe("web chat adapter", () => {
 
 describe("adapter registry", () => {
   test("every channel type has an adapter with the required functions", () => {
-    assert.deepEqual(supportedChannelTypes().sort(), ["instagram", "messenger", "telegram", "webchat", "whatsapp"]);
+    assert.deepEqual(supportedChannelTypes().sort(), ["instagram", "messenger", "telegram", "webchat", "whatsapp", "whatsapp_web"]);
     for (const type of supportedChannelTypes()) {
       const adapter = getAdapter(type);
       assert.equal(adapter.type, type);
@@ -380,6 +380,10 @@ describe("request validation", () => {
     assert.ok(ok({ type: "telegram", name: "Toko", accessToken: "123456789:AAH-abcdefghijklmnopqrstuvwxyz012345" }));
     assert.ok(!ok({ type: "telegram", name: "Toko" }));
     assert.ok(ok({ type: "webchat", name: "Website" }), "web chat needs nothing else");
+    assert.ok(!ok({ type: "whatsapp_web", name: "WhatsApp" }), "the QR flow has its own endpoint");
+    assert.ok(whatsappWebStartBody.safeParse({}).success);
+    assert.ok(whatsappWebStartBody.safeParse({ name: "WhatsApp CS", aiEnabled: false }).success);
+    assert.ok(!whatsappWebStartBody.safeParse({ name: "x".repeat(81) }).success);
   });
 
   test("names fit the database column and unknown types are refused", () => {

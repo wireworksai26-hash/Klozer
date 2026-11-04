@@ -118,6 +118,10 @@ export const config = {
     graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
   },
 
+  baileys: {
+    authDir: read("BAILEYS_AUTH_DIR", { devDefault: "data/baileys" }),
+  },
+
   webhooks: {
     // Outgoing webhooks may only reach public addresses. This switch exists for local development and tests
     // (a receiver on localhost) and is ignored in production.

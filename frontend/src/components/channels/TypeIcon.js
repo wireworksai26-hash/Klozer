@@ -1,7 +1,7 @@
 import Icon from "@/components/icons/Icon";
 import { InstagramIcon } from "@/components/icons";
 
-const GLYPH = { whatsapp: "whatsapp", messenger: "messenger", telegram: "send", webchat: "webchat" };
+const GLYPH = { whatsapp: "whatsapp", whatsapp_web: "whatsapp", messenger: "messenger", telegram: "send", webchat: "webchat" };
 
 /** The platform's mark for a channel type. */
 export default function TypeIcon({ type, className = "w-5 h-5" }) {

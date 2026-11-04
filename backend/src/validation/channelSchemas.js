@@ -45,6 +45,12 @@ export const createChannelBody = z
     if (body.wabaId && body.type !== "whatsapp") ctx.addIssue({ code: "custom", path: ["wabaId"], message: "hanya untuk WhatsApp" });
   });
 
+/** Optional label while the QR-linked number is being set up; the phone number arrives from WhatsApp after scanning. */
+export const whatsappWebStartBody = z.object({
+  name: text(80).optional(),
+  aiEnabled: z.boolean().optional(),
+});
+
 export const updateChannelBody = z
   .object({
     name: text(80).optional(),

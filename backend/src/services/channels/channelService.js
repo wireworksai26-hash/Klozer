@@ -14,6 +14,7 @@ import { noteSendOutcome } from "./paymentFlag.js";
 
 const NOT_CONFIGURED = {
   whatsapp: "WhatsApp belum dikonfigurasi untuk instansi ini.",
+  whatsapp_web: "WhatsApp belum dihubungkan untuk instansi ini.",
   messenger: "Messenger belum dihubungkan untuk instansi ini.",
   instagram: "Instagram belum dihubungkan untuk instansi ini.",
   telegram: "Telegram belum dihubungkan untuk instansi ini.",
@@ -114,6 +115,7 @@ export async function lookupProfileName({ institutionId, channelId, type, contac
  * @returns {Promise<{ channel: object }>}
  */
 export async function connectChannel({ institutionId, type, name, aiEnabled = true, input }) {
+  if (type === "whatsapp_web") throw badRequest("WhatsApp lewat QR dihubungkan dari tombol Hubungkan WhatsApp (QR).", { code: "CHANNEL_NOT_SUPPORTED" });
   const adapter = getAdapter(type);
   await assertWithinLimit({ queryOne }, institutionId);
   const resolved = await adapter.resolveConnection(input);

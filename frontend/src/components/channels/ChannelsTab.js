@@ -9,7 +9,8 @@ import TypeIcon from "./TypeIcon";
 import ChannelFormModal from "./ChannelFormModal";
 import MetaBilling from "./MetaBilling";
 import WhatsappConnect from "./WhatsappConnect";
-import { TOKEN_TYPES, TYPE_ORDER, channelTypes } from "./channelTypes";
+import WhatsappWebConnect from "./WhatsappWebConnect";
+import { MANUAL_TYPES, TOKEN_TYPES, TYPE_ORDER, channelTypes } from "./channelTypes";
 
 /** Short lines from a successful platform answer (name, account, quality), only what the platform sent. */
 function describeTest(result, t) {
@@ -127,7 +128,7 @@ export default function ChannelsTab() {
         const channels = body.data || [];
         const limit = body.limit;
         const full = typeof limit === "number" && channels.length >= limit;
-        const allowed = (body.supportedTypes?.length ? TYPE_ORDER.filter((id) => body.supportedTypes.includes(id)) : TYPE_ORDER).filter((id) => !(id === "instagram" && activeInstitution?.modules?.instagram === false));
+        const allowed = (body.supportedTypes?.length ? MANUAL_TYPES.filter((id) => body.supportedTypes.includes(id)) : MANUAL_TYPES).filter((id) => !(id === "instagram" && activeInstitution?.modules?.instagram === false));
         const addButton = isManager ? (
           <Button icon="plus" onClick={() => setForm({ mode: "create" })} disabled={full}>
             {t("Tambah saluran")}
@@ -144,7 +145,12 @@ export default function ChannelsTab() {
               {addButton}
             </div>
 
-            {isManager ? <WhatsappConnect disabled={full} onConnected={query.reload} /> : null}
+            {isManager ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <WhatsappConnect disabled={full} onConnected={query.reload} />
+                <WhatsappWebConnect existing={channels.find((c) => c.type === "whatsapp_web") ?? null} disabled={full} onChanged={query.reload} />
+              </div>
+            ) : null}
 
             {channels.length === 0 ? (
               <Card>

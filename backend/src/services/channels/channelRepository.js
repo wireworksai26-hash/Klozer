@@ -2,7 +2,7 @@ import { query, queryOne, transaction } from "../../config/db.js";
 import { config as appConfig } from "../../config/env.js";
 import { badRequest, conflict, notFound } from "../../utils/errors.js";
 import { decryptSecret, encryptSecret } from "../../utils/crypto.js";
-import { CONNECTABLE_CHANNEL_TYPES, channelLimitFor } from "./channelPlans.js";
+import { ALL_CHANNEL_TYPES, channelLimitFor } from "./channelPlans.js";
 
 const parseJson = (v) => (typeof v === "string" ? JSON.parse(v) : v ?? null);
 
@@ -78,6 +78,18 @@ export async function loadTransportChannelAny(institutionId, id) {
   return row ? toTransportChannel(row) : null;
 }
 
+/** A tenant's channel of one type, active or not, ready to send with. Null when none exists. */
+export async function findChannelByType(institutionId, type) {
+  const row = await queryOne("SELECT * FROM channels WHERE institution_id = ? AND type = ? ORDER BY is_default DESC, id ASC LIMIT 1", [institutionId, type]);
+  return row ? toTransportChannel(row) : null;
+}
+
+/** Every active channel of a type, across tenants. Used to restore sockets after a restart. */
+export async function listActiveChannelsByType(type) {
+  const rows = await query("SELECT * FROM channels WHERE type = ? AND is_active = 1 ORDER BY id", [type]);
+  return rows.map(toTransportChannel);
+}
+
 /** The tenant's default active channel of a type: the one marked default, else the oldest. Null when none is connected. */
 export async function loadDefaultChannel(institutionId, type = "whatsapp") {
   const row = await queryOne("SELECT * FROM channels WHERE institution_id = ? AND type = ? AND is_active = 1 ORDER BY is_default DESC, id ASC LIMIT 1", [institutionId, type]);
@@ -98,7 +110,7 @@ export async function assertWithinLimit(tx, institutionId) {
 
 /** Connect a new account. The first channel of a type becomes its default. */
 export async function createChannel({ institutionId, type, name, externalId, displayHandle = null, accessToken = null, config = null, aiEnabled = true }) {
-  if (!CONNECTABLE_CHANNEL_TYPES.includes(type)) throw badRequest(`Kanal ${type} belum bisa dihubungkan.`, { code: "CHANNEL_NOT_SUPPORTED" });
+  if (!ALL_CHANNEL_TYPES.includes(type)) throw badRequest(`Kanal ${type} belum bisa dihubungkan.`, { code: "CHANNEL_NOT_SUPPORTED" });
 
   const id = await transaction(async (tx) => {
     const taken = await tx.queryOne("SELECT institution_id FROM channels WHERE type = ? AND external_id = ?", [type, externalId]);
@@ -150,6 +162,32 @@ export async function updateChannel({ institutionId, id, name, displayHandle, ac
     if (sets.length) await tx.query(`UPDATE channels SET ${sets.join(", ")} WHERE id = ? AND institution_id = ?`, [...values, id, institutionId]);
   });
   return getChannel(institutionId, id);
+}
+
+/** Switch a channel on or off without touching its other settings. */
+export async function setChannelActive(institutionId, id, active) {
+  await query("UPDATE channels SET is_active = ? WHERE id = ? AND institution_id = ?", [active ? 1 : 0, id, institutionId]);
+}
+
+/** Record the account a QR-linked WhatsApp session turned out to be. */
+export async function setChannelIdentity({ institutionId, id, externalId, displayHandle = null, config = null }) {
+  const row = await queryOne("SELECT config_json FROM channels WHERE id = ? AND institution_id = ? AND type = 'whatsapp_web'", [id, institutionId]);
+  if (!row) throw notFound("Kanal tidak ditemukan.");
+  const merged = { ...(parseJson(row.config_json) || {}), ...(config ?? {}) };
+  try {
+    await query("UPDATE channels SET external_id = ?, display_handle = ?, config_json = ? WHERE id = ? AND institution_id = ?", [
+      externalId,
+      displayHandle,
+      JSON.stringify(merged),
+      id,
+      institutionId,
+    ]);
+  } catch (err) {
+    if (err?.code === "ER_DUP_ENTRY") {
+      throw conflict("Nomor WhatsApp ini sudah terhubung ke toko lain.", { code: "CHANNEL_TAKEN" });
+    }
+    throw err;
+  }
 }
 
 /** Remove a channel. Conversations keep their history (their channel link is cleared); another channel becomes the default. */
