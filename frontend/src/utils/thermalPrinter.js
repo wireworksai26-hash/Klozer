@@ -8,6 +8,13 @@
 const ESC = "\x1B";
 const GS = "\x1D";
 
+/** Receipt values can come from customer-controlled channels, so treat them as text, never markup. */
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+
+/** ESC/POS is a command stream: strip control bytes so a customer name cannot inject printer commands. */
+const printable = (value) => String(value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, "");
+
 export const ESC_COMMANDS = {
   INIT: `${ESC}@`,
   ALIGN_LEFT: `${ESC}a\x00`,
@@ -35,7 +42,7 @@ export function formatEscPosReceipt(order, { paperWidth = 58, storeName = "Gepre
   out += ESC_COMMANDS.ALIGN_CENTER;
   out += ESC_COMMANDS.BOLD_ON;
   out += ESC_COMMANDS.DOUBLE_BOTH_ON;
-  out += `${storeName.toUpperCase()}\n`;
+  out += `${printable(storeName).toUpperCase()}\n`;
   out += ESC_COMMANDS.TEXT_NORMAL;
   out += ESC_COMMANDS.BOLD_OFF;
   out += `TIKET DAPUR & REKAP PESANAN\n`;
@@ -43,11 +50,11 @@ export function formatEscPosReceipt(order, { paperWidth = 58, storeName = "Gepre
   out += doubleDivider;
 
   out += ESC_COMMANDS.ALIGN_LEFT;
-  out += `No Order : ${order.order_number || order.id || "ORD-001"}\n`;
-  out += `Tanggal  : ${new Date(order.created_at || Date.now()).toLocaleString("id-ID")}\n`;
-  out += `Customer : ${order.customer_name || "Pelanggan"} (${order.customer_phone || "-"})\n`;
+  out += `No Order : ${printable(order.order_number || order.id || "ORD-001")}\n`;
+  out += `Tanggal  : ${printable(new Date(order.created_at || Date.now()).toLocaleString("id-ID"))}\n`;
+  out += `Customer : ${printable(order.customer_name || "Pelanggan")} (${printable(order.customer_phone || "-")})\n`;
   if (order.address) {
-    out += `Alamat   : ${order.address}\n`;
+    out += `Alamat   : ${printable(order.address)}\n`;
   }
   out += divider;
 
@@ -67,7 +74,7 @@ export function formatEscPosReceipt(order, { paperWidth = 58, storeName = "Gepre
   ];
 
   items.forEach((item) => {
-    const name = item.item_name || item.name || "Menu";
+    const name = printable(item.item_name || item.name || "Menu");
     const qty = String(item.quantity || 1);
     const subtotal = `Rp ${(Number(item.subtotal || item.unit_price * item.quantity || 0)).toLocaleString("id-ID")}`;
 
@@ -110,7 +117,7 @@ export function formatEscPosReceipt(order, { paperWidth = 58, storeName = "Gepre
   }
 
   if (order.notes) {
-    out += `Catatan: ${order.notes}\n`;
+    out += `Catatan: ${printable(order.notes)}\n`;
   }
   out += `Powered by Klozer AI Commerce\n`;
   out += ESC_COMMANDS.FEED_AND_CUT;
@@ -192,12 +199,13 @@ export function printViaBrowserWindow(order, { paperWidth = 58, storeName = "Gep
     alert("Pop-up diblokir oleh browser. Harap izinkan pop-up untuk mencetak struk.");
     return;
   }
+  printWindow.opener = null;
 
   const html = `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Struk Order #${order.order_number || order.id || "001"}</title>
+        <title>Struk Order #${escapeHtml(order.order_number || order.id || "001")}</title>
         <style>
           @page { size: ${widthMm} auto; margin: 2mm; }
           body {
@@ -227,17 +235,17 @@ export function printViaBrowserWindow(order, { paperWidth = 58, storeName = "Gep
       </head>
       <body>
         <div class="text-center">
-          <div class="header-title">${storeName.toUpperCase()}</div>
+          <div class="header-title">${escapeHtml(storeName.toUpperCase())}</div>
           <div>TIKET DAPUR & REKAP PESANAN</div>
           <div style="font-size: 9.5px;">WhatsApp Automated Order</div>
         </div>
 
         <div class="double-divider"></div>
 
-        <div>No Order : ${order.order_number || order.id || "ORD-001"}</div>
-        <div>Waktu    : ${new Date(order.created_at || Date.now()).toLocaleString("id-ID")}</div>
-        <div>Customer : ${order.customer_name || "Pelanggan"} (${order.customer_phone || "-"})</div>
-        ${order.address ? `<div>Alamat   : ${order.address}</div>` : ""}
+        <div>No Order : ${escapeHtml(order.order_number || order.id || "ORD-001")}</div>
+        <div>Waktu    : ${escapeHtml(new Date(order.created_at || Date.now()).toLocaleString("id-ID"))}</div>
+        <div>Customer : ${escapeHtml(order.customer_name || "Pelanggan")} (${escapeHtml(order.customer_phone || "-")})</div>
+        ${order.address ? `<div>Alamat   : ${escapeHtml(order.address)}</div>` : ""}
 
         <div class="divider"></div>
 
@@ -245,7 +253,7 @@ export function printViaBrowserWindow(order, { paperWidth = 58, storeName = "Gep
           .map(
             (it) => `
           <div>
-            <div class="bold">${it.item_name || it.name}</div>
+            <div class="bold">${escapeHtml(it.item_name || it.name)}</div>
             <div class="item-row">
               <span>${it.quantity}x @ Rp ${(Number(it.unit_price || 0)).toLocaleString("id-ID")}</span>
               <span class="bold">Rp ${(Number(it.subtotal || it.unit_price * it.quantity || 0)).toLocaleString("id-ID")}</span>
@@ -282,7 +290,7 @@ export function printViaBrowserWindow(order, { paperWidth = 58, storeName = "Gep
           <div class="badge-lunas">
             ${isPaid ? "*** LUNAS (DYNAMIC QRIS) ***" : order.payment_method === "cod" ? "*** COD (BAYAR DI TEMPAT) ***" : "*** MENUNGGU BAYAR ***"}
           </div>
-          ${order.notes ? `<div style="margin-top: 4px;">Catatan: ${order.notes}</div>` : ""}
+          ${order.notes ? `<div style="margin-top: 4px;">Catatan: ${escapeHtml(order.notes)}</div>` : ""}
           <div style="margin-top: 6px; font-size: 9px; color: #555;">Powered by Klozer AI Commerce</div>
         </div>
 

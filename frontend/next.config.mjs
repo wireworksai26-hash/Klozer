@@ -3,6 +3,25 @@
 // same-origin, so the browser never needs CORS.
 const BACKEND_INTERNAL_URL = process.env.BACKEND_INTERNAL_URL || "http://localhost:5000";
 
+// A single policy for the whole app. Next injects inline bootstrap scripts, so
+// 'unsafe-inline' stays for scripts; the value here is that any other origin,
+// framing, plugins and base-tag tricks are refused.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' https://connect.facebook.net",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "media-src 'self' blob: https:",
+  "worker-src 'self' blob:",
+  "frame-src 'self' https://www.facebook.com https://web.facebook.com https://connect.facebook.net https://staticxx.facebook.com",
+  "connect-src 'self' https: wss: ws:",
+].join("; ");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -26,6 +45,7 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+          { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
         ],
       },
     ];

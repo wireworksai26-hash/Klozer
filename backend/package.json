@@ -24,13 +24,18 @@
     "jsonwebtoken": "^9.0.3",
     "jsqr": "^1.4.0",
     "mysql2": "^3.16.2",
-    "nodemailer": "^10.0.16",
+    "nodemailer": "^10.1.4",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "pngjs": "^7.0.0",
     "socket.io": "^4.8.3",
     "unpdf": "^1.9.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
+  },
+  "overrides": {
+    "body-parser": "^1.20.9",
+    "qs": "^6.16.1",
+    "ip-address": "^10.7.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

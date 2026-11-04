@@ -2,6 +2,7 @@ import { query, queryOne, retryOnDeadlock } from "../config/db.js";
 import { isTest } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { parseJsonColumn } from "../utils/jsonColumn.js";
+import { sanitizeXss } from "../utils/sanitize.js";
 import { emitToTenant } from "../realtime.js";
 import { generateAiCsResponse } from "./aiBrainService.js";
 import { getAdapter } from "./channels/adapters/index.js";
@@ -50,12 +51,19 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** How the assistant refers to the place it is chatting on. */
 const CHANNEL_LABELS = { whatsapp: "WhatsApp", messenger: "Messenger", instagram: "Instagram", telegram: "Telegram", webchat: "live chat website" };
 
+/** Contact names come from the channel (a customer can choose their own display name), so store text only. */
+function cleanContactName(name) {
+  const cleaned = typeof name === "string" ? sanitizeXss(name).slice(0, 80) : "";
+  return cleaned || "Pelanggan";
+}
+
 /**
  * Create the contact or refresh it. A contact is one person on one channel type (their number, handle or chat id).
  * @returns {Promise<{ leadId: number, created: boolean }>}
  */
 async function upsertLead({ institutionId, channelId, channelType, contactId, name }) {
   const phone = channelType === "whatsapp" ? contactId : null;
+  const safeName = cleanContactName(name);
   const known = await queryOne("SELECT id FROM leads WHERE institution_id = ? AND channel_type = ? AND external_id = ?", [institutionId, channelType, contactId]);
   const result = await retryOnDeadlock(() => query(
     `INSERT INTO leads (institution_id, channel_id, channel_type, external_id, phone_number, name, source, status, last_contacted_at, last_inbound_at)
@@ -64,7 +72,7 @@ async function upsertLead({ institutionId, channelId, channelType, contactId, na
                              channel_id = COALESCE(VALUES(channel_id), channel_id),
                              external_id = COALESCE(external_id, VALUES(external_id)),
                              id = LAST_INSERT_ID(id)`,
-    [institutionId, channelId, channelType, contactId, phone, name, channelType]
+    [institutionId, channelId, channelType, contactId, phone, safeName, channelType]
   ));
   return { leadId: result.insertId, created: !known && result.affectedRows === 1 };
 }
@@ -72,7 +80,7 @@ async function upsertLead({ institutionId, channelId, channelType, contactId, na
 /** A new contact on a platform that knows their name: replace the placeholder once the platform answers. */
 function refreshContactName({ institutionId, channelId, channelType, contactId, leadId }) {
   lookupProfileName({ institutionId, channelId, type: channelType, contactId })
-    .then((name) => name && query("UPDATE leads SET name = ? WHERE id = ? AND institution_id = ?", [name.slice(0, 150), leadId, institutionId]))
+    .then((name) => name && query("UPDATE leads SET name = ? WHERE id = ? AND institution_id = ?", [cleanContactName(name), leadId, institutionId]))
     .catch((err) => logger.warn({ err: err.message }, "Could not store the customer's name"));
 }
 
@@ -271,6 +279,7 @@ async function answerWithAi(ctx, { customerName, text, lead }) {
  * @param {object|null} [p.referral] the Click-to-WhatsApp ad this first message came from, when there is one
  */
 export async function handleInbound({ institutionId, channel = null, channelType = "whatsapp", contactId, contactName = "Pelanggan", text = "", messageId = null, messageType = "text", mediaId = null, referral = null }) {
+  contactName = cleanContactName(contactName);
   const contact = getAdapter(channelType).normalizeContactId(contactId);
   if (!contact) return { success: false, reason: "invalid_phone" };
   const channelId = channel?.id ?? null;

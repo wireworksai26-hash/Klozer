@@ -29,10 +29,36 @@ export function userPayload(user, inst) {
   };
 }
 
+/** Columns a tenant's own staff may see; integrations secrets (CAPI token) never leave the server. */
+const INSTITUTION_PUBLIC_FIELDS = [
+  "id",
+  "name",
+  "slug",
+  "mode",
+  "sector",
+  "phone_number",
+  "email",
+  "address",
+  "subscription_tier",
+  "subscription_expires_at",
+  "blast_credit_quota",
+  "blast_credits_used",
+  "ai_token_quota",
+  "ai_tokens_used",
+  "features_json",
+  "language",
+  "meta_pixel_id",
+  "ai_persona_json",
+  "is_active",
+  "created_at",
+  "updated_at",
+];
+
 export function institutionPublic(inst) {
   if (!inst) return null;
-  const { ai_tokens_used, ...rest } = inst;
-  return { ...rest, ai_tokens_used };
+  const out = {};
+  for (const key of INSTITUTION_PUBLIC_FIELDS) if (inst[key] !== undefined) out[key] = inst[key];
+  return out;
 }
 
 /**
@@ -57,13 +83,14 @@ export async function login(req, res) {
   const ok = await comparePassword(password, user.password_hash);
   if (!ok) {
     // One atomic statement: concurrent wrong guesses each count, so parallel requests cannot dodge the lock.
-    // The counter is only reset by a successful login, so after a lock expires each further miss re-locks.
+    // The lock is set from the old count and the counter is cleared at the same time, so keeping an
+    // account locked now needs a fresh set of misses instead of one request every 15 minutes.
     await query(
       `UPDATE users
-          SET failed_login_count = failed_login_count + 1,
-              locked_until = IF(failed_login_count >= ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? MINUTE), locked_until)
+          SET locked_until = IF(failed_login_count >= ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? MINUTE), locked_until),
+              failed_login_count = IF(failed_login_count >= ?, 0, failed_login_count + 1)
         WHERE id = ?`,
-      [MAX_FAILED_LOGINS, LOCK_MINUTES, user.id]
+      [MAX_FAILED_LOGINS - 1, LOCK_MINUTES, MAX_FAILED_LOGINS - 1, user.id]
     );
     await audit(req, "auth.login_failed", { userId: user.id, institutionId: user.institution_id, metadata: { reason: "bad_password" } });
     throw unauthorized("Email atau password salah.");
@@ -79,6 +106,7 @@ export async function login(req, res) {
 
   const token = generateToken(user);
   setSessionCookie(res, token);
+  res.set("Cache-Control", "no-store");
   res.json({
     success: true,
     message: "Login berhasil.",
@@ -173,6 +201,7 @@ export async function register(req, res) {
     }).catch((err) => logger.warn({ err: err.message }, "Credential email failed"));
   }
 
+  res.set("Cache-Control", "no-store");
   res.status(201).json({
     success: true,
     message: "Instansi & kredensial SPV / CS berhasil dibuat. Simpan password ini, tidak akan ditampilkan lagi.",
