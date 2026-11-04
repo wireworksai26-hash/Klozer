@@ -181,7 +181,7 @@ describe("an agent that may write", () => {
     const task = await row("SELECT * FROM tasks WHERE institution_id = ?", [t.institutionId]);
     assert.deepEqual([task.source, task.agent_id, task.lead_id, task.type, task.priority, task.status, task.title], ["ai_agent", t.agent.id, lead.id, "follow_up", "high", "open", "Kabari pelanggan soal stok kemeja"]);
     const hours = (new Date(task.due_at) - Date.now()) / 3600_000;
-    assert.ok(hours > 23.9 && hours <= 24, `due in ${hours} hours`);
+    assert.ok(hours > 23.9 && hours <= 24.01, `due in ${hours} hours`);
     assert.equal(task.assigned_to, lead.assigned_cs_id);
     const events = await query("SELECT event, actor_type, actor_agent_id FROM task_events WHERE task_id = ?", [task.id]);
     assert.deepEqual(events.map((e) => [e.event, e.actor_type, e.actor_agent_id]), [["created", "ai_agent", t.agent.id]]);

@@ -408,7 +408,7 @@ export async function announceOverdue({ limit = 200 } = {}) {
     if (!task) continue;
     emitToTenant(institutionId, "task:overdue", task);
     if (task.assignedTo) emitToUser(task.assignedTo, "task:overdue", task);
-    emitEvent({ institutionId, type: "task.overdue", data: taskEventData(task) });
+    await emitEvent({ institutionId, type: "task.overdue", data: taskEventData(task) });
   }
   return announced;
 }

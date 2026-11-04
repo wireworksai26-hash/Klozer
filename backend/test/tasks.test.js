@@ -311,7 +311,7 @@ describe("settings and tasks made by rules", () => {
     const [task] = (await get(t, t.ownerToken, "/tasks")).body.data;
     assert.deepEqual([task.type, task.source, task.assignedTo, task.leadId, task.title], ["handle_chat", "rule", t.cs.id, leadId, "Tangani chat: Pelanggan meminta berbicara dengan manusia"]);
     const minutes = (new Date(task.dueAt) - Date.now()) / 60_000;
-    assert.ok(minutes > 28 && minutes <= 30, `due in ${minutes} minutes`);
+    assert.ok(minutes > 28 && minutes <= 31, `due in ${minutes} minutes`);
 
     await query("UPDATE leads SET handled_by = 'ai' WHERE id = ?", [leadId]);
     await startHandoff({ institutionId: t.institutionId, leadId, reason: "guardrail" });

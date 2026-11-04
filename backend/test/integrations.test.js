@@ -98,9 +98,24 @@ async function addWebhook(t, rx, events = ["*"], over = {}) {
 async function queued(t, count) {
   await waitFor(async () => Number((await row("SELECT COUNT(*) AS n FROM webhook_deliveries WHERE institution_id = ?", [t.institutionId])).n) >= count, { timeout: 4000 });
 }
-const deliver = async (t, now = new Date(), expect = 0) => {
+/** Event rows are written in the background; wait until the outbox for this tenant stops growing. */
+async function settle(t, { quiet = 150, timeout = 4000 } = {}) {
+  const deadline = Date.now() + timeout;
+  let last = -1;
+  while (Date.now() < deadline) {
+    const n = Number((await row("SELECT COUNT(*) AS n FROM webhook_deliveries WHERE institution_id = ?", [t.institutionId])).n);
+    if (n === last) return n;
+    last = n;
+    await new Promise((resolve) => setTimeout(resolve, quiet));
+  }
+  return last;
+}
+/** MySQL stores DATETIME to whole seconds, rounding a queued time up; one second later it is certainly due. */
+const due = () => new Date(Date.now() + 1000);
+const deliver = async (t, now = null, expect = 0) => {
   if (expect) await queued(t, expect);
-  return runWebhookDeliveries({ institutionId: t.institutionId, now });
+  else await settle(t);
+  return runWebhookDeliveries({ institutionId: t.institutionId, now: now ?? due() });
 };
 const deliveriesOf = (endpointId) => query("SELECT * FROM webhook_deliveries WHERE endpoint_id = ? ORDER BY id", [endpointId]);
 const types = (rx) => rx.received.map((r) => r.json?.type);
@@ -467,8 +482,9 @@ describe("webhook delivery", () => {
     const order = await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 2 }], shipping_fee: 10000 });
     assert.equal(order.status, 201);
 
-    const queued = await deliveriesOf(hook.id);
-    assert.deepEqual([queued.length, queued[0].status, queued[0].event_type], [1, "pending", "order.created"]);
+    await queued(t, 1);
+    const first = await deliveriesOf(hook.id);
+    assert.deepEqual([first.length, first[0].status, first[0].event_type], [1, "pending", "order.created"]);
     assert.equal((await deliver(t)).delivered, 1);
 
     assert.equal(rx.received.length, 1);
@@ -496,7 +512,7 @@ describe("webhook delivery", () => {
     const order = (await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] })).body.data;
     await api().patch(`/api/v1/orders/${order.id}/status`).set(bearer(t.ownerToken)).send({ status: "paid" });
     await api().put(`/api/v1/shipping/orders/${order.id}`).set(bearer(t.csToken)).send({ courier_code: "jne", awb_number: "JNE123456789" });
-    await deliver(t, new Date(), 3);
+    await deliver(t, undefined, 3);
 
     assert.deepEqual(types(rx).sort(), ["order.paid", "order.status_changed", "shipment.updated"]);
     const changed = rx.received.find((r) => r.json.type === "order.status_changed").json.data;
@@ -515,7 +531,7 @@ describe("webhook delivery", () => {
     await waitFor(async () => (await query("SELECT id FROM webhook_deliveries WHERE institution_id = ? AND event_type = 'message.sent'", [t.institutionId])).length >= 1);
     await inboundWhatsapp(t, { from: "6281300000001", text: "saya mau komplain barang rusak" });
     await waitFor(async () => (await query("SELECT id FROM webhook_deliveries WHERE institution_id = ? AND event_type = 'conversation.handoff'", [t.institutionId])).length >= 1);
-    await deliver(t, new Date(), 6);
+    await deliver(t);
 
     const by = (type) => rx.received.filter((r) => r.json.type === type).map((r) => r.json.data);
     assert.equal(by("contact.created").length, 1);
@@ -559,7 +575,8 @@ describe("webhook delivery", () => {
     const product = await createProduct(t.institutionId, { price: 100000, stock: 5 });
     await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] });
 
-    const t0 = new Date();
+    await queued(t, 1);
+    const t0 = new Date(Math.ceil(Date.now() / 1000) * 1000 + 1000);
     assert.deepEqual(await deliver(t, t0), { delivered: 0, failed: 1, dropped: 0 });
     let d = (await deliveriesOf(hook.id))[0];
     assert.deepEqual([d.status, d.attempts, d.last_status_code, d.last_error, d.response_excerpt], ["failed", 1, 500, "HTTP 500", "down"]);
@@ -584,7 +601,8 @@ describe("webhook delivery", () => {
     const product = await createProduct(t.institutionId, { price: 100000, stock: 5 });
     await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] });
 
-    let clock = new Date();
+    await queued(t, 1);
+    let clock = new Date(Math.ceil(Date.now() / 1000) * 1000 + 1000);
     for (let i = 0; i < 7; i++) {
       await deliver(t, clock);
       clock = new Date(clock.getTime() + 25 * 3600_000);
@@ -656,7 +674,8 @@ describe("webhook delivery", () => {
     await addWebhook(t, rx, ["order.created"]);
     const product = await createProduct(t.institutionId, { price: 100000, stock: 50 });
     for (let i = 0; i < 6; i++) await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] });
-    const now = new Date();
+    await queued(t, 6);
+    const now = new Date(Math.ceil(Date.now() / 1000) * 1000 + 1000);
     const [a, b] = await Promise.all([deliver(t, now), deliver(t, now)]);
     assert.equal(a.delivered + b.delivered, 6);
     assert.equal(rx.received.length, 6);
@@ -699,6 +718,7 @@ describe("webhook delivery", () => {
     const hook = await addWebhook(t, rx, ["order.created"]);
     const product = await createProduct(t.institutionId, { price: 100000, stock: 5 });
     await api().post("/api/v1/orders").set(bearer(t.csToken)).send({ items: [{ product_id: product, quantity: 1 }] });
+    await queued(t, 1);
     await api().put(`/api/v1/integrations/webhooks/${hook.id}`).set(bearer(t.ownerToken)).send({ isActive: false });
     const result = await deliver(t);
     assert.deepEqual([result.dropped, rx.received.length], [1, 0]);
@@ -714,7 +734,7 @@ describe("webhook delivery", () => {
     const id = (await api().post("/api/v1/open/contacts").set(withKey(key)).send({ phone: "081200000009", name: "Budi" })).body.data.id;
     await api().put(`/api/v1/open/contacts/${id}/consent`).set(withKey(key)).send({ state: "opted_out", source: "stop" });
     await api().patch(`/api/v1/open/contacts/${id}`).set(withKey(key)).send({ city: "Solo" });
-    await deliver(t, new Date(), 3);
+    await deliver(t, undefined, 3);
     assert.deepEqual(types(rx).sort(), ["contact.consent_changed", "contact.created", "contact.updated"]);
     const consent = rx.received.find((r) => r.json.type === "contact.consent_changed").json.data;
     assert.deepEqual([consent.state, consent.contact.id, consent.contact.marketing_consent], ["opted_out", id, "opted_out"]);
