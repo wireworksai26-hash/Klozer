@@ -14,6 +14,11 @@ export default function Modal({ open, onClose, title, description, size = "md", 
   const { t } = useDashboard();
   const panel = useRef(null);
   const titleId = useId();
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -26,7 +31,7 @@ export default function Modal({ open, onClose, title, description, size = "md", 
     const onKey = (e) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !panel.current) return;
@@ -48,7 +53,7 @@ export default function Modal({ open, onClose, title, description, size = "md", 
       document.body.style.overflow = overflow;
       if (previous instanceof HTMLElement) previous.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   const drawer = variant === "drawer";
