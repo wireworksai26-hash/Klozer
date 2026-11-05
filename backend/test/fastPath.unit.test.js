@@ -1,7 +1,7 @@
 import "./setupEnv.js";
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_TOPICS, MAX_LISTED_PRODUCTS, MAX_WORDS, ambiguousText, catalogText, detectTopic, greetingText, infoText, matchProducts, paymentText, productText, thanksText } from "../src/services/fastpath/fastPathModel.js";
+import { DEFAULT_TOPICS, MAX_LISTED_PRODUCTS, MAX_WORDS, ambiguousText, catalogText, detectTopic, emptyCatalogText, greetingText, infoText, matchProducts, paymentText, productText, thanksText } from "../src/services/fastpath/fastPathModel.js";
 
 const products = [
   { id: 1, name: "Kemeja Batik", price: 150000, stock: 10 },
@@ -37,7 +37,7 @@ describe("which messages are fast questions", () => {
   });
 
   test("the product list", () => {
-    for (const text of ["list produk dong", "ada produk apa aja", "katalognya mana", "daftar harga", "jual apa aja kak"]) assert.equal(topicOf(text), "catalog", text);
+    for (const text of ["list produk dong", "ada produk apa aja", "katalognya mana", "daftar harga", "jual apa aja kak", "coba kirim daftar nya ya", "kirim list dong", "daftar layanan", "daftar paket", "list nya mana", "layanan apa aja", "coba cek katalog nya"]) assert.equal(topicOf(text), "catalog", text);
   });
 
   test("the price or stock of one product, named by its whole name or by one clear word", () => {
@@ -98,6 +98,10 @@ describe("what is said back", () => {
     assert.doesNotMatch(text, /QRIS/);
     assert.match(paymentText({ accounts, qris: true }), /QRIS/);
     assert.match(text, /bukti pembayaran/);
+  });
+
+  test("an empty catalog says so instead of promising a list", () => {
+    assert.match(emptyCatalogText(), /Belum ada produk/);
   });
 
   test("the list is cut at a sensible length and says how many more there are", () => {

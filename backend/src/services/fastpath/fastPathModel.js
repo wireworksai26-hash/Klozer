@@ -31,7 +31,13 @@ const THANKS_CORE = new Set(["makasih", "terimakasih", "thanks", "thx", "tks", "
 const THANKS_FILLER = new Set(["ok", "oke", "siap", "sip", "ya", "yaa", "kak", "ka", "banyak", "sangat", "deh", "nih", "min", "admin", "udah", "sudah", "jelas", "paham", "ngerti", "you", "kk", "mantap"]);
 
 const PAYMENT_PHRASES = ["rekening", "no rek", "norek", "nomor rek", "transfer kemana", "transfer ke mana", "bayar kemana", "bayar ke mana", "cara bayar", "cara pembayaran", "metode pembayaran", "pembayaran lewat apa", "bayar lewat apa", "bayar pakai apa", "bisa bayar pakai apa", "bisa bayar lewat apa", "ada qris", "bisa qris", "bisa transfer"];
-const CATALOG_PHRASES = ["list produk", "daftar produk", "katalog", "menu", "produk apa", "jual apa", "ada apa aja", "ada apa saja", "ada produk apa", "pricelist", "price list", "daftar harga", "list harga", "lihat produk", "produknya apa"];
+const CATALOG_PHRASES = [
+  "list produk", "daftar produk", "katalog", "menu", "produk apa", "jual apa", "ada apa aja", "ada apa saja",
+  "ada produk apa", "pricelist", "price list", "daftar harga", "list harga", "lihat produk", "produknya apa",
+  "daftar layanan", "daftar paket", "daftar jasa", "list layanan", "list paket", "list jasa",
+  "kirim daftar", "kirim list", "daftar nya", "list nya", "daftar dong", "list dong",
+  "layanan apa", "paket apa", "jasa apa", "katalog produk", "katalog layanan", "menu layanan",
+];
 const ADDRESS_PHRASES = ["alamat", "lokasi", "dimana", "di mana", "maps", "toko dimana", "letak toko"];
 const HOURS_PHRASES = ["jam buka", "buka jam", "jam operasional", "buka sampai", "tutup jam", "jam tutup", "jam berapa buka", "jam berapa tutup", "buka hari", "buka setiap hari", "hari libur"];
 const PRODUCT_ASK_WORDS = new Set(["harga", "berapa", "stok", "stock", "ready", "tersedia", "kosong", "sisa", "ada"]);
@@ -118,6 +124,8 @@ export function catalogText({ products, total }) {
   const more = total > shown.length ? `\n\nMasih ada ${total - shown.length} produk lain. Sebut nama produk yang kakak cari ya.` : "\n\nMau pesan yang mana kak?";
   return `Ini produk kami:\n${rows.join("\n")}${more}`;
 }
+
+export const emptyCatalogText = () => "Belum ada produk yang terdaftar di katalog kami kak. Coba tanya lagi nanti atau hubungi tim kami ya.";
 
 export function productText({ product }) {
   const stock = product.stock <= 0 ? "stoknya sedang habis" : `stok tersedia ${product.stock}`;

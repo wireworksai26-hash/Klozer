@@ -4,7 +4,7 @@ import { getFastPathSettings } from "./fastPathSettings.js";
 import { loadCatalog } from "../commerce/catalog.js";
 import { getCommerceSettings } from "../commerce/commerceSettings.js";
 import { isGatewayConfigured } from "../ipaymuService.js";
-import { MAX_WORDS, ambiguousText, catalogText, detectTopic, greetingText, infoText, matchProducts, paymentText, productText, thanksText } from "./fastPathModel.js";
+import { MAX_WORDS, ambiguousText, catalogText, detectTopic, emptyCatalogText, greetingText, infoText, matchProducts, paymentText, productText, thanksText } from "./fastPathModel.js";
 
 /**
  * Answers repetitive questions from the shop's own data without the language model. The shop can switch the whole thing
@@ -46,7 +46,7 @@ export async function tryFastPath({ institutionId, text }) {
       }
       case "catalog": {
         catalog ??= [...(await loadCatalog(institutionId)).values()];
-        return catalog.length ? catalogText({ products: catalog, total: catalog.length }) : null;
+        return catalog.length ? catalogText({ products: catalog, total: catalog.length }) : emptyCatalogText();
       }
       case "product": {
         const candidates = hit.products ?? matchProducts(text, catalog ?? []);
