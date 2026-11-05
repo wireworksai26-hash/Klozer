@@ -244,8 +244,9 @@ export function createWhatsAppWebManager({
       pruneMessages(session);
 
       if (!onInbound) continue;
+      log.info({ channelId: session.channel.id, messageId: parsed.messageId, contactId, messageType: parsed.type }, "WhatsApp inbound received");
       try {
-        await onInbound({
+        const result = await onInbound({
           institutionId: session.channel.institutionId,
           channel: session.channel,
           channelType: "whatsapp_web",
@@ -256,6 +257,19 @@ export function createWhatsAppWebManager({
           messageType: parsed.type,
           mediaId: mediaUsable ? parsed.messageId : null,
         });
+        log.info(
+          {
+            channelId: session.channel.id,
+            messageId: parsed.messageId,
+            leadId: result?.leadId ?? null,
+            replied: result?.replied ?? null,
+            delivered: result?.delivered ?? null,
+            reason: result?.reason ?? null,
+            intent: result?.intent ?? null,
+            path: result?.path ?? null,
+          },
+          "WhatsApp inbound handled"
+        );
       } catch (err) {
         log.error({ err: err.message, channelId: session.channel.id, messageId: parsed.messageId }, "WhatsApp inbound message failed");
       }
@@ -432,8 +446,12 @@ export function createWhatsAppWebManager({
 }
 
 async function deliverInbound(payload) {
-  const { handleInbound } = await import("../conversationService.js");
-  return handleInbound(payload);
+  const [{ handleInbound }, { loadTransportChannelAny }] = await Promise.all([
+    import("../conversationService.js"),
+    import("./channelRepository.js"),
+  ]);
+  const fresh = await loadTransportChannelAny(payload.institutionId, payload.channel.id).catch(() => null);
+  return handleInbound({ ...payload, channel: fresh ?? payload.channel });
 }
 
 async function bindConnected(channel, me) {
