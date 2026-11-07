@@ -18,7 +18,6 @@ import { apiFetch } from "@/utils/api";
 
 export default function RegisterPage() {
   const [institutionName, setInstitutionName] = useState("");
-  const [sector, setSector] = useState("Fashion & Retail");
   const [mode, setMode] = useState("business");
   const [ownerName, setOwnerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -43,7 +42,7 @@ export default function RegisterPage() {
       const data = await apiFetch("/auth/register", {
         method: "POST",
         auth: false,
-        body: { institutionName, sector, mode, ownerName: ownerName || undefined, phone: phone || undefined },
+        body: { institutionName, mode, ownerName: ownerName || undefined, phone: phone || undefined },
       });
       setCredentialsBundle(data.credentialsBundle);
     } catch (err) {
@@ -222,35 +221,18 @@ Silakan gunakan kredensial ini untuk login di: http://localhost:3000/login
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-body-sm font-bold text-charcoal mb-1">
-                      Tipe Operasional
+                      Jenis Usaha
                     </label>
                     <select
                       value={mode}
                       onChange={(e) => setMode(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-bold outline-none focus:border-brand focus:bg-white"
                     >
-                      <option value="business">Bisnis / Retail E-Commerce</option>
-                      <option value="ngo">NGO / Lembaga ZISWAF</option>
+                      <option value="business">Bisnis</option>
+                      <option value="ngo">NGO</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-body-sm font-bold text-charcoal mb-1">
-                      Sektor Industri
-                    </label>
-                    <select
-                      value={sector}
-                      onChange={(e) => setSector(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-line bg-canvas text-body-sm text-charcoal font-bold outline-none focus:border-brand focus:bg-white"
-                    >
-                      <option value="Fashion & Retail">Fashion & Retail</option>
-                      <option value="Kecantikan & Skincare">Kecantikan & Skincare</option>
-                      <option value="Kuliner & F&B">Kuliner & F&B</option>
-                      <option value="Jasa & Laundry">Jasa & Laundry</option>
-                      <option value="Properti & Otomotif">Properti & Otomotif</option>
-                      <option value="Lembaga Sosial & Donasi">Lembaga Sosial & Donasi</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-line">

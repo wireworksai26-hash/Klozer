@@ -36,6 +36,7 @@ export const settingsGuides = [
       list([
         "Buat akun terpisah untuk tiap staf di **Pengaturan**, tab **Hak Akses Tim**.",
         "Password awal hanya tampil sekali saat akun dibuat atau diatur ulang. Simpan dan berikan ke orangnya.",
+        "Untuk kurir atau pengantar, buat akun dengan peran **PIC Pengantaran**. Ia hanya melihat pengantaran miliknya. Lihat panduan Pengantaran dan PIC pengantaran.",
         "Gunakan password minimal 12 karakter. Mengganti password mengeluarkan perangkat lain.",
         "Nonaktifkan staf yang sudah tidak bekerja. Ia langsung keluar dari semua perangkat.",
         "Akun terkunci sementara setelah beberapa kali salah password. Tunggu beberapa menit lalu coba lagi.",

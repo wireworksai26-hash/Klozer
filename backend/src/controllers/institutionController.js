@@ -69,7 +69,7 @@ export async function createInstitution(req, res) {
         name,
         slug,
         mode,
-        sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
+        sector || (mode === "ngo" ? "NGO" : "Bisnis"),
         phone_number ?? null,
         email,
         address ?? null,

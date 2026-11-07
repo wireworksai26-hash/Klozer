@@ -22,12 +22,14 @@ const ROLE_LABELS = {
   finance: "Finance & Rekonsiliasi",
   cs: "Customer Service",
   pic_warehouse: "PIC Gudang",
+  pic_delivery: "PIC Pengantaran",
 };
 
 /** Which sidebar/theme set the dashboard shows for a server role. */
 export function uiRoleFor(serverRole) {
   if (serverRole === "supervisor" || serverRole === "finance") return "spv";
   if (serverRole === "pic_warehouse") return "cs";
+  if (serverRole === "pic_delivery") return "pic";
   return serverRole || "owner";
 }
 
@@ -37,6 +39,7 @@ export const roleLabel = (serverRole) => ROLE_LABELS[serverRole] || serverRole;
 export function roleToApi(label = "") {
   const text = String(label).toLowerCase();
   if (/finance|keuangan|rekonsiliasi/.test(text)) return "finance";
+  if (/pengantaran|antar|kurir|delivery/.test(text)) return "pic_delivery";
   if (/pic|gudang|warehouse/.test(text)) return "pic_warehouse";
   if (/supervisor|spv/.test(text)) return "supervisor";
   return "cs";
@@ -215,6 +218,7 @@ export function leadFromApi(l, now = Date.now()) {
     aiAgentId: l.ai_agent_id ?? null,
     aiAgentPinned: Boolean(l.ai_agent_pinned),
     marketingConsent: l.marketing_consent || "unknown",
+    isVip: Boolean(l.is_vip),
     followupOptOut: Boolean(l.followup_opt_out),
   };
 }
@@ -306,7 +310,7 @@ export function institutionFromApi(i) {
     id: `INST-${pad(i.id)}`,
     dbId: i.id,
     name: i.name,
-    sector: i.sector || "Bisnis & Jasa",
+    sector: i.sector || (i.mode === "ngo" ? "NGO" : "Bisnis"),
     mode: i.mode,
     owner: i.owner_name || "-",
     email: i.email || "",
@@ -331,7 +335,8 @@ export function institutionToApi(ui, { superadmin = false } = {}) {
     if (v !== undefined && v !== "") out[k] = v;
   };
   set("name", ui.name);
-  set("sector", ui.sector);
+  set("sector", ui.mode === "ngo" ? "NGO" : ui.mode === "business" ? "Bisnis" : ui.sector);
+  set("mode", ui.mode);
   set("email", ui.email);
   set("phone_number", ui.phone);
   set("address", ui.address);

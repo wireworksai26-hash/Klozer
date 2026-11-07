@@ -153,7 +153,7 @@ export async function register(req, res) {
         institutionName,
         slug,
         mode,
-        sector || (mode === "ngo" ? "Lembaga Sosial & Donasi" : "Fashion & Retail"),
+        sector || (mode === "ngo" ? "NGO" : "Bisnis"),
         phone || null,
         contactEmail || spvEmail,
         config.trial.tier,

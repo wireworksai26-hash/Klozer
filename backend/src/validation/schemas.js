@@ -349,6 +349,15 @@ export const aiPersonaBody = z.object({
   greetingMessage: optionalText(500),
   abandonedMessage: optionalText(500),
   customFaqKeywords: optionalText(500),
+  adaptiveStyle: z.boolean().optional(),
+  // from the client intake form: goal, tone of voice, brand values, words to prefer and never use, off-limit topics, big orders
+  goal: z.enum(["support", "sales", "both"]).optional(),
+  toneStyles: z.array(z.enum(["formal", "ramah", "empatis"])).max(3).optional(),
+  brandValues: optionalText(200),
+  preferredWords: optionalText(300),
+  forbiddenWords: optionalText(300),
+  offLimitTopics: optionalText(400),
+  bigOrderAmount: z.coerce.number().int().min(0).max(1e10).optional(),
   voiceAccent: optionalText(120),
   voiceGender: optionalText(60),
 });

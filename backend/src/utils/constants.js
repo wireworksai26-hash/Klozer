@@ -56,7 +56,7 @@ export function topupPrice(tokens) {
 export const LEAD_STATUSES = ["new", "in_progress", "closing", "repeat", "idle", "closed_lost"];
 export const ORDER_STATUSES = ["waiting_payment", "paid", "processing", "shipped", "delivered", "completed", "cancelled"];
 export const PAYMENT_METHODS = ["qris", "va", "bank_transfer", "cod", "cash"];
-export const STAFF_ROLES = ["supervisor", "owner", "finance", "cs", "pic_warehouse"];
+export const STAFF_ROLES = ["supervisor", "owner", "finance", "cs", "pic_warehouse", "pic_delivery"];
 
 /** Allowed order status transitions. Anything not listed is rejected. */
 export const ORDER_TRANSITIONS = Object.freeze({

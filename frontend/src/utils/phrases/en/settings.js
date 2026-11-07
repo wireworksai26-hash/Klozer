@@ -83,7 +83,15 @@ const phrases = {
   "Token tidak pernah ditampilkan kembali. Isi ulang di bawah untuk menggantinya.": "The token is never shown again. Fill it in again below to replace it.",
   "Customer Service Junior": "Customer Service Junior",
   "Customer Service Senior": "Customer Service Senior",
-  "Supervisor (SPV)": "Supervisor (SPV)"
+  "Supervisor (SPV)": "Supervisor (SPV)",
+  "Mulai dari contoh": "Start from an example",
+  "Pilih salah satu, isinya mengisi kolom di bawah. Ubah seperlunya, lalu klik Simpan Persona. Nama admin tidak berubah.": "Pick one and it fills the fields below. Change what you need, then click Save Persona. The admin name does not change.",
+  "Sesuaikan gaya dengan tiap pelanggan": "Match each customer's style",
+  "AI membaca cara tiap pelanggan menulis, lalu menjawab dengan gaya yang sama: formal dengan yang formal, santai dengan yang santai, singkat dengan yang singkat. Ini per nomor pelanggan, dihitung dari chat mereka sendiri.": "The AI reads how each customer writes and answers in the same style: formal with the formal, relaxed with the relaxed, short with the short. It works per customer number, from their own chat.",
+  "PIC Pengantaran": "Delivery PIC",
+  "Nomor WhatsApp PIC *": "PIC WhatsApp number *",
+  "Nomor WhatsApp (opsional)": "WhatsApp number (optional)",
+  "PIC menerima pemberitahuan pengantaran baru di nomor ini, dan masuk dengan email dan password sendiri.": "The PIC gets new-delivery notices on this number and signs in with their own email and password.",
 };
 
 export default phrases;

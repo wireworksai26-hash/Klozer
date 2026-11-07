@@ -1,6 +1,8 @@
 // English translations keyed by the Indonesian source phrase used in t("...").
 // One file per area keeps merges small. A phrase may appear in only one file.
 import common from "./common.js";
+import delivery from "./delivery.js";
+import persona from "./persona.js";
 import shell from "./shell.js";
 import coming_soon from "./coming-soon.js";
 import charts from "./charts.js";
@@ -88,4 +90,6 @@ export const enPhrases = {
   ...vouchers,
   ...billing,
   ...topup,
+  ...delivery,
+  ...persona,
 };

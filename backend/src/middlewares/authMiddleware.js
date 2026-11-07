@@ -4,7 +4,7 @@ import { queryOne } from "../config/db.js";
 import { unauthorized, forbidden } from "../utils/errors.js";
 import { CSRF_HEADER, CSRF_VALUE, SESSION_COOKIE, isAllowedOrigin, readCookie } from "../utils/session.js";
 
-export const ROLES = ["superadmin", "supervisor", "owner", "finance", "cs", "pic_warehouse"];
+export const ROLES = ["superadmin", "supervisor", "owner", "finance", "cs", "pic_warehouse", "pic_delivery"];
 
 export function generateToken(user) {
   return jwt.sign(

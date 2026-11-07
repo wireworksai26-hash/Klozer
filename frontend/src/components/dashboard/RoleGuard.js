@@ -33,6 +33,13 @@ export default function RoleGuard({ children }) {
     }
   }, [status, role, pathname, router]);
 
+  // A delivery PIC works from the deliveries screen only; anywhere else in the dashboard sends them back to it.
+  useEffect(() => {
+    if (status === "ready" && role === "pic" && pathname !== "/dashboard/deliveries") {
+      router.replace("/dashboard/deliveries");
+    }
+  }, [status, role, pathname, router]);
+
   if (isBooting || status === "idle") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-canvas text-ink">

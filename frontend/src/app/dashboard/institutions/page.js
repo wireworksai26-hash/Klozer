@@ -28,7 +28,7 @@ export default function InstitutionsPage() {
   } = useDashboard();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSector, setSelectedSector] = useState("all");
+  const [selectedKind, setSelectedKind] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingInst, setEditingInst] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -42,7 +42,7 @@ export default function InstitutionsPage() {
   // Form State with Language & Modules
   const [formData, setFormData] = useState({
     name: "",
-    sector: "Fashion & Retail",
+    mode: "business",
     owner: "",
     email: "",
     phone: "",
@@ -55,7 +55,7 @@ export default function InstitutionsPage() {
   const handleOpenAdd = () => {
     setFormData({
       name: "",
-      sector: "Fashion & Retail",
+      mode: "business",
       owner: "",
       email: "",
       phone: "",
@@ -72,7 +72,7 @@ export default function InstitutionsPage() {
     setEditingInst(inst);
     setFormData({
       name: inst.name || "",
-      sector: inst.sector || "Fashion & Retail",
+      mode: inst.mode === "ngo" ? "ngo" : "business",
       owner: inst.owner || "",
       email: inst.email || "",
       phone: inst.phone || "",
@@ -146,10 +146,8 @@ Login URL: ${window.location.origin}/login`;
       (inst.name?.toLowerCase() || "").includes(s) ||
       (inst.owner?.toLowerCase() || "").includes(s) ||
       (inst.id?.toLowerCase() || "").includes(s);
-    const matchSector =
-      selectedSector === "all" ||
-      (inst.sector?.toLowerCase() || "").includes(selectedSector.toLowerCase());
-    return matchSearch && matchSector;
+    const matchKind = selectedKind === "all" || (inst.mode === "ngo" ? "ngo" : "business") === selectedKind;
+    return matchSearch && matchKind;
   });
 
   return (
@@ -206,17 +204,15 @@ Login URL: ${window.location.origin}/login`;
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-label font-bold text-fg-muted whitespace-nowrap">{t("Sektor:")}</span>
+          <span className="text-label font-bold text-fg-muted whitespace-nowrap">{t("Jenis usaha:")}</span>
           <select
-            value={selectedSector}
-            onChange={(e) => setSelectedSector(e.target.value)}
+            value={selectedKind}
+            onChange={(e) => setSelectedKind(e.target.value)}
             className="text-label font-semibold bg-soft border border-line rounded-xl px-3 py-1.5 text-fg outline-none cursor-pointer"
           >
-            <option value="all">{t("Semua Sektor")} ({institutions.length})</option>
-            <option value="Fashion">Fashion & Retail</option>
-            <option value="Beauty">Beauty & Skincare</option>
-            <option value="Sosial">{t("Lembaga Sosial & ZISWAF")}</option>
-            <option value="Kuliner">{t("Kuliner & F&B")}</option>
+            <option value="all">{t("Semua jenis usaha")} ({institutions.length})</option>
+            <option value="business">{t("Bisnis")}</option>
+            <option value="ngo">NGO</option>
           </select>
         </div>
       </div>
@@ -245,7 +241,7 @@ Login URL: ${window.location.origin}/login`;
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <div className="text-fg font-medium">{inst.sector}</div>
+                    <div className="text-fg font-medium">{inst.mode === "ngo" ? "NGO" : t("Bisnis")}</div>
                     <span className="text-caption font-bold text-brand bg-brand-soft px-2 py-0.5 rounded-md border border-brand-soft inline-block mt-0.5">
                       {inst.tier}
                     </span>
@@ -346,18 +342,15 @@ Login URL: ${window.location.origin}/login`;
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-fg block mb-1">
-                    {t("institutions.sectorLabel", "Sektor Usaha")}
+                    {t("Jenis usaha")}
                   </label>
                   <select
-                    value={formData.sector}
-                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                    value={formData.mode}
+                    onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                     className="w-full bg-soft border border-line rounded-xl p-2.5 text-fg outline-none font-medium"
                   >
-                    <option value="Fashion & Retail">Fashion & Retail</option>
-                    <option value="Beauty & Healthcare">Beauty & Healthcare</option>
-                    <option value="Lembaga Sosial & Donasi">{t("Lembaga Sosial & Donasi")}</option>
-                    <option value="Kuliner & F&B">{t("Kuliner & F&B")}</option>
-                    <option value="Properti & Jasa">{t("Properti & Jasa")}</option>
+                    <option value="business">{t("Bisnis")}</option>
+                    <option value="ngo">NGO</option>
                   </select>
                 </div>
 

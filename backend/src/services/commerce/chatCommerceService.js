@@ -12,6 +12,7 @@ import { trackWaybill, isBiteshipConfigured } from "../shipping/biteship.js";
 import { calculateCodRiskScore } from "../shippingService.js";
 import { recordTokenUsage } from "../tokenService.js";
 import { cancelPending, scheduleCartFollowups, scheduleOrderFollowups } from "../followup/followupService.js";
+import { isBigOrder } from "../personaRules.js";
 import { loadCatalog } from "./catalog.js";
 import { getCommerceSettings } from "./commerceSettings.js";
 import { analyzeOrderMessage } from "./commerceNlu.js";
@@ -396,7 +397,9 @@ async function placeOrder(env, draft) {
 
   const replyText = say.placedText({ orderNumber: order.order_number, total: order.total_amount, paymentMethod: draft.paymentMethod, fulfillmentType: draft.fulfillmentType, qris, accounts });
   // the QR could not be made: keep the order, and let a person finish the payment step
-  const handoffReason = draft.paymentMethod === "qris" && !qris?.imageUrl ? "commerce_payment" : undefined;
+  // a big order (above the amount the owner set in the persona) is also passed to a person, so it is checked by hand
+  const persona = await queryOne("SELECT ai_persona_json FROM institutions WHERE id = ?", [ctx.institutionId]).then((row) => parseJsonColumn(row?.ai_persona_json)).catch(() => null);
+  const handoffReason = draft.paymentMethod === "qris" && !qris?.imageUrl ? "commerce_payment" : isBigOrder(order.total_amount, persona) ? "commerce_big_order" : undefined;
   return { replyText, handoffReason, meta: { commerce: "order_placed", orderId: order.id, settings: settings.shippingMode } };
 }
 

@@ -1,5 +1,6 @@
 // Prompt and reply shaping for the WhatsApp customer-service assistant.
 // Pure functions only (no database, no network) so the wording rules can be unit-tested.
+import { personaPromptLines } from "./personaRules.js";
 
 /**
  * The dashboard used to prefill "Gaya Bahasa" with this text and saved it as-is, so it is the product
@@ -41,6 +42,7 @@ export function effectiveTone(persona = {}) {
  * @param {string} p.bankTransferSummary
  * @param {string} p.instAddress
  * @param {string} p.instHours
+ * @param {string} [p.styleBlock]       how this customer writes (aiStyle.styleBlock); it beats the default voice and the owner persona
  * @param {string} [p.learningBlock]   owner rules and corrections (see aiContext.buildLearningBlock)
  * @param {string} [p.knowledgeBlock]  passages from the owner's documents (see aiContext.buildKnowledgeBlock)
  */
@@ -58,6 +60,7 @@ export function buildCsSystemPrompt({
   instHours,
   learningBlock = "",
   knowledgeBlock = "",
+  styleBlock = "",
   channelLabel = "WhatsApp",
   agentBlock = "",
 }) {
@@ -72,6 +75,7 @@ export function buildCsSystemPrompt({
       ? `- Sapaan pembuka yang diinginkan pemilik toko (pakai kalau ini pesan pertama): "${persona.greetingMessage}"`
       : null,
     persona.customFaqKeywords ? `- Topik yang sering ditanyakan pelanggan: ${persona.customFaqKeywords}` : null,
+    ...personaPromptLines(persona),
   ].filter(Boolean);
   const personaBlock = personaLines.length
     ? `
@@ -87,9 +91,9 @@ Ikuti gaya bicara di atas bila ada, tapi balasan tetap singkat dan tanpa format 
 
   return `
 Kamu adalah ${agentName}, admin chat ${channelLabel} "${instName}" (${instSector}). Kamu ngobrol langsung dengan pelanggan untuk menjawab pertanyaan produk, membantu mereka memesan, dan mengurus pembayarannya.
-${personaBlock}${agentBlock}${learningBlock}
+${personaBlock}${styleBlock}${agentBlock}${learningBlock}
 CARA NGOBROL (utamakan ini):
-1. Pakai bahasa WhatsApp sehari-hari: santai, hangat, tetap sopan. Sapa pelanggan "kak". Sebut dirimu "aku" atau "kami", bukan "saya" atau "Anda". Contoh nada: "Ready kak, masih ada 7 pcs ya", "Siap kak, aku catat dulu", "Boleh banget kak".
+1. Pakai bahasa WhatsApp sehari-hari: santai, hangat, tetap sopan. Sapa pelanggan "kak". Sebut dirimu "aku" atau "kami", bukan "saya" atau "Anda". Contoh nada: "Ready kak, masih ada 7 pcs ya", "Siap kak, aku catat dulu", "Boleh banget kak". Ini gaya bawaan: kalau ada bagian [GAYA PELANGGAN INI], ikuti bagian itu untuk nada, sapaan, dan panjang jawaban.
 2. Singkat: 1-3 kalimat pendek per balasan, seperti orang mengetik di HP. Baru panjangkan untuk rincian pesanan, total, atau cara bayar, dan itu pun rapi per baris. Jangan menulis seperti esai atau surat.
 3. Jawab pertanyaannya dulu, baru tambah satu hal yang berguna (tawarkan varian, tanya alamat). Maksimal satu pertanyaan per balasan.
 4. Emoji paling banyak satu per balasan dan hanya kalau pas (😊 🙏 👍). Jangan pakai emoji kalau pelanggan sedang komplain atau kesal.
@@ -97,6 +101,7 @@ CARA NGOBROL (utamakan ini):
 6. Jangan pakai format markdown (tanpa **tebal**, tanpa #, tanpa tabel). Untuk daftar cukup baris biasa diawali "-".
 7. Ikuti bahasa pelanggan. Kalau mereka menulis dalam bahasa Inggris, balas dengan Inggris yang santai.
 8. Variasikan pembuka kalimat, jangan terus-terusan "Baik kak," atau "Siap kak,".
+9. Tulis seperti marketing sungguhan yang memperhatikan pelanggannya, bukan balasan template: tanggapi hal spesifik yang dia sebut (acara, kebutuhan, ukuran, budget), dan kalau pas, tanya satu hal singkat tentang kebutuhannya sebelum menawarkan. Jangan menumpuk daftar pilihan kalau satu rekomendasi yang tepat cukup.
 
 IDENTITAS:
 - Kamu bicara sebagai admin toko. Jangan memperkenalkan diri sebagai "Asisten AI", "chatbot", atau "virtual assistant", dan jangan menulis "sebagai AI".

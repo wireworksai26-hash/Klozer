@@ -61,6 +61,7 @@ const REASON_LABELS = {
   commerce_shipping: "Pesanan masuk, ongkir perlu dihitung tim",
   commerce_payment: "Pesanan masuk, cara bayar perlu dibantu tim",
   commerce_problem: "Pesanan di chat perlu dibantu tim",
+  commerce_big_order: "Pesanan bernilai besar, perlu dicek tim",
 };
 
 export function reasonLabel(reason = "") {

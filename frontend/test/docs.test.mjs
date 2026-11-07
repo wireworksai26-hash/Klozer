@@ -53,7 +53,7 @@ test("bold menu names mentioned in the guides are menu names that exist", () => 
   const settings = fs.readFileSync(path.join(root, "src", "app", "dashboard", "settings", "page.js"), "utf8");
   const known = nav + settings;
   // names that must appear exactly as the sidebar or a settings tab shows them
-  const MENUS = ["Live Chat WhatsApp", "Jalur Cepat", "Basis Pengetahuan", "Evaluasi AI", "Saluran Chat", "Smart Broadcast", "Iklan dan ROAS", "Top Up Token AI", "Persona dan Script AI", "Hak Akses Tim", "Profil Usaha dan WhatsApp", "Test CS AI", "Pesanan di Chat", "Agen AI", "Tugas"];
+  const MENUS = ["Live Chat WhatsApp", "Jalur Cepat", "Basis Pengetahuan", "Evaluasi AI", "Saluran Chat", "Smart Broadcast", "Iklan dan ROAS", "Top Up Token AI", "Persona dan Script AI", "Hak Akses Tim", "Profil Usaha dan WhatsApp", "Test CS AI", "Pesanan di Chat", "Agen AI", "Tugas", "Pengantaran"];
   for (const name of MENUS) assert.ok(known.includes(`"${name}"`) || known.includes(name), `menu "${name}" is not in the sidebar or settings`);
   const mentioned = new Set();
   for (const guide of ALL_GUIDES) for (const text of everyText(guide)) for (const m of text.matchAll(/\*\*([^*]+)\*\*/g)) mentioned.add(m[1]);

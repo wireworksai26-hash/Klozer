@@ -55,6 +55,14 @@ export const DEFAULT_PERSONA = {
   greetingMessage: "",
   abandonedMessage: "",
   customFaqKeywords: "",
+  adaptiveStyle: true, // the assistant follows how each customer writes (formal, casual, short)
+  goal: "",
+  toneStyles: [],
+  brandValues: "",
+  preferredWords: "",
+  forbiddenWords: "",
+  offLimitTopics: "",
+  bigOrderAmount: undefined,
   voiceAccent: "Bahasa Indonesia Standar (Aksen Ramah)",
   voiceGender: "Female (Putri)",
 };
@@ -98,6 +106,7 @@ export function DashboardProvider({ children }) {
   // Task counts for the menu badge, and a bump whenever a task changes so an open task list can refetch.
   const [taskSummary, setTaskSummary] = useState(null);
   const [taskEvent, setTaskEvent] = useState(null);
+  const [deliveryEvent, setDeliveryEvent] = useState(null);
   // Bumps when the team prices or credits a token top up, so the top up screen can refetch.
   const [topupEvent, setTopupEvent] = useState(null);
   const [billingEvent, setBillingEvent] = useState(null);
@@ -279,6 +288,22 @@ export function DashboardProvider({ children }) {
       taskChanged();
       pushNotification({ type: "security", title: "Tugas melewati tenggat", desc: String(task?.title || "").slice(0, 140), link: "/dashboard/tasks" });
     });
+    // Deliveries: the PIC hears about a new one at once; the team hears when one is finished or fails.
+    socket.on("delivery:assigned", (evt) => {
+      setDeliveryEvent({ at: Date.now() });
+      pushNotification({ type: "chat", title: "Pengantaran baru untuk Anda", desc: evt?.orderNumber ? `Pesanan ${evt.orderNumber}. Buka untuk melihat alamat.` : "Buka untuk melihat alamat.", link: "/dashboard/deliveries" });
+    });
+    socket.on("delivery:updated", (evt) => {
+      setDeliveryEvent({ at: Date.now() });
+      if (evt?.status === "delivered" || evt?.status === "failed") {
+        pushNotification({
+          type: evt.status === "failed" ? "security" : "chat",
+          title: evt.status === "failed" ? "Pengantaran gagal" : "Pesanan sudah diterima pelanggan",
+          desc: evt.orderNumber ? `Pesanan ${evt.orderNumber}` : "",
+          link: "/dashboard/deliveries",
+        });
+      }
+    });
     socket.on("chat:needs_human", (evt) => {
       const reasons = {
         non_text_message: "Pelanggan mengirim gambar/suara. AI tidak membalas lampiran.",
@@ -330,6 +355,11 @@ export function DashboardProvider({ children }) {
   /** Everything tenant-scoped. Each source fails independently so one bad endpoint does not blank the dashboard. */
   const loadTenantData = useCallback(
     async (user) => {
+      // A delivery PIC works from one screen of their own deliveries; the shop's catalog, contacts and orders are not theirs.
+      if (user.role === "pic_delivery") {
+        setDataLoading(false);
+        return;
+      }
       setDataLoading(true);
       const results = await Promise.allSettled([
         fetchAll("/products").then((rows) => setProducts(rows.map(productFromApi))),
@@ -517,7 +547,7 @@ export function DashboardProvider({ children }) {
         const res = await api.post("/institutions", {
           name: newInst.name,
           mode: newInst.mode === "ngo" ? "ngo" : "business",
-          sector: newInst.sector,
+          sector: newInst.mode === "ngo" ? "NGO" : "Bisnis",
           email: newInst.email,
           phone_number: newInst.phone,
           address: newInst.address,
@@ -754,6 +784,34 @@ export function DashboardProvider({ children }) {
     });
   };
 
+  /** Many contacts at once. Resolves to the server's summary { created, existing, duplicates, invalidCount, invalid }. */
+  const importLeads = (rows) =>
+    attempt(async () => {
+      const summary = { total: 0, created: 0, existing: 0, duplicates: 0, invalidCount: 0, invalid: [] };
+      for (let i = 0; i < rows.length; i += 1000) {
+        const res = await api.post("/leads/import", { rows: rows.slice(i, i + 1000) });
+        const part = res.data;
+        summary.total += part.total;
+        summary.created += part.created;
+        summary.existing += part.existing;
+        summary.duplicates += part.duplicates;
+        summary.invalidCount += part.invalidCount;
+        summary.invalid.push(...part.invalid.map((x) => ({ ...x, row: x.row + i })));
+      }
+      await refreshLeads();
+      return summary;
+    });
+
+  /** The manual VIP mark on a contact. */
+  const setLeadVip = (id, isVip) => {
+    const dbId = toDbId(id);
+    return attempt(async () => {
+      await api.put(`/leads/${dbId}/vip`, { is_vip: Boolean(isVip) });
+      setLeads((prev) => prev.map((l) => (l.dbId === dbId ? { ...l, isVip: Boolean(isVip) } : l)));
+      return true;
+    });
+  };
+
   const deleteLead = (id) => {
     const dbId = toDbId(id);
     return attempt(
@@ -820,7 +878,7 @@ export function DashboardProvider({ children }) {
     const next = { ...(aiConfig.spvPersona || {}), ...personaFields };
     return attempt(
       async () => {
-        const body = Object.fromEntries(Object.entries(next).filter(([, v]) => typeof v === "string" && v.trim() !== ""));
+        const body = Object.fromEntries(Object.entries(next).filter(([, v]) => typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v) && v > 0) || (Array.isArray(v) && v.length > 0) || (typeof v === "string" && v.trim() !== "")));
         await api.put("/ai/persona", body);
         setAiConfig((prev) => ({ ...prev, spvPersona: next }));
         return next;
@@ -896,6 +954,7 @@ export function DashboardProvider({ children }) {
     chatEvent,
     taskSummary,
     taskEvent,
+    deliveryEvent,
     topupEvent,
     billingEvent,
     refreshTaskSummary,
@@ -926,6 +985,8 @@ export function DashboardProvider({ children }) {
     deleteOrder,
     leads,
     addLead,
+    importLeads,
+    setLeadVip,
     updateLead,
     deleteLead,
     // team

@@ -3,6 +3,8 @@ import { emitEvent } from "../services/integrations/eventBus.js";
 import { contactPayload } from "../services/integrations/eventPayloads.js";
 import { buildPagination, escapeLike, normalizePhone, parsePagination } from "../utils/helpers.js";
 import { badRequest, notFound } from "../utils/errors.js";
+import { audit } from "../services/auditService.js";
+import { importLeads } from "../services/leads/leadImportService.js";
 
 async function assertCsInTenant(csId, tenantId) {
   if (csId === undefined || csId === null) return;
@@ -105,4 +107,21 @@ export async function deleteLead(req, res) {
   const result = await query("DELETE FROM leads WHERE id = ? AND institution_id = ?", [req.params.id, req.tenantId]);
   if (!result.affectedRows) throw notFound("Kontak tidak ditemukan.");
   res.json({ success: true, message: "Kontak berhasil dihapus." });
+}
+
+/** POST /leads/import — many contacts at once. Existing numbers are skipped, never changed. */
+export async function importContacts(req, res) {
+  const summary = await importLeads({ institutionId: req.tenantId, rows: req.body.rows });
+  await audit(req, "lead.import", { metadata: { total: summary.total, created: summary.created, existing: summary.existing, invalid: summary.invalidCount } });
+  res.status(summary.created ? 201 : 200).json({ success: true, message: `${summary.created} kontak diimpor.`, data: summary });
+}
+
+/** PUT /leads/:id/vip — the manual VIP mark (a contact is also shown as VIP once their paid orders pass the threshold). */
+export async function setVip(req, res) {
+  const result = await query("UPDATE leads SET is_vip = ? WHERE id = ? AND institution_id = ?", [req.body.is_vip ? 1 : 0, req.params.id, req.tenantId]);
+  if (!result.affectedRows) {
+    const exists = await queryOne("SELECT id FROM leads WHERE id = ? AND institution_id = ?", [req.params.id, req.tenantId]);
+    if (!exists) throw notFound("Kontak tidak ditemukan.");
+  }
+  res.json({ success: true, message: req.body.is_vip ? "Kontak ditandai VIP." : "Tanda VIP dilepas.", data: { id: Number(req.params.id), is_vip: req.body.is_vip } });
 }

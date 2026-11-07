@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
+import PersonaForm from "@/components/persona/PersonaForm";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
 import { api } from "@/utils/api";
@@ -268,63 +269,7 @@ function PlatformTab() {
 }
 
 function PersonaTab() {
-  const { aiConfig, updateSpvAiPersona, t } = useDashboard();
-  const [form, setForm] = useState(aiConfig.spvPersona);
-  const [saving, setSaving] = useState(false);
-
-  // The persona arrives asynchronously after sign-in; adopt it unless the user has started typing.
-  const [touched, setTouched] = useState(false);
-  const loaded = aiConfig.spvPersona;
-  const view = touched ? form : loaded;
-
-  const set = (key) => (e) => {
-    setTouched(true);
-    setForm({ ...view, [key]: e.target.value });
-  };
-
-  const save = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    await updateSpvAiPersona(view);
-    setSaving(false);
-  };
-
-  const fields = [
-    ["botName", "Nama Admin Chat", "Contoh: Siti, Admin Toko Batik"],
-    ["tone", "Gaya Bahasa", "Santai, ramah, dan to the point seperti admin toko di WhatsApp"],
-  ];
-
-  return (
-    <form onSubmit={save} className={`${card} max-w-[760px] flex flex-col gap-4 text-body-sm`}>
-      <div>
-        <h3 className="card-title">{t("Persona dan Script AI")}</h3>
-        <p className="text-label text-fg-muted">{t("Dipakai langsung saat AI membalas pelanggan di WhatsApp.")}</p>
-      </div>
-      {fields.map(([key, name, placeholder]) => (
-        <div key={key}>
-          <label className={label}>{t(name)}</label>
-          <input className={input} value={view[key] || ""} placeholder={t(placeholder)} maxLength={300} onChange={set(key)} />
-        </div>
-      ))}
-      <div>
-        <label className={label}>{t("Sapaan Pembuka")}</label>
-        <textarea className={input} rows={3} maxLength={500} value={view.greetingMessage || ""} onChange={set("greetingMessage")} placeholder={t("Halo kak! Terima kasih sudah menghubungi kami.")} />
-      </div>
-      <div>
-        <label className={label}>{t("Pesan Follow-up Keranjang Ditinggalkan")}</label>
-        <textarea className={input} rows={2} maxLength={500} value={view.abandonedMessage || ""} onChange={set("abandonedMessage")} />
-      </div>
-      <div>
-        <label className={label}>{t("Topik yang Sering Ditanyakan")}</label>
-        <input className={input} maxLength={500} value={view.customFaqKeywords || ""} onChange={set("customFaqKeywords")} placeholder={t("ongkir, transfer, cod, ukuran, resi")} />
-      </div>
-      <div className="flex justify-end pt-2 border-t border-line">
-        <button type="submit" disabled={saving} className="btn-primary !py-2 !px-5 font-bold disabled:opacity-60">
-          {saving ? t("Menyimpan...") : t("Simpan Persona")}
-        </button>
-      </div>
-    </form>
-  );
+  return <PersonaForm />;
 }
 
 function CredentialsBox({ credentials, onClose }) {
@@ -354,7 +299,7 @@ function CredentialsBox({ credentials, onClose }) {
 function TeamTab() {
   const { teamMembers, addTeamMember, updateTeamMemberPermissions, deleteTeamMember, resetTeamMemberPassword, currentUser, t } = useDashboard();
   const [showAdd, setShowAdd] = useState(false);
-  const [member, setMember] = useState({ name: "", email: "", role: "Customer Service Junior" });
+  const [member, setMember] = useState({ name: "", email: "", phone: "", role: "Customer Service Junior" });
   const [issued, setIssued] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
 
@@ -364,7 +309,7 @@ function TeamTab() {
     if (created) {
       setIssued(created.credentials);
       setShowAdd(false);
-      setMember({ name: "", email: "", role: "Customer Service Junior" });
+      setMember({ name: "", email: "", phone: "", role: "Customer Service Junior" });
     }
   };
 
@@ -464,7 +409,13 @@ function TeamTab() {
                   <option value="Supervisor (SPV)">{t("Supervisor (SPV)")}</option>
                   <option value="Finance & Rekonsiliasi">{t("Finance & Rekonsiliasi")}</option>
                   <option value="PIC Gudang">{t("PIC Gudang")}</option>
+                  <option value="PIC Pengantaran">{t("PIC Pengantaran")}</option>
                 </select>
+              </div>
+              <div>
+                <label className={label}>{member.role === "PIC Pengantaran" ? t("Nomor WhatsApp PIC *") : t("Nomor WhatsApp (opsional)")}</label>
+                <input required={member.role === "PIC Pengantaran"} inputMode="tel" className={input} value={member.phone} onChange={(e) => setMember({ ...member, phone: e.target.value })} placeholder="08123456789" />
+                {member.role === "PIC Pengantaran" ? <p className="text-caption text-fg-muted mt-1">{t("PIC menerima pemberitahuan pengantaran baru di nomor ini, dan masuk dengan email dan password sendiri.")}</p> : null}
               </div>
               <p className="text-caption text-fg-muted">{t("Password awal dibuat otomatis dan hanya ditampilkan sekali setelah akun dibuat.")}</p>
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">

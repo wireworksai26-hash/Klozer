@@ -24,7 +24,15 @@ const phrases = {
   "Total Kontak": "Total Contacts",
   "Pelanggan Repeat Order": "Repeat Order Customers",
   "Rata-rata Belanja per Pembeli": "Average Spend per Buyer",
-  "Belum Beli": "Not Purchased Yet"
+  "Belum Beli": "Not Purchased Yet",
+  "{count} sudah ada": "{count} already existed",
+  "{count} ganda di file": "{count} repeated in the file",
+  "{count} nomor tidak valid": "{count} invalid numbers",
+  "Segmen kontak": "Contact segments",
+  "VIP": "VIP",
+  "Repeat": "Repeat",
+  "Lepas VIP": "Remove VIP",
+  "Jadikan VIP": "Make VIP",
 };
 
 export default phrases;

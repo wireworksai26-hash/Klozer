@@ -43,6 +43,10 @@ import * as broadcastCtrl from "../controllers/broadcastController.js";
 import * as adsCtrl from "../controllers/adsController.js";
 import * as bv from "../validation/broadcastSchemas.js";
 import * as integrationsCtrl from "../controllers/integrationsController.js";
+import * as deliveryCtrl from "../controllers/deliveryController.js";
+import * as dv from "../validation/deliverySchemas.js";
+import * as liv from "../validation/leadImportSchemas.js";
+import * as pv from "../validation/personaSchemas.js";
 import * as openCtrl from "../controllers/openApiController.js";
 import * as iv from "../validation/integrationSchemas.js";
 import * as agentCtrl from "../controllers/agentController.js";
@@ -121,6 +125,8 @@ router.delete("/products/:id", ...tenant, requireRole(...STOCK), validate({ para
 // ==================== 6. LEADS ====================
 router.get("/leads", ...tenant, requireRole(...SALES, "finance"), validate({ query: v.listLeadsQuery }), h(leadCtrl.getLeads));
 router.post("/leads", ...tenant, requireRole(...SALES), validate({ body: v.createLeadBody }), h(leadCtrl.createLead));
+router.post("/leads/import", ...tenant, requireRole(...SALES), validate({ body: liv.importLeadsBody }), h(leadCtrl.importContacts));
+router.put("/leads/:id/vip", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: liv.setVipBody }), h(leadCtrl.setVip));
 router.put("/leads/:id", ...tenant, requireRole(...SALES), validate({ params: v.idParams, body: v.updateLeadBody }), h(leadCtrl.updateLead));
 router.delete("/leads/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(leadCtrl.deleteLead));
 router.post("/leads/:id/assign", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: cv.assignLeadBody }), h(routingCtrl.assign));
@@ -205,6 +211,7 @@ router.delete("/tasks/:id", ...tenant, requireRole(...MANAGERS), tasksOn, valida
 // ==================== HOW KLOZER IS PAID (managed by the superadmin, shown publicly) ====================
 router.get("/public/payment-methods", webchatPollLimiter, h(payCtrl.publicList));
 router.get("/public/payment-methods/:id/qris", webchatPollLimiter, validate({ params: v.idParams }), h(payCtrl.publicQrisImage));
+router.get("/public/bank-accounts/:id/qris", webchatPollLimiter, validate({ params: v.idParams }), h(bankCtrl.publicQrisImage));
 router.get("/platform/vouchers", authenticate, requireSuperadmin, validate({ query: vouv.voucherListQuery }), h(voucherCtrl.list));
 router.post("/platform/vouchers", authenticate, requireSuperadmin, validate({ body: vouv.createVoucherBody }), h(voucherCtrl.create));
 router.put("/platform/vouchers/:id", authenticate, requireSuperadmin, validate({ params: v.idParams, body: vouv.updateVoucherBody }), h(voucherCtrl.update));
@@ -337,11 +344,15 @@ router.get("/bank-accounts", ...tenant, requireRole(...MANAGERS, "finance"), h(b
 router.post("/bank-accounts", ...tenant, requireRole(...MANAGERS), validate({ body: v.createBankAccountBody }), h(bankCtrl.createBankAccount));
 router.put("/bank-accounts/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: v.updateBankAccountBody }), h(bankCtrl.updateBankAccount));
 router.delete("/bank-accounts/:id", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(bankCtrl.deleteBankAccount));
+router.get("/bank-accounts/:id/qris", ...tenant, requireRole(...MANAGERS, "finance"), validate({ params: v.idParams }), h(bankCtrl.qrisImage));
+router.put("/bank-accounts/:id/qris", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams, body: payv.qrisImageBody }, { rawFields: ["fileBase64"] }), h(bankCtrl.uploadQris));
+router.delete("/bank-accounts/:id/qris", ...tenant, requireRole(...MANAGERS), validate({ params: v.idParams }), h(bankCtrl.deleteQris));
 router.get("/reports/my-performance", ...tenant, requireRole(...SALES), h(reportCtrl.getMyPerformance));
 router.get("/audit-logs", ...tenant, requireRole(...MANAGERS, "finance"), h(auditCtrl.listAuditLogs));
 
 router.get("/ai/persona", ...tenant, requireRole(...SALES), h(personaCtrl.getPersona));
 router.put("/ai/persona", ...tenant, requireRole(...MANAGERS), validate({ body: v.aiPersonaBody }), h(personaCtrl.updatePersona));
+router.post("/ai/persona/generate", ...tenant, requireRole(...MANAGERS), aiLimiter, validate({ body: pv.generatePersonaBody }), h(personaCtrl.generatePersona));
 
 // ==================== 8. ORDERS ====================
 router.get("/orders", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ query: v.listOrdersQuery }), h(orderCtrl.getOrders));
@@ -349,6 +360,16 @@ router.post("/orders", ...tenant, requireRole(...SALES), validate({ body: v.crea
 router.get("/orders/:id", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams }), h(orderCtrl.getOrder));
 router.patch("/orders/:id/status", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams, body: v.updateOrderStatusBody }), h(orderCtrl.updateOrderStatus));
 router.get("/orders/:id/invoice", ...tenant, requireRole(...MONEY, "pic_warehouse"), validate({ params: v.idParams }), h(orderCtrl.getOrderInvoice));
+
+// ==================== 8b. DELIVERIES (PIC pengantaran) ====================
+const DISPATCH = ["owner", "supervisor", "cs", "pic_warehouse"];
+router.get("/deliveries", ...tenant, requireRole(...DISPATCH, "pic_delivery"), validate({ query: dv.listDeliveriesQuery }), h(deliveryCtrl.list));
+router.get("/deliveries/pics", ...tenant, requireRole(...DISPATCH), h(deliveryCtrl.pics));
+router.post("/deliveries", ...tenant, requireRole(...DISPATCH), validate({ body: dv.assignDeliveryBody }), h(deliveryCtrl.assign));
+router.post("/deliveries/:id/pickup", ...tenant, requireRole("pic_delivery", ...MANAGERS), validate({ params: v.idParams }), h(deliveryCtrl.pickup));
+router.post("/deliveries/:id/finish", ...tenant, requireRole("pic_delivery", ...MANAGERS), validate({ params: v.idParams, body: dv.finishDeliveryBody }), h(deliveryCtrl.finishDelivery));
+router.post("/deliveries/:id/cancel", ...tenant, requireRole(...DISPATCH), validate({ params: v.idParams }), h(deliveryCtrl.cancelDelivery));
+router.post("/deliveries/:id/notice", ...tenant, requireRole(...DISPATCH), validate({ params: v.idParams }), h(deliveryCtrl.notice));
 
 // ==================== 9. PAYMENTS ====================
 router.post("/payments/qris", ...tenant, requireRole(...MONEY), requireFeature("qris", "Dynamic QRIS"), validate({ body: v.createQrisBody }), h(paymentCtrl.createQrisPayment));

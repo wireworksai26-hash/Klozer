@@ -29,6 +29,7 @@ import {
   PrinterIcon,
   FileTextIcon,
   PackageIcon,
+  TruckIcon,
   BanIcon,
   ShoppingCartIcon,
   WarehouseIcon,
@@ -55,6 +56,7 @@ function managerNav({ t, language, badges, planIconClass }) {
       { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
       { label: t("Tugas"), href: "/dashboard/tasks", icon: glyph("task"), badge: badges.tasks || undefined },
       { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+      { label: t("Pengantaran"), href: "/dashboard/deliveries", icon: <TruckIcon className="w-4.5 h-4.5" /> },
       { label: t("nav.products", "Katalog & HPP"), href: "/dashboard/products", icon: <LayersIcon className="w-4.5 h-4.5" /> },
     ],
     navSections: [
@@ -240,6 +242,7 @@ export function buildRolesConfig({ t, language, badges = {} }) {
             { label: language === "en" ? "Blocked Contacts" : "Blacklist Nomor", href: "/dashboard/blocked-contacts", icon: <BanIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Booking & Appointments" : "Booking Reservasi", href: "/dashboard/bookings", icon: <CalendarIcon className="w-4.5 h-4.5" /> },
             { label: t("nav.orders", "Pesanan & Transaksi"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
+            { label: t("Pengantaran"), href: "/dashboard/deliveries", icon: <TruckIcon className="w-4.5 h-4.5" /> },
             { label: language === "en" ? "Team Chat" : "Internal Chat Tim", href: "/dashboard/internal-chat", icon: <UsersIcon className="w-4.5 h-4.5" /> },
           ],
         },
@@ -270,10 +273,20 @@ export function buildRolesConfig({ t, language, badges = {} }) {
       ],
       navItems: [],
     },
+    pic: {
+      label: "PIC Pengantaran",
+      badgeColor: "bg-warning-100 text-warning-800 border-warning-200",
+      avatar: "PI",
+      icon: <TruckIcon className="w-4 h-4 text-warning-700" />,
+      pinnedItems: [{ label: t("Pengantaran Saya"), href: "/dashboard/deliveries", icon: <TruckIcon className="w-4.5 h-4.5" /> }],
+      navSections: [],
+      navItems: [],
+    },
   };
 
   // One place to learn every feature, for every role, always in reach at the end of the pinned items
-  for (const roleConfig of Object.values(config)) {
+  for (const [roleName, roleConfig] of Object.entries(config)) {
+    if (roleName === "pic") continue; // the PIC has one screen and nothing to learn beyond it
     roleConfig.pinnedItems = [...(roleConfig.pinnedItems ?? []), { label: t("Dokumentasi"), href: "/dashboard/documentation", icon: glyph("book") }];
   }
 

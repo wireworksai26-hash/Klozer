@@ -24,6 +24,8 @@ import { buildKnowledgeBlock, buildLearningBlock, buildRetrievalQuery } from "./
 import { retrieveLearning } from "./aiLearningService.js";
 import { retrieveKnowledge } from "./knowledge/knowledgeService.js";
 import { followUpAfterTools, parseToolCalls, stripToolLines } from "./agents/tools/toolProtocol.js";
+import { detectCustomerStyle, styleBlock as buildStyleBlock } from "./aiStyle.js";
+import { OFF_LIMIT_REPLY, findTerm, personaRules } from "./personaRules.js";
 
 /** Asked by another agent, not by a customer: answer for that agent, plainly, with no greeting. */
 const CONSULT_BLOCK = `
@@ -513,6 +515,19 @@ export async function generateAiCsResponse({
 
   // 2. Fetch Multi-Tenant RAG Ground Truth Context
   const baseContext = await getInstitutionRagContext(institutionId);
+  const persona = { ...(baseContext.persona || {}), ...agentPersona(agent) };
+  const rules = personaRules(persona);
+  // Topics the owner put off limits are refused in code, with a fixed sentence, before the model is called (no tokens used).
+  if (findTerm(messageText, rules.offLimitTopics)) {
+    return {
+      success: true,
+      intent: "guardrail_blocked",
+      replyText: OFF_LIMIT_REPLY,
+      needsEscalation: false,
+      guardrailViolation: "off_limit_topic",
+      modelUsed: "guardrail",
+    };
+  }
   const instName = institutionName || baseContext.institutionName || "Toko Kami";
   const instSector = sector || baseContext.sector || "Bisnis";
   const instAddress = address || baseContext.address || "Belum diatur";
@@ -572,10 +587,18 @@ export async function generateAiCsResponse({
     features.aiLearning === false ? { rules: [], examples: [] } : safely("learning", () => retrieveLearning({ institutionId, text: retrievalText }), { rules: [], examples: [] }),
   ]);
 
+  // How this customer writes (their own recent messages), so the answer matches: serious with serious, short with short.
+  // The owner can switch it off in the persona. It reads only the customer's own words.
+  const customerWords = (Array.isArray(history) ? history : [])
+    .filter((h) => h.role === "user" || h.sender === "user" || h.sender === "customer")
+    .map((h) => h.content || h.text || "");
+  const customerStyleBlock = persona.adaptiveStyle === false ? "" : buildStyleBlock(detectCustomerStyle([...customerWords, messageText]));
+
   const systemPrompt = buildCsSystemPrompt({
     instName,
     instSector,
-    persona: { ...(baseContext.persona || {}), ...agentPersona(agent) },
+    persona,
+    styleBlock: customerStyleBlock,
     agentBlock: `${buildAgentBlock(agent)}${consult ? CONSULT_BLOCK : ""}${tools?.block ?? ""}`,
     isInitialTurn,
     customerFirstName,
@@ -630,6 +653,29 @@ export async function generateAiCsResponse({
   // The assistant says it cannot answer by starting with [TIM]: the customer gets the rest of its sentence, then a person takes over.
   const unsure = Boolean(result?.text) && ESCALATION_MARKER.test(result.text) && !consult;
   if (result?.text && unsure) result = { ...result, text: result.text.replace(ESCALATION_MARKER, "").trim() || GUARDRAIL_REPLIES.escalation };
+
+  // Words the owner banned: if the reply uses one, ask once for a rewrite; if it still does, a person answers instead.
+  const bannedHit = result?.text && !unsure ? findTerm(result.text, rules.forbiddenWords) : null;
+  if (bannedHit) {
+    const retry = await callBestProvider({ systemPrompt, userMessage: `${finalUserMessage}\n\n[Perbaikan: balasanmu memakai kata yang dilarang pemilik toko: "${bannedHit}". Tulis ulang balasannya tanpa kata itu.]` });
+    const combined = addUsage(result.usage ?? {}, retry?.usage);
+    if (retry?.text && !findTerm(retry.text, rules.forbiddenWords)) {
+      result = { ...retry, text: stripToolLines(retry.text), usage: combined };
+    } else {
+      return {
+        success: true,
+        intent: "ai_unsure",
+        replyText: GUARDRAIL_REPLIES.escalation,
+        needsEscalation: true,
+        escalationReason: "ai_unsure",
+        modelUsed: result.model,
+        provider: result.provider,
+        usage: combined,
+        latencyMs: result.latencyMs,
+        institutionContext: { name: instName, sector: instSector },
+      };
+    }
+  }
 
   if (result?.text) {
     return {

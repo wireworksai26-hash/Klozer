@@ -3,17 +3,21 @@ import { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { CheckCircleIcon, AlertTriangleIcon, PackageIcon, XIcon, ReceiptIcon } from "@/components/icons";
 import ThermalPrintModal from "@/components/common/ThermalPrintModal";
+import AssignDeliveryModal from "@/components/delivery/AssignDeliveryModal";
 import PaymentProofsModal from "@/components/common/PaymentProofsModal";
 import { formatDateId } from "@/utils/mappers.mjs";
 
 export default function OrdersPage() {
-  const { orders, addOrder, updateOrderStatus, deleteOrder, products, role, currentUser, activeInstitution, notify, t, locale } = useDashboard();
+  const { orders, addOrder, updateOrderStatus, deleteOrder, products, role, currentUser, activeInstitution, notify, t, locale, serverRole } = useDashboard();
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedThermalOrder, setSelectedThermalOrder] = useState(null);
+  const [deliveryOrder, setDeliveryOrder] = useState(null);
+  // who may hand an order to a delivery PIC (the server enforces it too)
+  const canDispatch = ["owner", "supervisor", "cs", "pic_warehouse"].includes(serverRole);
   const [proofOrder, setProofOrder] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
@@ -308,6 +312,17 @@ export default function OrdersPage() {
                           <span>{t("Tiket Dapur")}</span>
                         </button>
 
+                        {canDispatch && ["waiting_payment", "paid", "processing", "shipped"].includes(o.status) && (
+                          <button
+                            type="button"
+                            onClick={() => setDeliveryOrder(o)}
+                            className="px-2.5 py-1 text-caption font-bold text-brand bg-brand-soft hover:bg-brand hover:text-white rounded-lg transition-colors border border-brand/20 cursor-pointer"
+                            title={t("Berikan ke PIC pengantaran")}
+                          >
+                            {t("Antar")}
+                          </button>
+                        )}
+
                         <button
                           onClick={() => setSelectedInvoice(o)}
                           className="px-2.5 py-1 text-caption font-bold text-ink bg-canvas hover:bg-ink hover:text-white rounded-lg transition-colors border border-line cursor-pointer"
@@ -584,6 +599,7 @@ export default function OrdersPage() {
 
       {/* Thermal Print Modal */}
       {proofOrder && <PaymentProofsModal order={proofOrder} onClose={() => setProofOrder(null)} />}
+      {deliveryOrder && <AssignDeliveryModal order={deliveryOrder} onClose={() => setDeliveryOrder(null)} />}
       <ThermalPrintModal
         isOpen={Boolean(selectedThermalOrder)}
         onClose={() => setSelectedThermalOrder(null)}

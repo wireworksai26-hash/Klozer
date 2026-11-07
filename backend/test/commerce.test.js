@@ -191,6 +191,34 @@ describe("taking an order in chat", () => {
     assert.ok((await pendingJobs(t)).length >= 1, "reminders are scheduled for the unpaid order");
   });
 
+  test("an order above the amount the owner set goes to a person; a smaller one does not", async () => {
+    const big = await shop();
+    await api().put("/api/v1/ai/persona").set(bearer(big.ownerToken)).send({ bigOrderAmount: 300000 });
+    mockNetwork({ nlu: orderNlu(big) });
+    await toSummary(big);
+    await say(big, "ya kak");
+    assert.equal((await ordersOf(big)).length, 1, "the order is still placed");
+    const lead = await leadOf(big);
+    assert.equal(lead.handled_by, "human");
+    assert.equal(lead.handoff_reason, "commerce_big_order");
+
+    mock.restoreAll();
+    const small = await shop();
+    await api().put("/api/v1/ai/persona").set(bearer(small.ownerToken)).send({ bigOrderAmount: 400000 });
+    mockNetwork({ nlu: orderNlu(small) });
+    await toSummary(small);
+    await say(small, "ya kak");
+    assert.equal((await ordersOf(small)).length, 1);
+    assert.notEqual((await leadOf(small)).handled_by, "human", "315.000 is below 400.000");
+
+    mock.restoreAll();
+    const none = await shop();
+    mockNetwork({ nlu: orderNlu(none) });
+    await toSummary(none);
+    await say(none, "ya kak");
+    assert.notEqual((await leadOf(none)).handled_by, "human", "with no amount set nothing is handed over");
+  });
+
   test("the order list shows where an order came from", async () => {
     const t = await shop();
     mockNetwork({ nlu: orderNlu(t) });
