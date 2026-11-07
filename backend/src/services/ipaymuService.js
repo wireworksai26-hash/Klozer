@@ -6,6 +6,7 @@ import { AppError, serviceUnavailable, unauthorized } from "../utils/errors.js";
 import { verifyIpaymuSignature } from "../utils/hmacValidator.js";
 import { claimIdempotencyKey, markIdempotentFailed, markIdempotentSuccess } from "./idempotencyService.js";
 import { afterPaid, markOrderPaid } from "./orderService.js";
+import { dynamicQrisFor } from "./tenantQrisService.js";
 
 const SANDBOX_URL = "https://sandbox.ipaymu.com/api/v2";
 const PRODUCTION_URL = "https://my.ipaymu.com/api/v2";
@@ -48,6 +49,24 @@ export function signIpaymuRequest(bodyString, { va, apiKey }, method = "POST") {
  * failure is surfaced instead of silently falling back to it.
  */
 export async function createQrisCharge({ institutionId, order, customerName, customerPhone, customerEmail }) {
+  // A shop that uploaded its own QRIS (GoPay Merchant...) is paid straight into its merchant account: the code is made
+  // dynamic for this order, with no gateway and no fee. A person confirms the payment (no payment notice reaches Klozer).
+  const own = await dynamicQrisFor({ institutionId, order });
+  if (own) {
+    return {
+      success: true,
+      mode: "tenant_qris",
+      paymentReference: null,
+      transactionId: null,
+      qrString: own.payload,
+      qrImageUrl: own.imageUrl,
+      amount: own.amount,
+      feeAmount: 0,
+      expiresAt: null,
+      merchantName: own.merchantName,
+      manualConfirmation: true,
+    };
+  }
   const amount = Math.round(Number(order.total_amount));
   const paymentRef = `KLZ-${institutionId}-${order.id}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
   let feeAmount = Math.round(amount * QRIS_MDR);

@@ -71,6 +71,8 @@ export const handoffGenericText = () => "Pesanan kakak sudah aku catat, tapi unt
 export function placedText({ orderNumber, total, paymentMethod, fulfillmentType, qris, accounts = [], qrisMinutes = 5 }) {
   const head = `Pesanan ${orderNumber} sudah dibuat ✅ Total ${rupiah(total)}.`;
   if (paymentMethod === "qris") {
+    // the shop's own QRIS has no timer, and nothing tells us when it is paid: the customer sends the proof
+    if (qris?.imageUrl && qris.own) return `${head}\nScan QRIS ini ya kak: ${qris.imageUrl}\nNominalnya sudah terisi ${rupiah(total)}, tinggal bayar. Setelah itu kirim foto buktinya di sini ya kak.`;
     if (qris?.imageUrl) return `${head}\nScan QRIS ini ya kak: ${qris.imageUrl}\nBerlaku ${qrisMinutes} menit. Kalau sudah habis, balas "QRIS" nanti aku buatkan lagi.`;
     return `${head}\nQRIS-nya kami siapkan dulu ya kak, sebentar lagi dikirim oleh tim.`;
   }
@@ -81,7 +83,8 @@ export function placedText({ orderNumber, total, paymentMethod, fulfillmentType,
   return fulfillmentType === "pickup" ? `${head}\nBayar saat ambil di toko ya kak. Nanti kami kabari kalau sudah siap.` : `${head}\nBayar ke kurir saat paket sampai ya kak. Pesananmu kami proses.`;
 }
 
-export function qrisRenewedText({ orderNumber, total, imageUrl, qrisMinutes = 5 }) {
+export function qrisRenewedText({ orderNumber, total, imageUrl, own = false, qrisMinutes = 5 }) {
+  if (imageUrl && own) return `QRIS untuk pesanan ${orderNumber} (${rupiah(total)}): ${imageUrl}\nNominalnya sudah terisi. Setelah bayar, kirim foto buktinya di sini ya kak.`;
   return imageUrl
     ? `QRIS baru untuk pesanan ${orderNumber} (${rupiah(total)}): ${imageUrl}\nBerlaku ${qrisMinutes} menit ya kak.`
     : `Aku minta tim kirim QRIS baru untuk pesanan ${orderNumber} ya kak 🙏`;

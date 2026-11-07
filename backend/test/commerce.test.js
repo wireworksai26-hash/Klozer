@@ -4,6 +4,8 @@ process.env.BITESHIP_API_KEY = "test-biteship-key";
 import { test, before, after, afterEach, describe, mock } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "crypto";
+import QRCode from "qrcode";
+import { staticQris } from "./qrisFixture.js";
 import { api, bearer, createProduct, createTenant, setupDatabase, teardownDatabase, waitFor } from "./helpers.js";
 import { query } from "../src/config/db.js";
 import { config } from "../src/config/env.js";
@@ -217,6 +219,34 @@ describe("taking an order in chat", () => {
     await toSummary(none);
     await say(none, "ya kak");
     assert.notEqual((await leadOf(none)).handled_by, "human", "with no amount set nothing is handed over");
+  });
+
+  test("a shop with its own QRIS gets a dynamic one in chat: no gateway, no timer, and the customer is asked for the proof", async () => {
+    const t = await shop({ settings: { payQris: true, payTransfer: false } });
+    const account = await api().post("/api/v1/bank-accounts").set(bearer(t.ownerToken)).send({ bank_code: "GoPay Merchant", account_number: "ID1000000000001", account_holder: "Toko Batik" });
+    const image = await QRCode.toBuffer(staticQris([], "Toko Batik"), { type: "png", errorCorrectionLevel: "M", margin: 4, scale: 8 });
+    const up = await api().put(`/api/v1/bank-accounts/${account.body.data.id}/qris`).set(bearer(t.ownerToken)).send({ fileBase64: image.toString("base64"), fileName: "qris.png" });
+    assert.equal(up.body.qrisRead.ok, true);
+
+    const calls = mockNetwork({ nlu: orderNlu(t) });
+    await toSummary(t);
+    await say(t, "ya kak");
+    const [order] = await ordersOf(t);
+    let reply = lastText(calls);
+    assert.equal(order.payment_method, "qris");
+    assert.match(reply, new RegExp(`/api/v1/public/orders/${order.id}/qris\\.png\\?sig=`));
+    assert.match(reply, /Nominalnya sudah terisi Rp 315\.000/);
+    assert.match(reply, /kirim foto buktinya/);
+    assert.doesNotMatch(reply, /Berlaku 5 menit/);
+    assert.equal(calls.ipaymu.length, 0, "the gateway was not asked");
+
+    const link = reply.match(/\/api\/v1\/public\/orders\/\d+\/qris\.png\?sig=[\w-]+/)[0];
+    assert.equal((await api().get(link)).status, 200, "the customer can open the picture");
+
+    await say(t, "qris");
+    reply = lastText(calls);
+    assert.match(reply, /Nominalnya sudah terisi/, "asking again gives the same dynamic code");
+    assert.equal(calls.ipaymu.length, 0);
   });
 
   test("the order list shows where an order came from", async () => {

@@ -23,7 +23,31 @@ const phrases = {
   "Contoh: kirim bukti transfer ke chat ini": "Example: send the transfer proof to this chat",
   "Batal": "Cancel",
   "Simpan": "Save",
-  "a.n.": "Account name:"
+  "a.n.": "Account name:",
+  "+ QRIS Merchant": "+ QRIS Merchant",
+  "QRIS statis {name}": "Static QRIS {name}",
+  "Gambar QRIS dihapus.": "QRIS image removed.",
+  "Kode terbaca. Nominal diisi otomatis untuk tiap pesanan.": "Code read. The amount is filled in automatically for each order.",
+  "Kode QR di gambar ini tidak terbaca, jadi belum bisa dibuat dinamis. Unggah ulang PNG atau JPG yang lebih jelas.": "The QR code in this image could not be read, so it cannot be made dynamic yet. Upload a clearer PNG or JPG.",
+  "Mengunggah...": "Uploading...",
+  "Unggah QRIS": "Upload QRIS",
+  "Pilih gambar QRIS dulu.": "Choose a QRIS image first.",
+  "Gambar harus PNG, JPG, atau WebP.": "The image must be PNG, JPG, or WebP.",
+  "Gambar lebih dari 1,5 MB. Perkecil dulu.": "The image is larger than 1.5 MB. Make it smaller first.",
+  "QRIS terbaca atas nama {name}. Untuk setiap pesanan, nominalnya diisi otomatis.": "QRIS read under the name {name}. For every order, the amount is filled in automatically.",
+  "QRIS tersimpan, tetapi belum bisa dibuat dinamis.": "QRIS saved, but it cannot be made dynamic yet.",
+  "Merchant tersimpan, tetapi gambarnya belum terunggah. Buka kartunya lalu unggah ulang.": "The merchant was saved, but the image was not uploaded. Open its card and upload again.",
+  "Tambah QRIS Merchant": "Add QRIS Merchant",
+  "Untuk GoPay Merchant atau QRIS toko lain. Unggah QRIS statis, nanti dijadikan dinamis per pesanan.": "For GoPay Merchant or another shop QRIS. Upload the static QRIS and it is made dynamic for each order.",
+  "Simpan dan unggah": "Save and upload",
+  "Nama merchant": "Merchant name",
+  "Seperti tertulis di aplikasi GoPay Merchant atau di QRIS.": "As written in the GoPay Merchant app or on the QRIS.",
+  "ID merchant atau nomor GoPay (opsional)": "Merchant ID or GoPay number (optional)",
+  "Gambar QRIS statis": "Static QRIS image",
+  "PNG atau JPG yang jelas dan tidak terpotong, maksimal 1,5 MB. Unduh dari aplikasi GoPay Merchant.": "A clear, uncropped PNG or JPG, 1.5 MB at most. Download it from the GoPay Merchant app.",
+  "Cara kerjanya": "How it works",
+  "Klozer membaca kode di gambar, lalu untuk setiap pesanan membuat QRIS baru dengan nominal pesanan sudah terisi. Pembeli tinggal scan dan bayar.": "Klozer reads the code in the image, then for each order makes a new QRIS with the order total already filled in. The buyer just scans and pays.",
+  "Uangnya masuk langsung ke akun merchant Anda. GoPay Merchant tidak memberi kabar ke Klozer, jadi pembayaran dikonfirmasi tim setelah pembeli mengirim bukti.": "The money goes straight to your merchant account. GoPay Merchant does not notify Klozer, so your team confirms payment after the buyer sends proof."
 };
 
 export default phrases;

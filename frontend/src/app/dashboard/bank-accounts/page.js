@@ -3,22 +3,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { api } from "@/utils/api";
 import { XIcon } from "@/components/icons";
+import QrisMerchantModal, { qrisReadNotice } from "@/components/bank/QrisMerchantModal";
+import { QRIS_ACCEPT, fileToBase64, qrisFileProblem, qrisPath } from "@/components/bank/qrisFile";
 
 const input = "w-full bg-canvas border border-line rounded-xl p-2.5 text-ink outline-none font-medium focus:border-brand";
 const EMPTY = { bank_code: "BCA", account_number: "", account_holder: "", branch_office: "", transfer_instruction: "" };
-// GoPay Merchant has no payment API for individuals, so it is a manual destination: the customer pays,
-// sends the proof in chat, and staff confirm it in Keuangan after checking the GoPay Merchant app.
-const GOPAY_PRESET = {
-  ...EMPTY,
-  bank_code: "GOPAY",
-  transfer_instruction: "Bayar lewat GoPay ke nomor/QRIS ini, lalu kirim bukti pembayaran ke chat ini. Pesanan diproses setelah pembayaran kami konfirmasi.",
-};
 
 export default function BankAccountsPage() {
   const { notify, isManager, t } = useDashboard();
   const [banks, setBanks] = useState(null);
   const [form, setForm] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [qrisModal, setQrisModal] = useState(false);
+  const [uploadingId, setUploadingId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -60,6 +57,33 @@ export default function BankAccountsPage() {
     }
   };
 
+  /** Replace the QRIS picture of an account, then say whether Klozer could read the code in it. */
+  const uploadQris = async (b, file) => {
+    const issue = qrisFileProblem(file);
+    if (issue) return notify("error", t(issue));
+    setUploadingId(b.id);
+    try {
+      const res = await api.put(`/bank-accounts/${b.id}/qris`, { fileBase64: await fileToBase64(file), fileName: file.name });
+      const notice = qrisReadNotice(res.qrisRead, t);
+      notify(notice.type, notice.text);
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  const removeQris = async (b) => {
+    try {
+      await api.delete(`/bank-accounts/${b.id}/qris`);
+      notify("success", t("Gambar QRIS dihapus."));
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    }
+  };
+
   const remove = async (id) => {
     try {
       await api.delete(`/bank-accounts/${id}`);
@@ -79,8 +103,8 @@ export default function BankAccountsPage() {
         </div>
         {isManager && (
           <div className="flex items-center gap-2">
-            <button onClick={() => setForm(GOPAY_PRESET)} className="btn-outline !py-2 !px-4 text-body-sm font-bold">
-              + GoPay Merchant
+            <button onClick={() => setQrisModal(true)} className="btn-outline !py-2 !px-4 text-body-sm font-bold">
+              {t("+ QRIS Merchant")}
             </button>
             <button onClick={() => setForm(EMPTY)} className="btn-primary !py-2 !px-4 text-body-sm font-bold">
               {t("+ Tambah Rekening")}
@@ -105,9 +129,32 @@ export default function BankAccountsPage() {
                 </div>
                 <span className={`px-2.5 py-0.5 rounded-full text-caption font-bold ${b.is_active ? "bg-success-100 text-success-800" : "bg-line-strong text-fg"}`}>{b.is_active ? t("Aktif") : t("Nonaktif")}</span>
               </div>
+              {b.has_qris ? (
+                <div className="mt-3 flex items-start gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qrisPath(b.qrisUrl)} alt={t("QRIS statis {name}", { name: b.account_holder })} className="w-24 h-24 object-contain rounded-lg border border-line bg-white flex-shrink-0" />
+                  <div className="text-label">
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-brand-soft text-brand text-caption font-bold mb-1">QRIS</span>
+                    {b.qris_readable ? (
+                      <p className="m-0 text-success-800">{t("Kode terbaca. Nominal diisi otomatis untuk tiap pesanan.")}</p>
+                    ) : (
+                      <p role="alert" className="m-0 text-warning-800">{t("Kode QR di gambar ini tidak terbaca, jadi belum bisa dibuat dinamis. Unggah ulang PNG atau JPG yang lebih jelas.")}</p>
+                    )}
+                  </div>
+                </div>
+              ) : null}
               {b.transfer_instruction && <p className="mt-3 text-label text-fg-muted">{b.transfer_instruction}</p>}
               {isManager && (
-                <div className="flex gap-2 mt-4 pt-3 border-t border-line">
+                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-line">
+                  {b.has_qris || /qris|gopay/i.test(b.bank_code) ? (
+                    <label className={`px-2.5 py-1 text-caption font-bold text-brand bg-brand-soft rounded-lg border border-brand/20 cursor-pointer ${uploadingId === b.id ? "opacity-60" : ""}`}>
+                      {uploadingId === b.id ? t("Mengunggah...") : b.has_qris ? t("Ganti gambar QRIS") : t("Unggah QRIS")}
+                      <input type="file" accept={QRIS_ACCEPT} className="sr-only" disabled={uploadingId === b.id} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) uploadQris(b, f); }} />
+                    </label>
+                  ) : null}
+                  {b.has_qris ? (
+                    <button onClick={() => removeQris(b)} className="px-2.5 py-1 text-caption font-bold text-ink bg-canvas rounded-lg border border-line cursor-pointer">{t("Hapus gambar")}</button>
+                  ) : null}
                   <button onClick={() => setForm({ ...EMPTY, ...b, branch_office: b.branch_office || "", transfer_instruction: b.transfer_instruction || "" })} className="px-2.5 py-1 text-caption font-bold text-brand bg-brand-soft rounded-lg border-none cursor-pointer">{t("Ubah")}</button>
                   <button onClick={() => toggle(b)} className="px-2.5 py-1 text-caption font-bold text-ink bg-canvas rounded-lg border border-line cursor-pointer">{b.is_active ? t("Nonaktifkan") : t("Aktifkan")}</button>
                   {confirmId === b.id ? (
@@ -121,6 +168,8 @@ export default function BankAccountsPage() {
           ))}
         </div>
       )}
+
+      {qrisModal ? <QrisMerchantModal onClose={() => setQrisModal(false)} onDone={load} /> : null}
 
       {form && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">

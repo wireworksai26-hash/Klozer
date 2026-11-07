@@ -364,7 +364,7 @@ export const aiPersonaBody = z.object({
 
 const bankFields = {
   bank_code: trimmed(20),
-  account_number: z.string().trim().regex(/^[0-9A-Za-z .\-:]{3,50}$/, "nomor rekening tidak valid"),
+  account_number: z.string().trim().regex(/^[0-9A-Za-z .\-:+]{3,50}$/, "nomor rekening atau ID merchant tidak valid"),
   account_holder: trimmed(150),
   branch_office: optionalText(100),
   transfer_instruction: optionalText(2000),

@@ -13,6 +13,7 @@ import { calculateCodRiskScore } from "../shippingService.js";
 import { recordTokenUsage } from "../tokenService.js";
 import { cancelPending, scheduleCartFollowups, scheduleOrderFollowups } from "../followup/followupService.js";
 import { isBigOrder } from "../personaRules.js";
+import { hasActiveOwnQris } from "../tenantQrisService.js";
 import { loadCatalog } from "./catalog.js";
 import { getCommerceSettings } from "./commerceSettings.js";
 import { analyzeOrderMessage } from "./commerceNlu.js";
@@ -92,15 +93,16 @@ async function orderStatus({ ctx }) {
 }
 
 async function activeBanks(institutionId) {
-  return query("SELECT bank_code AS bank, account_number AS accountNumber, account_holder AS holder FROM bank_accounts WHERE institution_id = ? AND is_active = 1", [institutionId]);
+  return query("SELECT bank_code AS bank, account_number AS accountNumber, account_holder AS holder FROM bank_accounts WHERE institution_id = ? AND is_active = 1 AND qris_image IS NULL", [institutionId]);
 }
 
-const qrisPossible = (settings) => settings.payQris && (isGatewayConfigured() || !config.isProduction);
+// QRIS can be offered when the shop turned it on and there is a way to make one: its own uploaded code, the gateway, or the dev simulator
+const qrisPossible = async (institutionId, settings) => Boolean(settings.payQris) && (isGatewayConfigured() || !config.isProduction || (await hasActiveOwnQris(institutionId)));
 
 async function newQris({ ctx, order, name, phone }) {
   try {
     const charge = await createQrisCharge({ institutionId: ctx.institutionId, order, customerName: name, customerPhone: phone });
-    return { imageUrl: charge.qrImageUrl ?? null };
+    return { imageUrl: charge.qrImageUrl ?? null, own: charge.mode === "tenant_qris" };
   } catch (err) {
     logger.warn({ err: err.message, orderId: order.id }, "QRIS for a chat order could not be created");
     return null;
@@ -115,10 +117,10 @@ async function unpaidOrderHelp({ ctx, settings, text, lead }) {
   if (claimsPayment(text)) return { replyText: say.askProofText(), meta: { commerce: "ask_proof", orderId: order.id } };
 
   const choice = detectPaymentChoice(text);
-  if (choice === "qris" && qrisPossible(settings) && Number(order.total_amount) >= 1500) {
+  if (choice === "qris" && (await qrisPossible(ctx.institutionId, settings)) && Number(order.total_amount) >= 1500) {
     const qris = await newQris({ ctx, order, name: lead?.name, phone: ctx.channelType === "whatsapp" ? ctx.contactId : null });
     if (order.payment_method !== "qris") await query("UPDATE orders SET payment_method = 'qris' WHERE id = ? AND status = 'waiting_payment'", [order.id]);
-    return { replyText: say.qrisRenewedText({ orderNumber: order.order_number, total: order.total_amount, imageUrl: qris?.imageUrl }), meta: { commerce: "qris_renewed", orderId: order.id } };
+    return { replyText: say.qrisRenewedText({ orderNumber: order.order_number, total: order.total_amount, imageUrl: qris?.imageUrl, own: qris?.own }), meta: { commerce: "qris_renewed", orderId: order.id } };
   }
   if (choice === "bank_transfer" && settings.payTransfer) {
     const accounts = await activeBanks(ctx.institutionId);
@@ -242,7 +244,7 @@ async function availableMethods({ ctx, settings }, draft, catalog) {
   const { lines } = priceLines(draft.items, catalog);
   const total = subtotalOf(lines) + (draft.shippingFee ?? 0);
   const methods = [];
-  if (qrisPossible(settings) && total >= 1500) methods.push("qris");
+  if ((await qrisPossible(ctx.institutionId, settings)) && total >= 1500) methods.push("qris");
   if (settings.payTransfer && (await activeBanks(ctx.institutionId)).length) methods.push("bank_transfer");
   if (settings.payCod && draft.fulfillmentType === "delivery" && calculateCodRiskScore({ address: draft.addressText || "" }).riskLevel !== "HIGH_RISK_RTS") methods.push("cod");
   return methods;

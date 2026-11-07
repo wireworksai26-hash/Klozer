@@ -5,17 +5,19 @@ import { closeDraft, getDraft, listOpenDrafts } from "../services/commerce/draft
 import { priceLines } from "../services/commerce/draftModel.js";
 import { loadCatalog } from "../services/commerce/catalog.js";
 import { isGatewayConfigured } from "../services/ipaymuService.js";
+import { hasActiveOwnQris } from "../services/tenantQrisService.js";
 import { cancelPending, followupOverview } from "../services/followup/followupService.js";
 import { isBiteshipConfigured } from "../services/shipping/biteship.js";
 import { notFound } from "../utils/errors.js";
 
 /** What the tenant's setup still lacks for the assistant to take orders end to end. */
 async function readiness(institutionId, settings) {
-  const [{ banks }] = await query("SELECT COUNT(*) AS banks FROM bank_accounts WHERE institution_id = ? AND is_active = 1", [institutionId]);
+  const ownQris = await hasActiveOwnQris(institutionId);
+  const [{ banks }] = await query("SELECT COUNT(*) AS banks FROM bank_accounts WHERE institution_id = ? AND is_active = 1 AND qris_image IS NULL", [institutionId]);
   const [{ products }] = await query("SELECT COUNT(*) AS products FROM products WHERE institution_id = ? AND is_active = 1 AND stock_quantity > 0", [institutionId]);
   const problems = [];
   if (!Number(products)) problems.push("Belum ada produk aktif dengan stok.");
-  if (!(settings.payQris && isGatewayConfigured()) && !(settings.payTransfer && Number(banks) > 0) && !settings.payCod) problems.push("Belum ada cara bayar yang bisa dipakai (QRIS belum dikonfigurasi di server dan belum ada rekening transfer).");
+  if (!(settings.payQris && (isGatewayConfigured() || ownQris)) && !(settings.payTransfer && Number(banks) > 0) && !settings.payCod) problems.push("Belum ada cara bayar yang bisa dipakai (QRIS belum dikonfigurasi di server dan belum ada rekening transfer).");
   if (settings.shippingMode === "provider" && !isBiteshipConfigured()) problems.push("Mode ongkir 'provider' dipilih tetapi BITESHIP_API_KEY belum diisi di server; ongkir akan diserahkan ke tim.");
   if (settings.shippingMode === "provider" && !settings.originPostalCode) problems.push("Kode pos asal pengiriman belum diisi.");
   if (settings.shippingMode === "ask_team") problems.push("Ongkir diserahkan ke tim: setiap pesanan akan berhenti di tim kami setelah alamat diterima.");
@@ -25,7 +27,7 @@ async function readiness(institutionId, settings) {
 /** GET /commerce/settings */
 export async function getSettings(req, res) {
   const settings = await getCommerceSettings(req.tenantId);
-  res.json({ success: true, data: settings, readiness: await readiness(req.tenantId, settings), capabilities: { qrisGateway: isGatewayConfigured(), shippingProvider: isBiteshipConfigured() } });
+  res.json({ success: true, data: settings, readiness: await readiness(req.tenantId, settings), capabilities: { qrisGateway: isGatewayConfigured(), ownQris: await hasActiveOwnQris(req.tenantId), shippingProvider: isBiteshipConfigured() } });
 }
 
 /** PUT /commerce/settings */

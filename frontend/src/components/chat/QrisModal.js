@@ -36,7 +36,8 @@ export default function QrisModal({ lead, send, onClose }) {
       const qris = await api.post("/payments/qris", { order_id: order.dbId });
       const total = `Rp ${Number(qris.amount).toLocaleString("id-ID")}`;
       const link = qris.qrImageUrl ? `\nScan QRIS di sini: ${qris.qrImageUrl}` : "";
-      await send(`Pesanan ${order.id}: ${chosen.name} x${qty}, total ${total}.${link}\nPembayaran terverifikasi otomatis setelah QRIS dibayar.`);
+      const closing = qris.mode === "tenant_qris" ? "Nominalnya sudah terisi. Setelah bayar, kirim foto buktinya ya kak, nanti kami konfirmasi." : "Pembayaran terverifikasi otomatis setelah QRIS dibayar.";
+      await send(`Pesanan ${order.id}: ${chosen.name} x${qty}, total ${total}.${link}\n${closing}`);
       onClose();
     } catch (err) {
       notify("error", err.message);
@@ -80,7 +81,7 @@ export default function QrisModal({ lead, send, onClose }) {
             </Select>
           </div>
           <TextField label={t("Jumlah")} type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))} />
-          <p className="text-caption text-fg-muted">{t("Dibuat pesanan sungguhan (stok berkurang) dan QRIS dikirim ke chat. Pesanan lunas otomatis saat pembayaran diterima.")}</p>
+          <p className="text-caption text-fg-muted">{t("Dibuat pesanan sungguhan (stok berkurang) dan QRIS dikirim ke chat. Lewat iPaymu, pesanan lunas otomatis. Lewat QRIS merchant sendiri, pembayaran dikonfirmasi tim setelah pembeli mengirim bukti.")}</p>
         </div>
       )}
     </Modal>

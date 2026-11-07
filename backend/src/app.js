@@ -64,6 +64,8 @@ export function createApp() {
   app.use("/api/v1/knowledge/file", express.json({ limit: "8mb" }));
   // The QRIS picture of a payment method is sent as base64 (up to 1.5 MB of image).
   app.use("/api/v1/platform/payment-methods", express.json({ limit: "3mb" }));
+  // A shop uploads its own QRIS picture (up to 1.5 MB of image) the same way.
+  app.use("/api/v1/bank-accounts", express.json({ limit: "3mb" }));
   // A transfer proof is a picture sent as base64 (up to 3 MB of image) on a top up or a package bill.
   app.use(["/api/v1/ai/topups", "/api/v1/billing/orders"], express.json({ limit: "5mb" })); // payment proofs
 

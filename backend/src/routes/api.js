@@ -212,6 +212,7 @@ router.delete("/tasks/:id", ...tenant, requireRole(...MANAGERS), tasksOn, valida
 router.get("/public/payment-methods", webchatPollLimiter, h(payCtrl.publicList));
 router.get("/public/payment-methods/:id/qris", webchatPollLimiter, validate({ params: v.idParams }), h(payCtrl.publicQrisImage));
 router.get("/public/bank-accounts/:id/qris", webchatPollLimiter, validate({ params: v.idParams }), h(bankCtrl.publicQrisImage));
+router.get("/public/orders/:id/qris.png", webchatPollLimiter, validate({ params: v.idParams, query: z.object({ sig: z.string().max(64) }) }), h(bankCtrl.publicOrderQris));
 router.get("/platform/vouchers", authenticate, requireSuperadmin, validate({ query: vouv.voucherListQuery }), h(voucherCtrl.list));
 router.post("/platform/vouchers", authenticate, requireSuperadmin, validate({ body: vouv.createVoucherBody }), h(voucherCtrl.create));
 router.put("/platform/vouchers/:id", authenticate, requireSuperadmin, validate({ params: v.idParams, body: vouv.updateVoucherBody }), h(voucherCtrl.update));

@@ -21,7 +21,7 @@ const phrases = {
   "Tutup": "Close",
   "Tambahkan produk aktif terlebih dahulu di Katalog Produk.": "Please add an active product in the Product Catalog first.",
   "Jumlah": "Quantity",
-  "Dibuat pesanan sungguhan (stok berkurang) dan QRIS dikirim ke chat. Pesanan lunas otomatis saat pembayaran diterima.": "A real order is created (stock decreases) and the QRIS is sent to the chat. The order is marked paid automatically when payment is received.",
+  "Dibuat pesanan sungguhan (stok berkurang) dan QRIS dikirim ke chat. Lewat iPaymu, pesanan lunas otomatis. Lewat QRIS merchant sendiri, pembayaran dikonfirmasi tim setelah pembeli mengirim bukti.": "A real order is created (stock decreases) and the QRIS is sent to the chat. Through iPaymu the order is marked paid automatically. With your own merchant QRIS, your team confirms payment after the buyer sends proof.",
   "Memproses...": "Processing...",
   "Buat Pesanan dan Kirim QRIS": "Create Order and Send QRIS",
   "Kota": "City",

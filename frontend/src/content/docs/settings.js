@@ -9,7 +9,7 @@ export const settingsGuides = [
     summary: "Daftarkan rekening toko. Hanya rekening ini yang boleh disebut AI.",
     for: MANAGER,
     open: "/dashboard/bank-accounts",
-    keywords: "rekening bank transfer bca bri mandiri nomor rekening aktif",
+    keywords: "rekening bank transfer bca bri mandiri nomor rekening aktif qris gopay merchant statis dinamis",
     blocks: [
       h("Fungsi"),
       p("Di **Rekening Bank & QRIS** Anda mendaftarkan rekening toko. Saat pelanggan bertanya cara bayar, AI dan Jalur Cepat menyebut rekening dari daftar ini. Rekening yang tidak terdaftar tidak akan pernah disebut."),
@@ -22,6 +22,20 @@ export const settingsGuides = [
       ]),
       warn("Periksa nomor rekening dua kali. Nomor yang salah akan dikirim ke pelanggan apa adanya."),
       tip("Nonaktifkan rekening yang sudah tidak dipakai supaya AI berhenti menyebutnya."),
+      h("QRIS merchant sendiri (GoPay Merchant dan sejenisnya)"),
+      p("Kalau toko punya QRIS statis, misalnya dari GoPay Merchant, unggah gambarnya. Untuk setiap pesanan, Klozer membuat QRIS baru dengan nominal pesanan sudah terisi, jadi pembeli tidak perlu mengetik nominal."),
+      steps([
+        "Di **Rekening Bank & QRIS**, klik **+ QRIS Merchant**.",
+        "Isi nama merchant seperti tertulis di aplikasinya, lalu pilih gambar QRIS statis (PNG atau JPG yang jelas, maksimal 1,5 MB).",
+        "Klik **Simpan dan unggah**. Klozer membaca kode di gambar dan menampilkan hasilnya di kartu: **Kode terbaca** atau peringatan kalau tidak terbaca.",
+        "Untuk mengganti gambar, klik **Ganti gambar QRIS** di kartunya. **Hapus gambar** melepas QRIS dari toko.",
+      ]),
+      list([
+        "Uang masuk langsung ke akun merchant Anda. GoPay Merchant tidak memberi kabar ke Klozer, jadi pesanan tidak lunas otomatis. Pembeli mengirim foto bukti, lalu tim mengonfirmasi pembayarannya.",
+        "Kalau QRIS merchant sendiri aktif dan terbaca, QRIS dari chat memakainya, bukan QRIS iPaymu.",
+        "Gambar yang kodenya tidak terbaca tetap tersimpan tetapi tidak dipakai. Unggah ulang PNG atau JPG yang lebih jelas.",
+        "QRIS merchant tidak pernah disebut sebagai rekening transfer.",
+      ]),
     ],
   },
   {

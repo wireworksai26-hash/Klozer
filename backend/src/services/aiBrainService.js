@@ -172,7 +172,7 @@ export async function getInstitutionRagContext(institutionId) {
     ),
     query(
       `SELECT bank_code AS bank, account_number AS accountNumber, account_holder AS holder, transfer_instruction AS instruction
-         FROM bank_accounts WHERE institution_id = ? AND is_active = 1`,
+         FROM bank_accounts WHERE institution_id = ? AND is_active = 1 AND qris_image IS NULL`,
       [institutionId]
     ),
     query(

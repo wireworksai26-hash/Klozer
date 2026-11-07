@@ -39,7 +39,7 @@ export async function tryFastPath({ institutionId, text }) {
       case "thanks":
         return thanksText();
       case "payment": {
-        const accounts = await query("SELECT bank_code AS bank, account_number AS accountNumber, account_holder AS holder FROM bank_accounts WHERE institution_id = ? AND is_active = 1", [institutionId]);
+        const accounts = await query("SELECT bank_code AS bank, account_number AS accountNumber, account_holder AS holder FROM bank_accounts WHERE institution_id = ? AND is_active = 1 AND qris_image IS NULL", [institutionId]);
         const commerce = await getCommerceSettings(institutionId);
         const qris = Boolean(commerce.enabled && commerce.payQris && isGatewayConfigured());
         return accounts.length || qris ? paymentText({ accounts, qris }) : null;

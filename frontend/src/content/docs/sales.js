@@ -126,7 +126,7 @@ export const salesGuides = [
     keywords: "qris ipaymu transfer bukti bayar lunas rekening cod",
     blocks: [
       h("Fungsi"),
-      p("Pelanggan bisa membayar lewat QRIS (otomatis lunas) atau transfer ke rekening toko (Anda yang mengonfirmasi)."),
+      p("Pelanggan bisa membayar lewat QRIS (otomatis lunas lewat iPaymu, atau dikonfirmasi tim kalau memakai QRIS merchant sendiri) atau transfer ke rekening toko (Anda yang mengonfirmasi)."),
       h("QRIS dari chat"),
       steps([
         "Di **Live Chat WhatsApp**, klik **Terbitkan QRIS**.",
@@ -136,7 +136,8 @@ export const salesGuides = [
       list([
         "Nominal selalu dihitung dari pesanan, bukan dari yang diketik.",
         "Kode QRIS berlaku 5 menit. Kalau kedaluwarsa, terbitkan lagi.",
-        "QRIS butuh akun pembayaran yang disiapkan tim Klozer.",
+        "QRIS butuh akun pembayaran yang disiapkan tim Klozer, atau QRIS merchant sendiri yang Anda unggah di **Rekening Bank & QRIS**.",
+        "Dengan QRIS merchant sendiri, pesanan tidak lunas otomatis. Pembeli mengirim foto bukti, lalu Anda mengonfirmasi pembayarannya.",
       ]),
       h("Transfer manual"),
       steps([
