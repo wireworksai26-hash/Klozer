@@ -116,7 +116,7 @@ export default function SupervisorLabelStatsPage() {
             <button
               key={tab}
               onClick={() => setTimeRange(tab)}
-              className={`px-3 py-1.5 rounded-lg text-caption font-bold border-none cursor-pointer capitalize transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-caption font-bold border-none cursor-pointer capitalize transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 timeRange === tab ? "bg-brand text-white" : "bg-transparent text-fg-subtle hover:text-fg"
               }`}
             >

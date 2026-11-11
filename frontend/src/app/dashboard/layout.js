@@ -47,6 +47,7 @@ function DashboardContent({ children }) {
     markAllNotificationsRead,
     whatsappStatus,
     taskSummary,
+    passwordRequestCount,
   } = useDashboard();
 
   // Precise Active Navigation Detector (fixes multi-active button highlight bug)
@@ -73,9 +74,10 @@ function DashboardContent({ children }) {
   };
 
   const taskBadge = taskSummary?.mine || 0;
+  const hasWorkspace = currentUser?.role === "owner" && Boolean(currentUser?.workspace);
   const rolesConfig = useMemo(
-    () => buildRolesConfig({ t, language, badges: { tasks: taskBadge } }),
-    [t, language, taskBadge]
+    () => buildRolesConfig({ t, language, badges: { tasks: taskBadge, passwords: passwordRequestCount || 0, workspace: Boolean(hasWorkspace) } }),
+    [t, language, taskBadge, passwordRequestCount, hasWorkspace]
   );
   const baseRoleConfig = rolesConfig[role] || rolesConfig.agent;
 

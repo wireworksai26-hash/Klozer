@@ -4,7 +4,7 @@ import { authenticate, requireRole, requireSuperadmin } from "../middlewares/aut
 import { tenantContext } from "../middlewares/tenantContext.js";
 import { validate } from "../middlewares/validate.js";
 import { requireFeature } from "../middlewares/featureGate.js";
-import { aiLimiter, loginLimiter, openApiLimiter, publicAiLimiter, registerLimiter, webchatPollLimiter, webchatSendLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
+import { aiLimiter, forgotPasswordLimiter, loginLimiter, openApiLimiter, publicAiLimiter, registerLimiter, webchatPollLimiter, webchatSendLimiter, webhookLimiter } from "../middlewares/rateLimit.js";
 import { apiKeyAuth } from "../middlewares/apiKeyAuth.js";
 import { asyncHandler } from "../utils/errors.js";
 import * as v from "../validation/schemas.js";
@@ -47,6 +47,8 @@ import * as deliveryCtrl from "../controllers/deliveryController.js";
 import * as dv from "../validation/deliverySchemas.js";
 import * as liv from "../validation/leadImportSchemas.js";
 import * as pv from "../validation/personaSchemas.js";
+import * as wv from "../validation/workspaceSchemas.js";
+import * as workspaceCtrl from "../controllers/workspaceController.js";
 import * as openCtrl from "../controllers/openApiController.js";
 import * as iv from "../validation/integrationSchemas.js";
 import * as agentCtrl from "../controllers/agentController.js";
@@ -80,6 +82,7 @@ const tenant = [authenticate, tenantContext];
 
 // ==================== 1. AUTH ====================
 router.post("/auth/login", loginLimiter, validate({ body: v.loginBody }), h(authCtrl.login));
+router.post("/auth/forgot-password", forgotPasswordLimiter, validate({ body: v.forgotPasswordBody }), h(authCtrl.forgotPassword));
 router.post("/auth/register", registerLimiter, validate({ body: v.registerBody }), h(authCtrl.register));
 router.get("/auth/me", authenticate, h(authCtrl.getMe));
 router.post("/auth/change-password", authenticate, validate({ body: v.changePasswordBody }), h(authCtrl.changePassword));
@@ -232,6 +235,32 @@ router.post("/billing/orders/:id/cancel-by-team", authenticate, requireSuperadmi
 router.get("/billing/summary", authenticate, requireSuperadmin, validate({ query: billv.summaryQuery }), h(billingCtrl.summary));
 router.get("/billing/detail/:type/:id", authenticate, requireSuperadmin, validate({ params: billv.detailParams }), h(billingCtrl.detail));
 router.get("/platform/payment-proofs/:id", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(billingCtrl.proofImage));
+// ==================== WORKSPACE, CRM ====================
+const OWNER_ONLY = [authenticate, requireRole("owner")];
+router.get("/workspace", ...OWNER_ONLY, validate({ query: wv.overviewQuery }), h(workspaceCtrl.getWorkspace));
+router.get("/workspace/businesses", ...OWNER_ONLY, validate({ query: wv.overviewQuery }), h(workspaceCtrl.businesses));
+router.get("/workspace/report", ...OWNER_ONLY, validate({ query: wv.overviewQuery }), h(workspaceCtrl.workspaceReport));
+router.get("/workspace/assistant/history", ...OWNER_ONLY, h(workspaceCtrl.assistantLog));
+router.delete("/workspace/assistant/history", ...OWNER_ONLY, h(workspaceCtrl.assistantClear));
+router.post("/workspace/switch", ...OWNER_ONLY, validate({ body: wv.switchBody }), h(workspaceCtrl.switchBusiness));
+router.get("/workspace/contacts", ...OWNER_ONLY, validate({ query: wv.contactsQuery }), h(workspaceCtrl.workspaceContacts));
+router.post("/workspace/assistant/ask", ...OWNER_ONLY, aiLimiter, validate({ body: wv.askBody }), h(workspaceCtrl.ask));
+router.get("/crm/contacts/:id", ...tenant, requireRole(...SALES), validate({ params: wv.idParam }), h(workspaceCtrl.contactProfile));
+router.post("/crm/contacts/preview", ...tenant, requireRole(...SALES), validate({ body: wv.previewBody }), h(workspaceCtrl.previewSegment));
+router.post("/crm/contacts/merge", ...tenant, requireRole(...MANAGERS), validate({ body: wv.mergeBody }), h(workspaceCtrl.mergeContacts));
+router.get("/crm/segments", ...tenant, requireRole(...SALES), h(workspaceCtrl.listSegments));
+router.post("/crm/segments", ...tenant, requireRole(...MANAGERS), validate({ body: wv.createSegmentBody }), h(workspaceCtrl.createSegment));
+router.get("/crm/segments/:id/contacts", ...tenant, requireRole(...SALES), validate({ params: wv.idParam, query: wv.pageQuery }), h(workspaceCtrl.segmentContacts));
+router.delete("/crm/segments/:id", ...tenant, requireRole(...MANAGERS), validate({ params: wv.idParam }), h(workspaceCtrl.deleteSegment));
+router.get("/platform/workspaces", authenticate, requireSuperadmin, h(workspaceCtrl.adminList));
+router.post("/platform/workspaces", authenticate, requireSuperadmin, validate({ body: wv.createWorkspaceBody }), h(workspaceCtrl.adminCreate));
+router.put("/platform/workspaces/:id", authenticate, requireSuperadmin, validate({ params: wv.idParam, body: wv.updateWorkspaceBody }), h(workspaceCtrl.adminUpdate));
+router.delete("/platform/workspaces/:id", authenticate, requireSuperadmin, validate({ params: wv.idParam }), h(workspaceCtrl.adminDelete));
+router.post("/platform/workspaces/:id/institutions", authenticate, requireSuperadmin, validate({ params: wv.idParam, body: wv.attachBody }), h(workspaceCtrl.adminAttach));
+router.delete("/platform/workspaces/institutions/:id", authenticate, requireSuperadmin, validate({ params: wv.idParam }), h(workspaceCtrl.adminDetach));
+router.get("/platform/password-requests", authenticate, requireSuperadmin, validate({ query: v.passwordRequestsQuery }), h(authCtrl.listPasswordRequests));
+router.post("/platform/password-requests/:id/reset", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(authCtrl.resolvePasswordRequest));
+router.post("/platform/password-requests/:id/dismiss", authenticate, requireSuperadmin, validate({ params: v.idParams }), h(authCtrl.dismissPasswordRequest));
 router.get("/platform/payment-notifications", authenticate, requireSuperadmin, validate({ query: billv.notificationsQuery }), h(billingCtrl.notifications));
 router.post("/payments/platform-notify", webhookLimiter, validate({ body: billv.paymentNoticeBody }), h(billingCtrl.paymentNotice));
 router.get("/platform/payment-methods", authenticate, requireSuperadmin, h(payCtrl.adminList));

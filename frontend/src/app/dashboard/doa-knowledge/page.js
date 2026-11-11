@@ -96,7 +96,7 @@ export default function SupervisorDoaKnowledgePage() {
                 type="button"
                 onClick={() => handleTestAudio(p.id)}
                 disabled={isPlayingAudio === p.id}
-                className="px-3.5 py-1.5 rounded-xl bg-brand-soft text-brand hover:bg-brand hover:text-white text-caption font-bold flex items-center gap-1.5 transition-all border-none cursor-pointer self-start sm:self-auto"
+                className="px-3.5 py-1.5 rounded-xl bg-brand-soft text-brand hover:bg-brand hover:text-white text-caption font-bold flex items-center gap-1.5 transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer self-start sm:self-auto"
               >
                 <MicIcon className="w-4 h-4" />
                 <span>{isPlayingAudio === p.id ? "Memutar Audio..." : `Tes Suara AI (${p.voiceAudioPreview})`}</span>

@@ -121,7 +121,7 @@ export default function SupervisorInternalChatPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setActiveChannel(c.id)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-label font-bold flex items-center justify-between transition-all cursor-pointer border-none ${
+                  className={`w-full text-left px-3 py-2 rounded-xl text-label font-bold flex items-center justify-between transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer border-none ${
                     activeChannel === c.id
                       ? "bg-brand text-white shadow-xs"
                       : "bg-transparent text-fg-muted hover:bg-sunken hover:text-fg"

@@ -77,9 +77,9 @@ export default function CsCreditsPage() {
 
       {/* Balance Card */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-ink to-brand p-6 rounded-2xl text-white shadow-md flex flex-col justify-between">
+        <div className="bg-ink p-6 rounded-2xl text-white shadow-md flex flex-col justify-between">
           <div>
-            <span className="text-white/80 text-caption font-bold uppercase tracking-wider block mb-1">
+            <span className="text-white/70 text-caption font-medium block mb-1">
               Sisa Kuota Broadcast CS
             </span>
             <div className="text-heading font-bold font-mono">1,450 <span className="text-body font-sans font-normal text-white/80">Pesan</span></div>
@@ -173,7 +173,7 @@ export default function CsCreditsPage() {
                 <label
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg.id)}
-                  className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                     selectedPackage === pkg.id
                       ? "border-brand bg-brand-soft"
                       : "border-line bg-white hover:bg-soft"

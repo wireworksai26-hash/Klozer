@@ -171,7 +171,7 @@ export default function OrdersPage() {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,transform] border cursor-pointer ${
                   statusFilter === tab.key
                     ? "bg-brand text-white border-brand"
                     : "bg-canvas text-fg-muted border-line hover:bg-white"

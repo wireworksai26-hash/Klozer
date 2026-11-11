@@ -270,7 +270,7 @@
 
   .card-title {
     font-size: var(--text-title);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.3;
     color: var(--color-fg);
   }

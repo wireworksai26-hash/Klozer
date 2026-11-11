@@ -108,7 +108,7 @@ export default function PaymentBreakdownChart({
                   <div
                     key={idx}
                     style={{ width: `${m.pct}%` }}
-                    className={`${m.color} h-full first:rounded-l-full last:rounded-r-full transition-all duration-500`}
+                    className={`${m.color} h-full first:rounded-l-full last:rounded-r-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500`}
                     title={`${t(m.name)}: ${m.pct}%`}
                   />
                 ) : null

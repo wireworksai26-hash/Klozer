@@ -69,7 +69,7 @@ export default function SupervisorEtalasePage() {
           <button
             type="button"
             onClick={handleCopy}
-            className="px-4 py-2 bg-sunken hover:bg-brand-soft text-fg hover:text-brand rounded-xl text-label font-bold border border-line cursor-pointer transition-all"
+            className="px-4 py-2 bg-sunken hover:bg-brand-soft text-fg hover:text-brand rounded-xl text-label font-bold border border-line cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform]"
           >
             {copied ? (
               <span className="flex items-center gap-1.5 text-success-600 font-bold">

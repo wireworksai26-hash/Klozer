@@ -41,6 +41,8 @@ function toUiUser(user, institution) {
     institutionName: user.institutionName ?? institution?.name,
     institutionMode: user.institutionMode ?? institution?.mode,
     sector: user.sector ?? institution?.sector,
+    // set only for an owner whose business belongs to a workspace
+    workspace: user.workspace ?? null,
   };
 }
 
@@ -78,7 +80,8 @@ async function fetchAll(path, query = {}) {
   return items;
 }
 
-export function DashboardProvider({ children }) {
+/** `lean` skips loading one business's contacts, orders and catalog: the workspace area reads its own data and has no use for them. */
+export function DashboardProvider({ children, lean = false }) {
   // booting: checking the stored session | anonymous: no valid session | ready: signed in
   const [status, setStatus] = useState("booting");
   const [role, setRole] = useState("owner");
@@ -107,6 +110,9 @@ export function DashboardProvider({ children }) {
   const [taskSummary, setTaskSummary] = useState(null);
   const [taskEvent, setTaskEvent] = useState(null);
   const [deliveryEvent, setDeliveryEvent] = useState(null);
+  // Forgotten-password requests waiting for the Klozer team (menu badge) and a bump when one arrives.
+  const [passwordRequestCount, setPasswordRequestCount] = useState(0);
+  const [passwordRequestEvent, setPasswordRequestEvent] = useState(null);
   // Bumps when the team prices or credits a token top up, so the top up screen can refetch.
   const [topupEvent, setTopupEvent] = useState(null);
   const [billingEvent, setBillingEvent] = useState(null);
@@ -214,6 +220,15 @@ export function DashboardProvider({ children }) {
     }
   }, []);
 
+  const refreshPasswordRequests = useCallback(async () => {
+    try {
+      const res = await api.get("/platform/password-requests", { query: { limit: 1 } });
+      setPasswordRequestCount(res.pending ?? 0);
+    } catch {
+      setPasswordRequestCount(0);
+    }
+  }, []);
+
   // ---------------------------------------------------------------- realtime (Socket.io)
   const pushNotification = useCallback((item) => {
     setNotifications((prev) => [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, read: false, at: Date.now(), ...item }, ...prev].slice(0, 30));
@@ -304,6 +319,12 @@ export function DashboardProvider({ children }) {
         });
       }
     });
+    // Someone forgot their password: the team is told at once and handles it from the request list.
+    socket.on("password:requested", (evt) => {
+      setPasswordRequestEvent({ at: Date.now() });
+      refreshPasswordRequests();
+      pushNotification({ type: "security", title: "Permintaan lupa sandi", desc: evt?.email ? `${evt.email}${evt.institutionName ? ` (${evt.institutionName})` : ""}. Buka untuk membuatkan kata sandi baru.` : "Buka untuk membuatkan kata sandi baru.", link: "/dashboard/superadmin/password-requests" });
+    });
     socket.on("chat:needs_human", (evt) => {
       const reasons = {
         non_text_message: "Pelanggan mengirim gambar/suara. AI tidak membalas lampiran.",
@@ -319,7 +340,7 @@ export function DashboardProvider({ children }) {
       socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [status, pushNotification, refreshTaskSummary]);
+  }, [status, pushNotification, refreshTaskSummary, refreshPasswordRequests]);
 
   const markNotificationRead = (id) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   const markAllNotificationsRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -356,7 +377,7 @@ export function DashboardProvider({ children }) {
   const loadTenantData = useCallback(
     async (user) => {
       // A delivery PIC works from one screen of their own deliveries; the shop's catalog, contacts and orders are not theirs.
-      if (user.role === "pic_delivery") {
+      if (user.role === "pic_delivery" || lean) {
         setDataLoading(false);
         return;
       }
@@ -371,13 +392,13 @@ export function DashboardProvider({ children }) {
         user.role === "cs" ? api.get("/reports/my-performance").then((r) => setMyPerformance(r.data)) : Promise.resolve(),
         api.get("/whatsapp/status").then((s) => setWhatsappStatus(s)),
         api.get("/ai/token-balance").then((r) => setTokenBalance(r.balance)),
-        user.role === "superadmin" ? Promise.resolve() : refreshTaskSummary(),
+        user.role === "superadmin" ? refreshPasswordRequests() : refreshTaskSummary(),
       ]);
       const failed = results.filter((r) => r.status === "rejected" && r.reason?.status !== 403 && r.reason?.status !== 401);
       if (failed.length) notify("error", tRef.current("Sebagian data gagal dimuat: {reason}", { reason: failed[0].reason?.message || tRef.current("kesalahan jaringan") }));
       setDataLoading(false);
     },
-    [loadTeam, loadPersona, notify, refreshTaskSummary]
+    [loadTeam, loadPersona, notify, refreshTaskSummary, refreshPasswordRequests, lean]
   );
 
   const applyUser = useCallback((user, institution) => {
@@ -955,6 +976,9 @@ export function DashboardProvider({ children }) {
     taskSummary,
     taskEvent,
     deliveryEvent,
+    passwordRequestCount,
+    passwordRequestEvent,
+    refreshPasswordRequests,
     topupEvent,
     billingEvent,
     refreshTaskSummary,

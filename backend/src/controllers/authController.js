@@ -11,6 +11,8 @@ import { DEFAULT_FEATURES } from "../utils/constants.js";
 import { AppError, conflict, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { sendTrialCredentialsEmail } from "../services/emailService.js";
 import { audit } from "../services/auditService.js";
+import { workspaceOf } from "../services/workspaceService.js";
+import { FORGOT_REPLY, dismissRequest, listRequests, requestPasswordReset, resolveRequest } from "../services/passwordResetService.js";
 
 const MAX_FAILED_LOGINS = 5;
 const LOCK_MINUTES = 15;
@@ -112,7 +114,7 @@ export async function login(req, res) {
     success: true,
     message: "Login berhasil.",
     token,
-    user: userPayload(user, inst),
+    user: { ...userPayload(user, inst), workspace: await workspaceOf(user) },
     institution: institutionPublic(inst),
   });
 }
@@ -223,7 +225,7 @@ export async function getMe(req, res) {
   const user = await queryOne("SELECT * FROM users WHERE id = ?", [req.user.id]);
   if (!user) throw notFound("Pengguna tidak ditemukan.");
   const inst = await queryOne("SELECT * FROM institutions WHERE id = ?", [user.institution_id]);
-  res.json({ success: true, user: userPayload(user, inst), institution: institutionPublic(inst) });
+  res.json({ success: true, user: { ...userPayload(user, inst), workspace: await workspaceOf(user) }, institution: institutionPublic(inst) });
 }
 
 /**
@@ -259,4 +261,33 @@ export async function changePassword(req, res) {
 export async function logout(req, res) {
   clearSessionCookie(res);
   res.json({ success: true, message: "Anda telah keluar." });
+}
+
+/**
+ * POST /auth/forgot-password: asks the Klozer team for a new password. The reply is the same for any email, so the form
+ * cannot be used to find out who has an account.
+ */
+export async function forgotPassword(req, res) {
+  const { created } = await requestPasswordReset(req.body.email, req.ip);
+  if (created) await audit(req, "auth.password_requested", { metadata: { email: req.body.email }, institutionId: null });
+  res.json({ success: true, message: FORGOT_REPLY });
+}
+
+/** GET /platform/password-requests (superadmin): the requests with one status, and how many are waiting. */
+export async function listPasswordRequests(req, res) {
+  res.json({ success: true, ...(await listRequests(req.query)) });
+}
+
+/** POST /platform/password-requests/:id/reset (superadmin): sets a new password and returns it once, to hand to the person. */
+export async function resolvePasswordRequest(req, res) {
+  const { user, password } = await resolveRequest(req.params.id, req.user.id);
+  await audit(req, "user.reset_password", { entityType: "user", entityId: user.id, metadata: { via: "forgot_request" } });
+  res.json({ success: true, message: "Kata sandi baru dibuat.", credentials: { email: user.email, name: user.name, password } });
+}
+
+/** POST /platform/password-requests/:id/dismiss (superadmin): closes a request that is not needed. */
+export async function dismissPasswordRequest(req, res) {
+  const { email } = await dismissRequest(req.params.id, req.user.id);
+  await audit(req, "auth.password_request_dismissed", { metadata: { email } });
+  res.json({ success: true, message: "Permintaan ditutup." });
 }

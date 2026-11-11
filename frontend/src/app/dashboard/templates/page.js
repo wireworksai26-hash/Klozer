@@ -125,7 +125,7 @@ export default function CsTemplatesPage() {
             key={cat}
             type="button"
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3.5 py-1.5 rounded-xl text-caption font-bold border-none cursor-pointer transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-caption font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
               selectedCategory === cat
                 ? "bg-brand text-white shadow-xs"
                 : "bg-white text-fg-muted hover:text-fg border border-line"
@@ -161,7 +161,7 @@ export default function CsTemplatesPage() {
               <button
                 type="button"
                 onClick={() => handleCopy(t.id, t.body)}
-                className="px-3.5 py-1.5 rounded-xl text-caption font-bold bg-sunken hover:bg-brand-soft text-fg hover:text-brand border border-line cursor-pointer transition-all"
+                className="px-3.5 py-1.5 rounded-xl text-caption font-bold bg-sunken hover:bg-brand-soft text-fg hover:text-brand border border-line cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform]"
               >
                 {copiedId === t.id ? (
                   <span className="flex items-center gap-1 text-success-600 font-bold">

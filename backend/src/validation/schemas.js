@@ -43,6 +43,13 @@ export const loginBody = z.object({
   password: z.string().min(1, "wajib diisi").max(128),
 });
 
+export const passwordRequestsQuery = z.object({
+  status: z.enum(["pending", "handled", "dismissed"]).default("pending"),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export const forgotPasswordBody = z.object({ email: emailField });
+
 export const registerBody = z.object({
   institutionName: trimmed(120, 2),
   sector: optionalText(100),

@@ -132,7 +132,7 @@ export default function SupervisorBomPage() {
                   <button
                     type="button"
                     onClick={() => handleDeleteBom(bom.id)}
-                    className="p-2 rounded-xl text-danger-500 hover:bg-danger-50 border border-transparent hover:border-danger-200 cursor-pointer transition-all ml-2"
+                    className="p-2 rounded-xl text-danger-500 hover:bg-danger-50 border border-transparent hover:border-danger-200 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ml-2"
                     title={t("Hapus Resep")}
                   >
                     <TrashIcon className="w-4 h-4" />

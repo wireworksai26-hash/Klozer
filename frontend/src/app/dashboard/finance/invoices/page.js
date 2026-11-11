@@ -185,7 +185,7 @@ export default function SupervisorInvoicesPage() {
             <div className="bg-white p-5 rounded-2xl border border-line shadow-xs flex flex-col gap-3">
               <span className="text-label font-bold uppercase text-fg-subtle">{t("Pilih Format Dokumen:")}</span>
               <div className="flex flex-col gap-2">
-                <label className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedFormat === "a4" ? "border-brand bg-brand-soft" : "border-line hover:bg-soft"}`}>
+                <label className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${selectedFormat === "a4" ? "border-brand bg-brand-soft" : "border-line hover:bg-soft"}`}>
                   <input
                     type="radio"
                     name="format"
@@ -200,7 +200,7 @@ export default function SupervisorInvoicesPage() {
                   </div>
                 </label>
 
-                <label className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedFormat === "thermal80" ? "border-brand bg-brand-soft" : "border-line hover:bg-soft"}`}>
+                <label className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${selectedFormat === "thermal80" ? "border-brand bg-brand-soft" : "border-line hover:bg-soft"}`}>
                   <input
                     type="radio"
                     name="format"
@@ -226,7 +226,7 @@ export default function SupervisorInvoicesPage() {
                     key={o.id}
                     type="button"
                     onClick={() => setPickedId(o.id)}
-                    className={`p-3 text-left rounded-xl border transition-all cursor-pointer ${
+                    className={`p-3 text-left rounded-xl border transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer ${
                       selectedOrder?.id === o.id
                         ? "border-brand bg-brand-soft text-brand"
                         : "border-line bg-white text-fg"

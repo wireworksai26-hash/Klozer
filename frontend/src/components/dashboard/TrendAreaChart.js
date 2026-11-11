@@ -221,7 +221,7 @@ export default function TrendAreaChart({
     return `${(num || 0).toLocaleString("id-ID")} Order`;
   };
 
-  const toggleBase = "px-3 py-1 text-label font-bold rounded-lg transition-all border-none cursor-pointer whitespace-nowrap";
+  const toggleBase = "px-3 py-1 text-label font-bold rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer whitespace-nowrap";
 
   return (
     <div className={`bg-white rounded-2xl border border-line p-6 shadow-xs ${className}`}>
@@ -263,7 +263,7 @@ export default function TrendAreaChart({
                 key={range}
                 type="button"
                 onClick={() => setActiveRange(range)}
-                className={`px-2.5 py-1 text-caption font-bold rounded-lg transition-all border-none cursor-pointer ${
+                className={`px-2.5 py-1 text-caption font-bold rounded-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer ${
                   activeRange === range ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted hover:text-fg"
                 }`}
               >
@@ -357,7 +357,7 @@ export default function TrendAreaChart({
                   stroke="var(--color-brand)"
                   strokeWidth={active ? 2.5 : 2}
                   filter={active ? "url(#glowPoint)" : "none"}
-                  className="transition-all duration-200 pointer-events-none"
+                  className="transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 pointer-events-none"
                 />
               </g>
             );

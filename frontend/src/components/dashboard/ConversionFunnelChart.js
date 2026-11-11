@@ -117,7 +117,7 @@ export default function ConversionFunnelChart({
               <div className="h-2.5 w-full bg-sunken rounded-full overflow-hidden">
                 <div
                   style={{ width: `${step.pct}%` }}
-                  className={`h-full ${step.color} rounded-full transition-all duration-700 ease-out group-hover:opacity-90`}
+                  className={`h-full ${step.color} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-700 ease-out group-hover:opacity-90`}
                 />
               </div>
 

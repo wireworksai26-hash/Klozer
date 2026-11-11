@@ -114,7 +114,7 @@ export default function SuperadminExportsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedModule("leads")}
-                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1 ${
                     selectedModule === "leads"
                       ? "border-brand bg-brand-soft text-brand"
                       : "border-line bg-soft text-fg-muted"
@@ -127,7 +127,7 @@ export default function SuperadminExportsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedModule("finance")}
-                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1 ${
                     selectedModule === "finance"
                       ? "border-brand bg-brand-soft text-brand"
                       : "border-line bg-soft text-fg-muted"
@@ -140,7 +140,7 @@ export default function SuperadminExportsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedModule("tokens")}
-                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1 ${
                     selectedModule === "tokens"
                       ? "border-brand bg-brand-soft text-brand"
                       : "border-line bg-soft text-fg-muted"
@@ -153,7 +153,7 @@ export default function SuperadminExportsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedModule("blasting")}
-                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-1 ${
                     selectedModule === "blasting"
                       ? "border-brand bg-brand-soft text-brand"
                       : "border-line bg-soft text-fg-muted"

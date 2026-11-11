@@ -249,7 +249,7 @@ export default function SuperadminBlastingPage() {
                       </div>
                       <div className="w-full h-2 bg-line rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${
+                          className={`h-full rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                             c.status === "completed" ? "bg-success-500" : "bg-brand"
                           }`}
                           style={{ width: `${progressPercent}%` }}

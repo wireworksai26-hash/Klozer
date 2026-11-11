@@ -1,6 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import PersonaForm from "@/components/persona/PersonaForm";
+import RevealButton from "@/components/common/RevealButton";
 import { useSearchParams } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
 import { api } from "@/utils/api";
@@ -356,7 +357,7 @@ function TeamTab() {
                           type="button"
                           disabled={inactive}
                           onClick={() => updateTeamMemberPermissions(m.id, key)}
-                          className={`px-2.5 py-1 rounded-full text-caption font-bold border transition-all cursor-pointer ${m.permissions[key] ? "bg-success-100 text-success-800 border-success-300" : "bg-sunken text-fg-muted border-line"}`}
+                          className={`px-2.5 py-1 rounded-full text-caption font-bold border transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer ${m.permissions[key] ? "bg-success-100 text-success-800 border-success-300" : "bg-sunken text-fg-muted border-line"}`}
                         >
                           {m.permissions[key] ? t("Diizinkan") : t("Terkunci")}
                         </button>
@@ -539,6 +540,18 @@ function ProfileTab() {
   );
 }
 
+/** A password box with the eye button: the owner can check what they typed before saving. */
+function PasswordInput({ value, onChange, autoComplete }) {
+  const { t } = useDashboard();
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <input required type={shown ? "text" : "password"} autoComplete={autoComplete} className={`${input} pr-11`} value={value} onChange={onChange} />
+      <RevealButton shown={shown} onToggle={() => setShown((v) => !v)} showLabel={t("Tampilkan password")} hideLabel={t("Sembunyikan password")} className="absolute right-1.5 top-1/2 -translate-y-1/2" />
+    </div>
+  );
+}
+
 function AccountTab() {
   const { currentUser, changePassword, t } = useDashboard();
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
@@ -561,16 +574,16 @@ function AccountTab() {
       </div>
       <div>
         <label className={label}>{t("Password Saat Ini")}</label>
-        <input required type="password" autoComplete="current-password" className={input} value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} />
+        <PasswordInput autoComplete="current-password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} />
       </div>
       <div>
         <label className={label}>{t("Password Baru")}</label>
-        <input required type="password" autoComplete="new-password" className={input} value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} />
+        <PasswordInput autoComplete="new-password" value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} />
         <p className="text-caption text-fg-muted mt-1">{t("Minimal 12 karakter, kombinasi huruf besar, kecil, angka, dan simbol. Mengubah password mengeluarkan perangkat lain.")}</p>
       </div>
       <div>
         <label className={label}>{t("Ulangi Password Baru")}</label>
-        <input required type="password" autoComplete="new-password" className={input} value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
+        <PasswordInput autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
       </div>
       {error && <div className="p-2.5 rounded-xl bg-danger-50 border border-danger-200 text-danger-700 font-semibold">{error}</div>}
       <div className="flex justify-end">
@@ -608,7 +621,7 @@ function SettingsContent() {
           <button
             key={key}
             onClick={() => setPicked(key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-body-sm font-bold border-none cursor-pointer transition-all whitespace-nowrap ${active === key ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted hover:text-ink hover:bg-white"}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-body-sm font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] whitespace-nowrap ${active === key ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted hover:text-ink hover:bg-white"}`}
           >
             <Icon className="w-4 h-4" />
             <span>{text}</span>

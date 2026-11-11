@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NotificationCenter from "./NotificationCenter";
+import BusinessSwitcher from "@/components/workspace/BusinessSwitcher";
 
 /**
  * Dashboard top header bar component.
@@ -84,7 +85,7 @@ export default function DashboardHeader({
         </button>
 
         {/* Live Search Bar */}
-        <div className="hidden lg:flex items-center gap-2.5 bg-canvas border border-line rounded-full px-4 py-1.5 w-[260px] xl:w-[320px] focus-within:border-brand focus-within:bg-white transition-all">
+        <div className="hidden lg:flex items-center gap-2.5 bg-canvas border border-line rounded-full px-4 py-1.5 w-[260px] xl:w-[320px] focus-within:border-brand focus-within:bg-white transition-[color,background-color,border-color,box-shadow,opacity,transform]">
           <svg className="text-fg-subtle" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -104,7 +105,7 @@ export default function DashboardHeader({
             onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
             aria-haspopup="menu"
             aria-expanded={roleDropdownOpen}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-canvas hover:bg-brand-soft border border-line cursor-pointer transition-all text-label font-bold text-ink"
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-canvas hover:bg-brand-soft border border-line cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] text-label font-bold text-ink"
             title={t("Menu Profil Pengguna")}
           >
             <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-micro font-bold">
@@ -193,12 +194,13 @@ export default function DashboardHeader({
           </Link>
         )}
 
+        <BusinessSwitcher workspace={currentUser?.workspace} currentInstitutionId={currentUser?.institutionId} />
         {/* Language Switcher */}
         <div className="flex items-center bg-brand-soft p-0.5 rounded-full border border-brand-soft">
           <button
             type="button"
             onClick={() => setLanguage("id")}
-            className={`px-2 py-0.5 text-caption font-bold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+            className={`px-2 py-0.5 text-caption font-bold rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer flex items-center gap-1 ${
               language === "id" ? "bg-brand text-white shadow-xs" : "text-fg-muted hover:text-ink bg-transparent"
             }`}
             title={t("Ganti ke Bahasa Indonesia")}
@@ -209,7 +211,7 @@ export default function DashboardHeader({
           <button
             type="button"
             onClick={() => setLanguage("en")}
-            className={`px-2 py-0.5 text-caption font-bold rounded-full transition-all border-none cursor-pointer flex items-center gap-1 ${
+            className={`px-2 py-0.5 text-caption font-bold rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer flex items-center gap-1 ${
               language === "en" ? "bg-brand text-white shadow-xs" : "text-fg-muted hover:text-ink bg-transparent"
             }`}
             title={t("Ganti ke Bahasa Inggris")}

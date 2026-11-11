@@ -62,7 +62,7 @@ export const helpGuides = [
       ]),
       h("Akun"),
       faq([
-        ["Saya terkunci karena salah password.", "Tunggu beberapa menit lalu coba lagi. Kalau lupa password, minta owner atau supervisor mengaturnya ulang."],
+        ["Saya terkunci karena salah password.", "Tunggu beberapa menit lalu coba lagi. Kalau lupa password, klik **Lupa sandi?** di halaman login untuk mengirim permintaan ke admin Klozer, atau minta owner atau supervisor mengaturnya ulang."],
         ["Menu yang saya cari tidak ada.", "Menu menyesuaikan peran Anda dan paket toko. Kalau terkunci, fiturnya belum termasuk paket. Lihat **Langganan & Paket Toko**."],
       ]),
       tip("Kalau masalah Anda belum terjawab, hubungi tim Klozer dan sebutkan menu, waktu kejadian, dan pesan yang tampil."),

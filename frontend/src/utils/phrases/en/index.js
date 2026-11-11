@@ -22,6 +22,8 @@ import contacts from "./contacts.js";
 import bom from "./bom.js";
 import invoices from "./invoices.js";
 import bank_accounts from "./bank-accounts.js";
+import password_requests from "./password-requests.js";
+import workspace_phrases from "./workspace.js";
 import audit_log from "./audit-log.js";
 import reports from "./reports.js";
 import ai_sandbox from "./ai-sandbox.js";
@@ -56,6 +58,8 @@ export const enPhrases = {
   ...reports,
   ...audit_log,
   ...bank_accounts,
+  ...password_requests,
+  ...workspace_phrases,
   ...invoices,
   ...bom,
   ...contacts,

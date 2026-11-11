@@ -125,7 +125,7 @@ export default function ProductsPage() {
           <div className="flex items-center bg-white p-1 rounded-xl border border-line shadow-xs">
             <button
               onClick={() => setView("grid")}
-              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 view === "grid" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
@@ -133,7 +133,7 @@ export default function ProductsPage() {
             </button>
             <button
               onClick={() => setView("table")}
-              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 view === "table" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
@@ -144,7 +144,7 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
-            className="px-4 py-2.5 bg-white hover:bg-success-50 text-fg hover:text-success-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs"
+            className="px-4 py-2.5 bg-white hover:bg-success-50 text-fg hover:text-success-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-xs"
           >
             <UploadIcon className="w-4 h-4 text-success-600" />
             <span>{t("Impor / Ekspor Excel")}</span>
@@ -181,7 +181,7 @@ export default function ProductsPage() {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-all border cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-label font-bold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,transform] border cursor-pointer ${
                 categoryFilter === cat
                   ? "bg-brand text-white border-brand"
                   : "bg-canvas text-fg-muted border-line hover:bg-white"
@@ -231,7 +231,7 @@ export default function ProductsPage() {
               return (
                 <div
                   key={p.id}
-                  className={`bg-white rounded-2xl p-5 border border-line shadow-soft flex flex-col justify-between hover:shadow-md transition-all ${
+                  className={`bg-white rounded-2xl p-5 border border-line shadow-soft flex flex-col justify-between hover:shadow-md transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                     !p.active ? "opacity-60 bg-soft/80" : ""
                   }`}
                 >
@@ -522,7 +522,7 @@ export default function ProductsPage() {
                         });
                         setShowHppModal(true);
                       }}
-                      className="px-2 py-0.5 bg-accent-100 hover:bg-accent-200 text-accent-800 text-micro font-bold rounded-lg flex items-center gap-1 border border-accent-200 cursor-pointer transition-all"
+                      className="px-2 py-0.5 bg-accent-100 hover:bg-accent-200 text-accent-800 text-micro font-bold rounded-lg flex items-center gap-1 border border-accent-200 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                     >
                       <SparklesIcon className="w-3.5 h-3.5 text-accent-600" />
                       <span>{t("Hitung via AI")}</span>

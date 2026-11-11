@@ -135,7 +135,7 @@ export default function LeadsPage() {
           <div className="flex items-center bg-white p-1 rounded-xl border border-line shadow-xs">
             <button
               onClick={() => setView("kanban")}
-              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 view === "kanban" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
@@ -143,7 +143,7 @@ export default function LeadsPage() {
             </button>
             <button
               onClick={() => setView("table")}
-              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 view === "table" ? "bg-brand text-white shadow-xs" : "bg-transparent text-fg-muted"
               }`}
             >
@@ -202,7 +202,7 @@ export default function LeadsPage() {
                   {stageLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="bg-white p-4 rounded-xl border border-line shadow-xs hover:shadow-md transition-all flex flex-col gap-2 cursor-pointer"
+                      className="bg-white p-4 rounded-xl border border-line shadow-xs hover:shadow-md transition-[color,background-color,border-color,box-shadow,opacity,transform] flex flex-col gap-2 cursor-pointer"
                       onClick={() => handleOpenEdit(lead)}
                     >
                       <div className="flex items-center justify-between gap-2">

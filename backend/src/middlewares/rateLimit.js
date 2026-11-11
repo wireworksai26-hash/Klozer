@@ -63,6 +63,14 @@ export const registerLimiter = rateLimit({
   handler: handler("Terlalu banyak pendaftaran dari alamat ini. Coba lagi nanti."),
 });
 
+// A request for a new password reaches the team, so one address cannot flood them.
+export const forgotPasswordLimiter = rateLimit({
+  ...base,
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  handler: handler("Terlalu banyak permintaan dari alamat ini. Coba lagi nanti."),
+});
+
 export const publicAiLimiter = rateLimit({
   ...base,
   windowMs: 60 * 60 * 1000,

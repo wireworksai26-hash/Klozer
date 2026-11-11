@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { FEATURE_LIST, featuresForTier } from "@/utils/plans";
+import InstitutionWorkspace from "@/components/workspace/InstitutionWorkspace";
 import {
   BuildingIcon,
   CrownIcon,
@@ -185,7 +186,7 @@ Login URL: ${window.location.origin}/login`;
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-[color,background-color,border-color,box-shadow,opacity,transform] flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <span>{t("institutions.addBtn", "+ Tambah Instansi")}</span>
         </button>
@@ -199,7 +200,7 @@ Login URL: ${window.location.origin}/login`;
             placeholder={t("Cari nama instansi, pemilik, ID...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-body-sm bg-soft border border-line rounded-xl px-3.5 py-2 text-fg placeholder:text-fg-subtle outline-none focus:border-brand focus:bg-white transition-all font-medium"
+            className="w-full text-body-sm bg-soft border border-line rounded-xl px-3.5 py-2 text-fg placeholder:text-fg-subtle outline-none focus:border-brand focus:bg-white transition-[color,background-color,border-color,box-shadow,opacity,transform] font-medium"
           />
         </div>
 
@@ -383,7 +384,7 @@ Login URL: ${window.location.origin}/login`;
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, language: "id" })}
-                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer flex items-center justify-center gap-2 ${
                       formData.language === "id"
                         ? "bg-brand text-white border-brand shadow-xs"
                         : "bg-white text-fg-muted border-line hover:bg-soft"
@@ -395,7 +396,7 @@ Login URL: ${window.location.origin}/login`;
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, language: "en" })}
-                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`py-2 px-3 rounded-xl text-label font-bold border transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer flex items-center justify-center gap-2 ${
                       formData.language === "en"
                         ? "bg-brand text-white border-brand shadow-xs"
                         : "bg-white text-fg-muted border-line hover:bg-soft"
@@ -554,6 +555,8 @@ Login URL: ${window.location.origin}/login`;
                 </div>
               </div>
 
+              {editingInst ? <InstitutionWorkspace institution={editingInst} /> : null}
+
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-line mt-2">
                 <button
                   type="button"
@@ -567,7 +570,7 @@ Login URL: ${window.location.origin}/login`;
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold shadow-xs hover:shadow transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer"
                 >
                   {editingInst ? t("common.save", "Simpan Perubahan") : t("institutions.addBtn", "Tambahkan Institusi")}
                 </button>

@@ -100,7 +100,7 @@ export default function SupervisorEscalationPage() {
         <button
           type="button"
           onClick={() => setActiveFilter("pending")}
-          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-all ${
+          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
             activeFilter === "pending"
               ? "bg-brand text-white shadow-xs"
               : "bg-white text-fg-muted hover:text-fg border border-line"
@@ -111,7 +111,7 @@ export default function SupervisorEscalationPage() {
         <button
           type="button"
           onClick={() => setActiveFilter("handled")}
-          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-all ${
+          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
             activeFilter === "handled"
               ? "bg-brand text-white shadow-xs"
               : "bg-white text-fg-muted hover:text-fg border border-line"
@@ -122,7 +122,7 @@ export default function SupervisorEscalationPage() {
         <button
           type="button"
           onClick={() => setActiveFilter("all")}
-          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-all ${
+          className={`px-4 py-2 rounded-xl text-label font-bold border-none cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
             activeFilter === "all"
               ? "bg-brand text-white shadow-xs"
               : "bg-white text-fg-muted hover:text-fg border border-line"
@@ -150,7 +150,7 @@ export default function SupervisorEscalationPage() {
           filtered.map((item) => (
             <div
               key={item.id}
-              className={`p-5 rounded-2xl border transition-all ${
+              className={`p-5 rounded-2xl border transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                 item.urgency === "critical"
                   ? "bg-danger-50/30 border-danger-200"
                   : "bg-white border-line"

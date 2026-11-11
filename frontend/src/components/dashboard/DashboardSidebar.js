@@ -10,9 +10,9 @@ function ItemBadge({ item, isActive, padding }) {
   if (item.comingSoon) {
     return (
       <span
-        className={`text-micro font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 border ${
+        className={`text-micro font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 border ${
           isActive
-            ? "bg-white/20 text-white border-white/30"
+            ? "bg-white text-warning-800 border-warning-200"
             : "bg-warning-100 text-warning-800 border-warning-200"
         }`}
       >
@@ -23,8 +23,8 @@ function ItemBadge({ item, isActive, padding }) {
   if (!item.badge) return null;
   return (
     <span
-      className={`text-micro font-bold ${padding} py-0.5 rounded-full flex-shrink-0 ${
-        isActive ? "bg-white/20 text-white" : "bg-brand text-white"
+      className={`text-micro font-medium ${padding} py-0.5 rounded-full flex-shrink-0 ${
+        isActive ? "bg-brand text-white" : "bg-brand text-white"
       }`}
     >
       {item.badge}
@@ -104,7 +104,7 @@ export default function DashboardSidebar({
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-5 flex flex-col gap-0.5 overflow-y-auto">
-          <div className="px-3 pb-2 pt-1 text-caption font-bold uppercase tracking-wider text-fg-subtle mb-1">
+          <div className="px-3 pb-2 pt-1 text-caption font-medium text-fg-subtle">
             {t("Menu")} {currentRoleConfig.label}
           </div>
 
@@ -118,13 +118,13 @@ export default function DashboardSidebar({
                     key={item.label}
                     href={item.href}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-body-sm font-bold transition-all no-underline ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors no-underline ${
                       isActive
-                        ? "bg-brand text-white shadow-brand"
+                        ? "bg-brand-soft text-ink"
                         : "text-fg-muted hover:text-ink hover:bg-sunken"
                     }`}
                   >
-                    <span className={isActive ? "text-white" : "text-fg-subtle"}>{item.icon}</span>
+                    <span className={isActive ? "text-brand" : "text-fg-subtle"}>{item.icon}</span>
                     <span className="flex-1">{item.label}</span>
                     <ItemBadge item={item} isActive={isActive} padding="px-2" />
                   </Link>
@@ -132,7 +132,7 @@ export default function DashboardSidebar({
               })}
 
               {/* Separator */}
-              <div className="mx-3 my-2 border-t border-line" />
+              <div className="mx-3 my-3 border-t border-line" />
 
               {/* Collapsible Sections */}
               {currentRoleConfig.navSections.map((section) => {
@@ -147,7 +147,7 @@ export default function DashboardSidebar({
                     <button
                       type="button"
                       onClick={() => toggleSection(sectionKey)}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-label font-bold uppercase tracking-wide transition-all cursor-pointer border-none ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors cursor-pointer border-none ${
                         hasActiveChild
                           ? "text-brand bg-brand-soft"
                           : "text-fg-subtle hover:text-fg-muted hover:bg-sunken"
@@ -165,9 +165,9 @@ export default function DashboardSidebar({
                     </button>
 
                     <div
-                      className="overflow-hidden transition-all duration-200 ease-in-out"
+                      className="overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out"
                       style={{
-                        maxHeight: isOpen ? `${section.items.length * 48}px` : "0px",
+                        maxHeight: isOpen ? `${section.items.length * 40}px` : "0px",
                         opacity: isOpen ? 1 : 0,
                       }}
                     >
@@ -179,13 +179,13 @@ export default function DashboardSidebar({
                               key={item.label}
                               href={item.href}
                               onClick={onClose}
-                              className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-body-sm font-semibold transition-all no-underline ${
+                              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors no-underline ${
                                 isActive
-                                  ? "bg-brand text-white shadow-brand"
+                                  ? "bg-brand-soft text-ink"
                                   : "text-fg-muted hover:text-ink hover:bg-sunken"
                               }`}
                             >
-                              <span className={isActive ? "text-white" : "text-fg-subtle"}>
+                              <span className={isActive ? "text-brand" : "text-fg-subtle"}>
                                 {item.icon}
                               </span>
                               <span className="flex-1">{item.label}</span>
@@ -208,13 +208,13 @@ export default function DashboardSidebar({
                   key={item.label}
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-body-sm font-bold transition-all no-underline ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-body-sm font-medium transition-colors no-underline ${
                     isActive
-                      ? "bg-brand text-white shadow-brand"
+                      ? "bg-brand-soft text-ink"
                       : "text-fg-muted hover:text-ink hover:bg-sunken"
                   }`}
                 >
-                  <span className={isActive ? "text-white" : "text-fg-subtle"}>{item.icon}</span>
+                  <span className={isActive ? "text-brand" : "text-fg-subtle"}>{item.icon}</span>
                   <span className="flex-1">{item.label}</span>
                   <ItemBadge item={item} isActive={isActive} padding="px-2" />
                 </Link>
@@ -226,13 +226,13 @@ export default function DashboardSidebar({
         {/* Bottom Profile Widget */}
         <div className="p-4 border-t border-line flex-shrink-0 bg-canvas/60">
           <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-line">
-            <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white font-bold text-body-sm">
+            <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white font-semibold text-body-sm">
               {currentUser?.name
                 ? currentUser.name.slice(0, 2).toUpperCase()
                 : currentRoleConfig.avatar}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-body-sm font-bold text-ink truncate">
+              <div className="text-body-sm font-semibold text-ink truncate">
                 {currentUser?.name ||
                   (role === "superadmin"
                     ? "Platform Admin"

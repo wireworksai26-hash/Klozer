@@ -83,7 +83,7 @@ export default function SupervisorStockPage() {
           <button
             type="button"
             onClick={() => setShowTransferModal(true)}
-            className="px-4 py-2.5 bg-white hover:bg-success-50 text-fg hover:text-success-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs"
+            className="px-4 py-2.5 bg-white hover:bg-success-50 text-fg hover:text-success-700 border border-line rounded-xl text-body-sm font-bold flex items-center gap-2 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-xs"
           >
             <UploadIcon className="w-4 h-4 text-success-600" />
             <span>{t("Impor / Ekspor Excel")}</span>
@@ -284,7 +284,7 @@ export default function SupervisorStockPage() {
                   <button
                     type="button"
                     onClick={() => setAdjustType("in")}
-                    className={`py-2 text-label font-bold rounded-xl border cursor-pointer transition-all ${
+                    className={`py-2 text-label font-bold rounded-xl border cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                       adjustType === "in" ? "bg-success-600 text-white border-success-600" : "bg-canvas text-fg-muted"
                     }`}
                   >
@@ -293,7 +293,7 @@ export default function SupervisorStockPage() {
                   <button
                     type="button"
                     onClick={() => setAdjustType("out")}
-                    className={`py-2 text-label font-bold rounded-xl border cursor-pointer transition-all ${
+                    className={`py-2 text-label font-bold rounded-xl border cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
                       adjustType === "out" ? "bg-danger-600 text-white border-danger-600" : "bg-canvas text-fg-muted"
                     }`}
                   >

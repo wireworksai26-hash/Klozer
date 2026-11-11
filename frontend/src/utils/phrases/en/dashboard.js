@@ -67,7 +67,21 @@ const phrases = {
   "Diterima": "Delivered",
   "Dibatalkan": "Cancelled",
   "Pesanan||singular": "Order",
-  "Selesai||status": "Completed"
+  "Selesai||status": "Completed",
+  "Bukti bayar menunggu dicek": "Payment proofs waiting to be checked",
+  "Pelanggan sudah mengirim bukti. Cocokkan dengan mutasi.": "The customer sent proof. Match it with your bank statement.",
+  "Chat menunggu tim": "Chats waiting for your team",
+  "AI menyerahkan percakapan ini kepada manusia.": "The AI handed these conversations to a person.",
+  "Tugas lewat tenggat": "Overdue tasks",
+  "Buka daftar tugas dan selesaikan atau jadwalkan ulang.": "Open the task list and finish or reschedule them.",
+  "Pesanan menunggu pembayaran": "Orders waiting for payment",
+  "Belum ada bukti bayar. Ingatkan pelanggan bila sudah lama.": "No proof yet. Remind the customer if it has been a while.",
+  "Produk stok menipis": "Products low on stock",
+  "Stok sudah di batas minimum atau di bawahnya.": "Stock is at or below the minimum.",
+  "Perlu ditangani": "Needs attention",
+  "{count} jenis pekerjaan": "{count} kinds of work",
+  "Tidak ada yang menunggu. Pesanan, chat, dan tugas semuanya sudah ditangani.": "Nothing is waiting. Orders, chats, and tasks are all handled.",
+  "Buka": "Open"
 };
 
 export default phrases;

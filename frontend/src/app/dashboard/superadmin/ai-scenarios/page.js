@@ -174,7 +174,7 @@ export default function SuperadminAiScenariosPage() {
         {scenarios.map((scn, idx) => (
           <div
             key={scn.id}
-            className="bg-white p-5 rounded-2xl border border-line shadow-xs hover:border-brand transition-all"
+            className="bg-white p-5 rounded-2xl border border-line shadow-xs hover:border-brand transition-[color,background-color,border-color,box-shadow,opacity,transform]"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-line">
               <div className="flex items-center gap-3">

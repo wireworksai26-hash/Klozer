@@ -52,7 +52,7 @@ export default function NotificationCenter({
       <button
         type="button"
         onClick={handleToggle}
-        className={`relative p-2 rounded-full border cursor-pointer transition-all ${
+        className={`relative p-2 rounded-full border cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] ${
           isOpen
             ? "bg-brand-soft border-brand text-brand"
             : "hover:bg-canvas border-line bg-white text-ink"

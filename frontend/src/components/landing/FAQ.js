@@ -4,7 +4,9 @@ import { ChevronDownIcon, MessageSquareIcon } from "@/components/icons";
 import { faqItems } from "@/utils/legal/faq";
 import { whatsappUrl } from "@/utils/legal/config";
 
-const faqs = faqItems;
+// The landing page shows the questions buyers ask most; the full list is on /faq.
+const LANDING_FAQ = [0, 1, 3, 5, 8, 10];
+const faqs = LANDING_FAQ.map((i) => faqItems[i]).filter(Boolean);
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(0);
@@ -27,13 +29,13 @@ export default function FAQ() {
             <a
               href={whatsappUrl() || "/kontak"}
               {...(whatsappUrl() ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="p-5 rounded-2xl bg-white border border-line shadow-sm flex items-center gap-4 hover:border-brand hover:-translate-y-1 transition-all no-underline block"
+              className="p-5 rounded-2xl bg-white border border-line shadow-sm flex items-center gap-4 hover:border-brand hover:-translate-y-1 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline block"
             >
               <div className="w-12 h-12 rounded-xl bg-success-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
                 <MessageSquareIcon className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-body-sm font-bold text-ink">Hubungi Tim Kami di WhatsApp</div>
+                <div className="text-body-sm font-semibold text-ink">Hubungi Tim Kami di WhatsApp</div>
                 <div className="text-label text-fg-muted">Lihat kontak lengkap dan jam layanan</div>
               </div>
             </a>
@@ -46,7 +48,7 @@ export default function FAQ() {
               return (
                 <div
                   key={index}
-                  className={`rounded-2xl transition-all duration-300 border overflow-hidden ${
+                  className={`rounded-2xl transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 border overflow-hidden ${
                     isOpen
                       ? "bg-white border-brand/40 shadow-sm"
                       : "bg-white/80 border-line hover:bg-white hover:border-line-strong"
@@ -57,7 +59,7 @@ export default function FAQ() {
                     className="w-full flex items-center justify-between p-5 text-left gap-4 bg-transparent border-none cursor-pointer"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-body font-bold text-ink leading-snug">
+                    <span className="text-body font-semibold text-ink leading-snug">
                       {faq.q}
                     </span>
                     <div
@@ -70,7 +72,7 @@ export default function FAQ() {
                   </button>
 
                   <div
-                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    className={`transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 ease-in-out overflow-hidden ${
                       isOpen ? "max-h-[300px] opacity-100" : "max-h-0 opacity-0"
                     }`}
                   >
@@ -83,6 +85,9 @@ export default function FAQ() {
                 </div>
               );
             })}
+            <a href="/faq" className="self-start mt-2 text-body-sm font-semibold text-brand hover:underline">
+              Lihat semua pertanyaan
+            </a>
           </div>
 
         </div>

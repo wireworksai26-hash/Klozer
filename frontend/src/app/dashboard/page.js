@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useDashboard } from "@/context/DashboardContext";
-import { MetricCard, TrendAreaChart, ConversionFunnelChart, PaymentBreakdownChart } from "@/components/dashboard";
+import { AttentionList, MetricCard, TrendAreaChart, ConversionFunnelChart, PaymentBreakdownChart } from "@/components/dashboard";
 import { CrownIcon, DollarSignIcon, ShoppingCartIcon, UsersIcon, TrendingUpIcon, MessageSquareIcon, SparklesIcon } from "@/components/icons";
 import { PAID_STATUSES } from "@/utils/mappers.mjs";
 
@@ -36,7 +36,7 @@ function Header({ badge, title, subtitle, actions }) {
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
       <div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-          <span className="text-caption font-bold text-brand bg-brand-soft px-2.5 py-0.5 whitespace-nowrap rounded-full border border-brand-soft">{badge}</span>
+          <span className="text-caption font-semibold text-brand bg-brand-soft px-2.5 py-0.5 whitespace-nowrap rounded-full border border-brand-soft">{badge}</span>
           <span className="text-label text-fg-muted">{subtitle}</span>
         </div>
         <h1 className="page-title">{title}</h1>
@@ -46,8 +46,8 @@ function Header({ badge, title, subtitle, actions }) {
   );
 }
 
-const linkSecondary = "px-3.5 py-2 rounded-xl border border-line bg-white hover:bg-soft text-fg text-body-sm font-bold flex items-center gap-1.5 no-underline";
-const linkPrimary = "px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-bold flex items-center gap-1.5 no-underline";
+const linkSecondary = "px-3.5 py-2 rounded-xl border border-line bg-white hover:bg-soft text-fg text-body-sm font-semibold flex items-center gap-1.5 no-underline";
+const linkPrimary = "px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-body-sm font-semibold flex items-center gap-1.5 no-underline";
 
 function SuperadminView({ institutions, subscriptions }) {
   const { t } = useDashboard();
@@ -79,28 +79,28 @@ function SuperadminView({ institutions, subscriptions }) {
       <div className="bg-white rounded-2xl border border-line p-6">
         <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
           <h3 className="card-title">{t("Daftar Institusi dan Pemakaian Token AI")}</h3>
-          <Link href="/dashboard/institutions" className="text-label font-bold text-brand hover:underline">{t("Kelola Semua →")}</Link>
+          <Link href="/dashboard/institutions" className="text-label font-semibold text-brand hover:underline">{t("Kelola Semua →")}</Link>
         </div>
         <div className="table-scroll">
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="bg-soft border-b border-line">
-                <th className="py-2.5 px-4 font-bold text-fg-muted">{t("Nama")}</th>
-                <th className="py-2.5 px-4 font-bold text-fg-muted">{t("Sektor")}</th>
-                <th className="py-2.5 px-4 font-bold text-fg-muted">{t("Paket")}</th>
-                <th className="py-2.5 px-4 font-bold text-fg-muted">{t("Token Terpakai / Kuota")}</th>
-                <th className="py-2.5 px-4 font-bold text-fg-muted">Status</th>
+                <th className="py-2.5 px-4 font-semibold text-fg-muted">{t("Nama")}</th>
+                <th className="py-2.5 px-4 font-semibold text-fg-muted">{t("Sektor")}</th>
+                <th className="py-2.5 px-4 font-semibold text-fg-muted">{t("Paket")}</th>
+                <th className="py-2.5 px-4 font-semibold text-fg-muted">{t("Token Terpakai / Kuota")}</th>
+                <th className="py-2.5 px-4 font-semibold text-fg-muted">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {institutions.map((i) => (
                 <tr key={i.id} className="hover:bg-soft/80">
-                  <td className="py-3 px-4 font-bold text-fg">{i.name}</td>
+                  <td className="py-3 px-4 font-semibold text-fg">{i.name}</td>
                   <td className="py-3 px-4 text-fg-muted">{i.sector}</td>
                   <td className="py-3 px-4">{i.tier}</td>
                   <td className="py-3 px-4 tabular-nums">{i.quotaUsed.toLocaleString("id-ID")} / {i.quotaMax.toLocaleString("id-ID")}</td>
                   <td className="py-3 px-4">
-                    <span className={`text-caption font-bold px-2 py-0.5 rounded-full border ${i.status === "active" ? "text-success-700 bg-success-50 border-success-200" : "text-fg-muted bg-sunken border-line"}`}>{i.status === "active" ? t("Aktif") : t("Nonaktif")}</span>
+                    <span className={`text-caption font-semibold px-2 py-0.5 rounded-full border ${i.status === "active" ? "text-success-700 bg-success-50 border-success-200" : "text-fg-muted bg-sunken border-line"}`}>{i.status === "active" ? t("Aktif") : t("Nonaktif")}</span>
                   </td>
                 </tr>
               ))}
@@ -118,7 +118,7 @@ function RecentOrders({ orders }) {
     <div className="bg-white rounded-2xl border border-line p-6">
       <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
         <h3 className="card-title">{t("Pesanan Terbaru")}</h3>
-        <Link href="/dashboard/orders" className="text-label font-bold text-brand hover:underline">{t("Lihat Semua →")}</Link>
+        <Link href="/dashboard/orders" className="text-label font-semibold text-brand hover:underline">{t("Lihat Semua →")}</Link>
       </div>
       {orders.length === 0 ? (
         <div className="p-8 text-center text-fg-muted bg-soft rounded-xl border border-dashed border-line text-body-sm">{t("Belum ada pesanan.")}</div>
@@ -128,7 +128,7 @@ function RecentOrders({ orders }) {
             <thead>
               <tr className="bg-soft border-b border-line">
                 {["Pesanan||singular", "Pelanggan", "Item", "Total", "Metode", "Status"].map((h) => (
-                  <th key={h} className="py-2.5 px-4 font-bold text-fg-muted whitespace-nowrap">{t(h)}</th>
+                  <th key={h} className="py-2.5 px-4 font-semibold text-fg-muted whitespace-nowrap">{t(h)}</th>
                 ))}
               </tr>
             </thead>
@@ -137,16 +137,16 @@ function RecentOrders({ orders }) {
                 const [label, tone] = STATUS_BADGE[o.status] || [o.status, "bg-sunken text-fg-muted border-line"];
                 return (
                   <tr key={o.dbId} className="hover:bg-soft/80">
-                    <td className="py-3 px-4 font-mono font-bold text-brand whitespace-nowrap">{o.id}</td>
-                    <td className="py-3 px-4 font-bold text-fg whitespace-nowrap">{o.customer}</td>
+                    <td className="py-3 px-4 font-mono font-semibold text-brand whitespace-nowrap">{o.id}</td>
+                    <td className="py-3 px-4 font-semibold text-fg whitespace-nowrap">{o.customer}</td>
                     <td className="py-3 px-4 text-fg-muted min-w-[180px] lg:w-full lg:max-w-0 lg:truncate">
                       {o.items[0]?.name || "-"}
                       {o.items.length > 1 && ` (+${o.items.length - 1} ${t("lainnya")})`}
                     </td>
-                    <td className="py-3 px-4 font-bold text-fg whitespace-nowrap tabular-nums">{rp(o.total)}</td>
+                    <td className="py-3 px-4 font-semibold text-fg whitespace-nowrap tabular-nums">{rp(o.total)}</td>
                     <td className="py-3 px-4 text-fg-muted whitespace-nowrap">{o.paymentMethod}</td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`text-caption font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${tone}`}>{t(label)}</span>
+                      <span className={`text-caption font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${tone}`}>{t(label)}</span>
                     </td>
                   </tr>
                 );
@@ -202,9 +202,11 @@ export default function DashboardPage() {
       {!whatsappStatus?.configured && !dataLoading && role !== "cs" && (
         <div className="p-4 rounded-xl bg-warning-50 border border-warning-200 text-warning-900 text-body-sm font-semibold flex flex-wrap items-center justify-between gap-3">
           <span>{t("Nomor WhatsApp belum terhubung, jadi pesan pelanggan belum masuk ke Klozer.")}</span>
-          <Link href="/dashboard/settings?tab=profile" className="text-brand font-bold no-underline hover:underline">{t("Hubungkan sekarang →")}</Link>
+          <Link href="/dashboard/settings?tab=profile" className="text-brand font-semibold no-underline hover:underline">{t("Hubungkan sekarang →")}</Link>
         </div>
       )}
+
+      <AttentionList orders={scope} leads={myLeads} isManager={!isCs} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title={isCs ? t("Omzet Penjualan Saya") : t("Omzet Pesanan Lunas")} value={compact(revenue, t("Jt"))} subtitle={t("{count} pesanan lunas", { count: paid.length })} sparklineData={revenueSpark} icon={DollarSignIcon} />
@@ -230,7 +232,7 @@ export default function DashboardPage() {
                 <h3 className="card-title">{t("Performa dan Komisi Tim CS")}</h3>
                 <p className="text-label text-fg-muted">{t("Dihitung dari pesanan lunas dan chat yang dibalas")}</p>
               </div>
-              <Link href="/dashboard/settings?tab=team" className="text-label font-bold text-brand hover:underline whitespace-nowrap flex-shrink-0">{t("Kelola Staf →")}</Link>
+              <Link href="/dashboard/settings?tab=team" className="text-label font-semibold text-brand hover:underline whitespace-nowrap flex-shrink-0">{t("Kelola Staf →")}</Link>
             </div>
             {csList.length > 0 && (
               <div className="grid grid-cols-3 gap-3 mb-4">
@@ -241,7 +243,7 @@ export default function DashboardPage() {
                 ].map(([label, val]) => (
                   <div key={label} className="min-w-0">
                     <div className="text-caption text-fg-muted whitespace-nowrap">{label}</div>
-                    <div className="text-body font-bold text-fg whitespace-nowrap tabular-nums">{val}</div>
+                    <div className="text-body font-semibold text-fg whitespace-nowrap tabular-nums">{val}</div>
                   </div>
                 ))}
               </div>
@@ -253,14 +255,14 @@ export default function DashboardPage() {
                 {csList.map((cs) => (
                   <div key={cs.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-soft border border-line">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-brand-soft text-brand font-bold text-label flex items-center justify-center">{cs.name.charAt(0)}</div>
+                      <div className="w-8 h-8 rounded-full bg-brand-soft text-brand font-semibold text-label flex items-center justify-center">{cs.name.charAt(0)}</div>
                       <div className="min-w-0">
-                        <div className="font-bold text-body-sm text-fg truncate">{cs.name}</div>
+                        <div className="font-semibold text-body-sm text-fg truncate">{cs.name}</div>
                         <div className="text-caption text-fg-muted whitespace-nowrap">{t("{chats} chat dibalas • {orders} closing", { chats: cs.handledChats, orders: cs.closedOrders })}</div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 whitespace-nowrap tabular-nums">
-                      <div className="text-body-sm font-bold text-fg">{rp(cs.revenueGenerated)}</div>
+                      <div className="text-body-sm font-semibold text-fg">{rp(cs.revenueGenerated)}</div>
                       <div className="text-caption text-brand font-medium">{t("Komisi")} {rp(cs.commissionEarned)}</div>
                     </div>
                   </div>

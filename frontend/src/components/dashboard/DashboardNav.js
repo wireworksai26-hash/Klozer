@@ -1,6 +1,7 @@
 "use client";
 import {
   CrownIcon,
+  KeyIcon,
   BriefcaseIcon,
   ClipboardListIcon,
   HeadphonesIcon,
@@ -53,6 +54,7 @@ function managerNav({ t, language, badges, planIconClass }) {
   return {
     pinnedItems: [
       { label: t("nav.dashboard", "Dashboard Utama"), href: "/dashboard", icon: <BarChartIcon className="w-4.5 h-4.5" /> },
+      ...(badges.workspace ? [{ label: t("Kembali ke Workspace"), href: "/workspace", icon: <LayersIcon className="w-4.5 h-4.5" /> }] : []),
       { label: t("nav.liveChat", "Live Chat WhatsApp"), href: "/dashboard/chat", icon: <MessageSquareIcon className="w-4.5 h-4.5" /> },
       { label: t("Tugas"), href: "/dashboard/tasks", icon: glyph("task"), badge: badges.tasks || undefined },
       { label: t("nav.orders", "Pesanan & Order"), href: "/dashboard/orders", icon: <ShoppingCartIcon className="w-4.5 h-4.5" /> },
@@ -77,6 +79,7 @@ function managerNav({ t, language, badges, planIconClass }) {
         sectionIcon: <TrendingUpIcon className="w-4 h-4" />,
         items: [
           { label: en ? "Customers & CRM" : "Pelanggan & CRM", href: "/dashboard/contacts", icon: <UsersIcon className="w-4.5 h-4.5" /> },
+          { label: t("Pipeline dan Segmen"), href: "/dashboard/crm", icon: <TrendingUpIcon className="w-4.5 h-4.5" /> },
           { label: t("Pesanan di Chat"), href: "/dashboard/chat-commerce", icon: glyph("basket") },
           { label: en ? "Smart Broadcast" : "Smart Broadcast", href: "/dashboard/blasting", icon: glyph("megaphone") },
           { label: t("Iklan dan ROAS"), href: "/dashboard/ads", icon: <TargetIcon className="w-4.5 h-4.5" /> },
@@ -157,6 +160,7 @@ export function buildRolesConfig({ t, language, badges = {} }) {
           sectionIcon: <DatabaseIcon className="w-4 h-4" />,
           items: [
             { label: t("nav.institutions", "Instansi Tenant"), href: "/dashboard/institutions", icon: <BuildingIcon className="w-4.5 h-4.5" /> },
+            { label: t("Permintaan Sandi"), href: "/dashboard/superadmin/password-requests", icon: <KeyIcon className="w-4.5 h-4.5" />, badge: badges.passwords || undefined },
           ],
         },
         {

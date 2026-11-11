@@ -48,7 +48,7 @@ export default function MetricCard({
 
   return (
     <div
-      className={`@container bg-white rounded-2xl border border-line p-5 shadow-xs hover:shadow-card hover:border-line-strong transition-all duration-200 flex flex-col gap-3 group ${className}`}
+      className={`@container bg-white rounded-2xl border border-line p-5 shadow-xs hover:shadow-card hover:border-line-strong transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 flex flex-col gap-3 group ${className}`}
     >
       <span className="text-body-sm font-medium text-fg-muted tracking-tight truncate" title={title}>
         {title}
@@ -56,7 +56,7 @@ export default function MetricCard({
 
       {/* One line always: the number steps down a size on narrow cards instead of wrapping. */}
       <div className="flex items-center justify-between gap-3">
-        <div className="text-heading-sm @min-[210px]:text-heading-md font-bold text-fg tracking-tight leading-none whitespace-nowrap tabular-nums">
+        <div className="text-heading-sm @min-[210px]:text-heading-md font-semibold text-fg tracking-tight leading-none whitespace-nowrap tabular-nums">
           {prefix}
           {value}
           {suffix}
@@ -73,7 +73,7 @@ export default function MetricCard({
       <div className="flex items-center gap-2 pt-3 border-t border-line">
         {delta && (
           <div
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-bold whitespace-nowrap ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold whitespace-nowrap ${
               deltaType === "positive"
                 ? "bg-success-50 text-success-700 border border-success-200/60"
                 : deltaType === "negative"

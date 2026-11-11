@@ -10,6 +10,7 @@ import {
   KlozerIcon,
 } from "@/components/icons";
 import { apiFetch, cacheUser } from "@/utils/api";
+import RevealButton from "@/components/common/RevealButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,6 +19,38 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  // "Lupa sandi": the request goes to the Klozer admin, who gives a new password.
+  const [forgot, setForgot] = useState(false);
+  const [forgotSent, setForgotSent] = useState("");
+
+  const openForgot = () => {
+    setErrorMsg("");
+    setForgotSent("");
+    setForgot(true);
+  };
+  const closeForgot = () => {
+    setErrorMsg("");
+    setForgot(false);
+  };
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setErrorMsg("Masukkan email akun Anda dulu.");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const data = await apiFetch("/auth/forgot-password", { method: "POST", body: { email }, auth: false });
+      setForgotSent(data.message || "Permintaan dikirim ke admin.");
+    } catch (err) {
+      setErrorMsg(err.message || "Permintaan belum terkirim. Coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +66,7 @@ function LoginForm() {
       const data = await apiFetch("/auth/login", { method: "POST", body: { email, password }, auth: false });
       // The server set the httpOnly session cookie; keep only the profile for the first paint.
       cacheUser(data.user);
-      router.push("/dashboard");
+      router.push(data.user?.workspace ? "/workspace" : "/dashboard");
     } catch (err) {
       setErrorMsg(err.message || "Terjadi kesalahan saat memproses login.");
     } finally {
@@ -105,10 +138,10 @@ function LoginForm() {
           </Link>
 
           <h1 className="text-heading-md sm:text-heading font-bold text-ink tracking-tight">
-            Selamat Datang
+            {forgot ? "Lupa kata sandi" : "Selamat Datang"}
           </h1>
           <p className="text-body-sm text-fg-muted mt-1 mb-7 font-medium">
-            Silakan masuk ke dashboard agen Anda.
+            {forgot ? "Kirim permintaan ke admin Klozer. Setelah diproses, Anda diberi kata sandi baru." : "Silakan masuk ke dashboard agen Anda."}
           </p>
 
           {!errorMsg && sessionExpired && (
@@ -125,6 +158,59 @@ function LoginForm() {
             </div>
           )}
 
+          {forgot ? (
+            forgotSent ? (
+              <div className="space-y-5">
+                <div role="status" className="p-4 rounded-xl bg-success-50 border border-success-200 text-success-800 text-body-sm font-semibold">
+                  {forgotSent}
+                </div>
+                <p className="text-label text-fg-muted">
+                  Admin akan menghubungi Anda atau memberi tahu kata sandi baru lewat pemilik toko. Setelah menerimanya, masuk lalu ganti di Pengaturan.
+                </p>
+                <button type="button" onClick={closeForgot} className="w-full py-3.5 rounded-xl bg-brand hover:bg-brand-hover text-white font-bold text-body-sm cursor-pointer transition-all">
+                  Kembali ke halaman masuk
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <div>
+                  <label htmlFor="forgot-email" className="block text-body-sm font-bold text-charcoal mb-1.5">
+                    Email Akun
+                  </label>
+                  <div className="relative rounded-xl border border-line bg-white flex items-center px-3.5 py-2.5 shadow-2xs focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15 transition-all">
+                    <MailIcon className="w-4 h-4 text-fg-subtle mr-2.5 flex-shrink-0" />
+                    <input
+                      id="forgot-email"
+                      type="email"
+                      required
+                      autoFocus
+                      placeholder="nama@klozer.id"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full text-body-sm text-charcoal font-semibold placeholder-fg-subtle outline-none bg-transparent"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 rounded-xl bg-brand hover:bg-brand-hover text-white font-bold text-body-sm shadow-md hover:shadow-lg cursor-pointer transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Mengirim...</span>
+                    </>
+                  ) : (
+                    <span>Kirim permintaan ke admin</span>
+                  )}
+                </button>
+                <button type="button" onClick={closeForgot} className="w-full text-body-sm font-bold text-brand hover:underline bg-transparent border-none cursor-pointer py-1">
+                  Kembali ke halaman masuk
+                </button>
+              </form>
+            )
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-body-sm font-bold text-charcoal mb-1.5">
@@ -148,20 +234,22 @@ function LoginForm() {
                 <label className="block text-body-sm font-bold text-charcoal">
                   Kata Sandi
                 </label>
-                <a href="#" className="text-label font-bold text-brand hover:underline">
+                <button type="button" onClick={openForgot} className="text-label font-bold text-brand hover:underline bg-transparent border-none cursor-pointer p-0">
                   Lupa sandi?
-                </a>
+                </button>
               </div>
               <div className="relative rounded-xl border border-line bg-white flex items-center px-3.5 py-2.5 shadow-2xs focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15 transition-all">
                 <KeyIcon className="w-4 h-4 text-fg-subtle mr-2.5 flex-shrink-0" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full text-body-sm text-charcoal font-semibold placeholder-fg-subtle outline-none bg-transparent"
                 />
+                <RevealButton shown={showPassword} onToggle={() => setShowPassword((s) => !s)} className="-mr-1.5 ml-1" />
               </div>
             </div>
 
@@ -180,6 +268,7 @@ function LoginForm() {
               )}
             </button>
           </form>
+          )}
 
           <div className="mt-8 pt-6 border-t border-line text-center text-body-sm text-fg-muted">
             Belum punya akun?{" "}

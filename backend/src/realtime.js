@@ -13,6 +13,7 @@ const revalidateMs = () => Number(process.env.SOCKET_REVALIDATE_MS) || 60_000;
 
 const userRoom = (id) => `user-${id}`;
 const tenantRoom = (id) => `tenant-${id}`;
+const SUPERADMIN_ROOM = "superadmins";
 
 /** Create the Socket.io server on `httpServer`: authenticated, origin-checked, tenant-isolated. */
 export function attachRealtime(httpServer) {
@@ -42,6 +43,7 @@ export function attachRealtime(httpServer) {
     socket.join(userRoom(user.id));
     // A user only ever joins their own tenant's room; only the superadmin may watch another.
     socket.join(tenantRoom(user.institution_id));
+    if (user.role === "superadmin") socket.join(SUPERADMIN_ROOM);
     // Superadmins are not part of a tenant's team, so they never count as an online agent.
     const tracksPresence = user.role !== "superadmin" && Boolean(user.institution_id);
     if (tracksPresence) userConnected(user).catch((err) => logger.warn({ err: err.message }, "Presence connect failed"));
@@ -77,6 +79,11 @@ export function attachRealtime(httpServer) {
 /** Push an event to every connected dashboard of one tenant. No-op before the socket server exists (e.g. in tests). */
 export function emitToTenant(tenantId, event, payload) {
   if (ioInstance) ioInstance.to(tenantRoom(tenantId)).emit(event, payload);
+}
+
+/** Push an event to every open dashboard of the Klozer team (superadmins). */
+export function emitToSuperadmins(event, payload) {
+  if (ioInstance) ioInstance.to(SUPERADMIN_ROOM).emit(event, payload);
 }
 
 /** Push an event to one user's open dashboards. */
