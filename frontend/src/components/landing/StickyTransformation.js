@@ -24,14 +24,14 @@ const stages = [
     cardContent: (
       <div className="flex flex-col gap-3">
         <div className="bg-danger-50 p-3.5 sm:p-4 rounded-xl border border-danger-200 text-danger-800 text-label sm:text-body-sm">
-          <div className="font-bold mb-1 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-danger-500 animate-ping" />
+          <div className="font-semibold mb-1 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-danger-500" />
             <span>48 Chat Belum Dibalas (&gt;2 Jam)</span>
           </div>
           <div>Calon pembeli beralih ke toko lain akibat lambat respon.</div>
         </div>
         <div className="bg-canvas p-3 rounded-xl border border-line text-caption sm:text-label text-fg-muted flex items-center justify-between">
-          <span className="font-bold text-danger-600">Terdeteksi:</span>
+          <span className="font-semibold text-danger-600">Terdeteksi:</span>
           <span>Struk transfer tidak cocok dengan mutasi bank.</span>
         </div>
       </div>
@@ -52,7 +52,7 @@ const stages = [
     cardContent: (
       <div className="flex flex-col gap-3">
         <div className="bg-brand-soft p-3.5 sm:p-4 rounded-xl border border-brand/20 text-ink text-label sm:text-body-sm">
-          <div className="font-bold text-brand mb-1 flex items-center gap-1.5">
+          <div className="font-semibold text-brand mb-1 flex items-center gap-1.5">
             <SparklesIcon className="w-4 h-4 text-brand" />
             <span>QRIS Rp 312.000 Terbit Otomatis</span>
           </div>
@@ -60,7 +60,7 @@ const stages = [
         </div>
         <div className="bg-canvas p-3 rounded-xl border border-line text-caption sm:text-label flex items-center justify-between">
           <span className="text-fg-muted">Waktu Respon Chat:</span>
-          <span className="font-bold text-success-600">1.8 Detik (Instan)</span>
+          <span className="font-semibold text-success-600">1.8 Detik (Instan)</span>
         </div>
       </div>
     ),
@@ -80,7 +80,7 @@ const stages = [
     cardContent: (
       <div className="flex flex-col gap-3">
         <div className="bg-success-50 p-3.5 sm:p-4 rounded-xl border border-success-200 text-success-800 text-label sm:text-body-sm">
-          <div className="font-bold mb-1 flex items-center gap-1.5 text-success-800">
+          <div className="font-semibold mb-1 flex items-center gap-1.5 text-success-800">
             <CheckIcon className="w-4 h-4 text-success-600 shrink-0" />
             <span>64 Pesanan Lunas Hari Ini</span>
           </div>
@@ -88,7 +88,7 @@ const stages = [
         </div>
         <div className="bg-canvas p-3 rounded-xl border border-line text-caption sm:text-label flex items-center justify-between">
           <span className="text-fg-muted">Akurasi Transaksi:</span>
-          <span className="font-bold text-brand">100% Real-Time Cocok</span>
+          <span className="font-semibold text-brand">100% Real-Time Cocok</span>
         </div>
       </div>
     ),
@@ -120,7 +120,7 @@ export default function StickyTransformation() {
         {/* Section Headline */}
         <div className="mb-8 md:mb-10 text-left">
           <span className="eyebrow-label text-brand block mb-1.5 sm:mb-2">
-            TRANSFORMASI PENJUALAN
+            Transformasi penjualan
           </span>
           <h2 className="section-title">
             Masalah Transformasi{" "}
@@ -139,14 +139,14 @@ export default function StickyTransformation() {
                 <button
                   key={stage.id}
                   onClick={() => setActiveStage(idx)}
-                  className={`text-left p-3 sm:p-4 rounded-2xl transition-all duration-300 border cursor-pointer flex items-center gap-2.5 sm:gap-3.5 whitespace-nowrap flex-shrink-0 lg:flex-shrink ${
+                  className={`text-left p-3 sm:p-4 rounded-2xl transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 border cursor-pointer flex items-center gap-2.5 sm:gap-3.5 whitespace-nowrap flex-shrink-0 lg:flex-shrink ${
                     isActive
-                      ? "bg-white text-ink font-bold border-line shadow-md scale-102"
+                      ? "bg-white text-ink font-semibold border-line shadow-md scale-102"
                       : "bg-transparent text-fg-subtle hover:text-ink font-medium border-transparent hover:bg-white/50"
                   }`}
                 >
                   <span
-                    className={`w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-all duration-300 ${
+                    className={`w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 ${
                       isActive ? "bg-brand" : "bg-line"
                     }`}
                   />
@@ -164,7 +164,7 @@ export default function StickyTransformation() {
             
             {/* Title & Desc with smooth scale pop */}
             <div key={`text-${activeStage}`} className="animate-scale-pop">
-              <h3 className="text-subheading sm:text-heading-md md:text-heading font-bold text-ink mb-2 sm:mb-3">
+              <h3 className="text-subheading sm:text-heading-md md:text-heading font-semibold text-ink mb-2 sm:mb-3">
                 {current.title}
               </h3>
               <p className="text-body-sm sm:text-body text-fg-muted leading-relaxed mb-4 sm:mb-6">
@@ -190,8 +190,8 @@ export default function StickyTransformation() {
               className="bg-white rounded-2xl p-5 sm:p-7 border border-line shadow-card animate-scale-pop"
             >
               <div className="flex items-center justify-between pb-3 border-b border-line mb-3 sm:mb-4">
-                <span className="text-label sm:text-body-sm font-bold text-ink">{current.cardTag}</span>
-                <span className="text-micro sm:text-caption font-bold text-brand bg-brand-soft px-2.5 py-0.5 sm:py-1 rounded-full">
+                <span className="text-label sm:text-body-sm font-semibold text-ink">{current.cardTag}</span>
+                <span className="text-micro sm:text-caption font-semibold text-brand bg-brand-soft px-2.5 py-0.5 sm:py-1 rounded-full">
                   Tahap {activeStage + 1} dari 3
                 </span>
               </div>

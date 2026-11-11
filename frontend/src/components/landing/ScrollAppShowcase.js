@@ -68,7 +68,7 @@ export default function ScrollAppShowcase() {
         
         {/* Section Header */}
         <div className="text-center max-w-[800px] mx-auto mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-label font-bold tracking-wide uppercase mb-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-label font-semibold tracking-wide mb-2">
             <span>Satu Aplikasi Terpadu</span>
           </div>
           <h2 className="section-title">
@@ -89,7 +89,7 @@ export default function ScrollAppShowcase() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-label sm:text-body-sm font-bold transition-all duration-300 border-none cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-label sm:text-body-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 border-none cursor-pointer whitespace-nowrap ${
                     isActive
                       ? "bg-brand text-white shadow-md scale-102"
                       : "bg-transparent text-fg-muted hover:text-ink hover:bg-canvas"
@@ -107,7 +107,7 @@ export default function ScrollAppShowcase() {
           {/* Active Tab Progress Indicator (Desktop only) */}
           <div className="hidden md:block w-48 h-1 bg-line rounded-full mt-3 overflow-hidden">
             <div
-              className="h-full bg-brand rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-brand rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500 ease-out"
               style={{ width: `${((tabList.indexOf(activeTab) + 1) / tabList.length) * 100}%` }}
             />
           </div>
@@ -116,7 +116,7 @@ export default function ScrollAppShowcase() {
         {/* Full-Screen Immersive App Window */}
         <div
           ref={mockupRef}
-          className="bg-white rounded-3xl sm:rounded-3xl border border-line shadow-lift overflow-hidden transition-all duration-300 w-full"
+          className="bg-white rounded-3xl sm:rounded-3xl border border-line shadow-lift overflow-hidden transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 w-full"
         >
           {/* Browser / App Header Bar */}
           <div className="bg-canvas px-4 sm:px-6 py-3 border-b border-line flex items-center justify-between">
@@ -136,8 +136,8 @@ export default function ScrollAppShowcase() {
               <span>app.klozer.id / {activeTab}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 text-caption sm:text-label font-bold text-success-600 bg-success-50 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 sm:gap-2 text-caption sm:text-label font-semibold text-success-600 bg-success-50 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-success-500" />
               <span className="hidden sm:inline">Live Cloud Active</span>
               <span className="sm:hidden">Live</span>
             </div>
@@ -150,10 +150,10 @@ export default function ScrollAppShowcase() {
             {activeTab === "whatsapp" && (
               <div key="tab-wa" className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center animate-scale-pop">
                 <div className="lg:col-span-6 flex flex-col gap-3 sm:gap-4">
-                  <span className="text-caption sm:text-label font-bold uppercase tracking-wider text-brand">
+                  <span className="text-caption sm:text-label font-semibold text-brand">
                     Tahap 1: Otomatisasi Chat & Kasir WhatsApp
                   </span>
-                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-bold text-ink leading-tight">
+                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-semibold text-ink leading-tight">
                     Balas ratusan chat pembeli dalam hitungan detik
                   </h3>
                   <p className="text-body-sm sm:text-body text-fg-muted leading-relaxed">
@@ -177,11 +177,11 @@ export default function ScrollAppShowcase() {
 
                 <div className="lg:col-span-6 bg-canvas p-4 sm:p-5 rounded-2xl border border-line shadow-inner">
                   <div className="flex items-center gap-2.5 pb-2.5 border-b border-line mb-3">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold text-caption sm:text-label">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand text-white flex items-center justify-center font-semibold text-caption sm:text-label">
                       WA
                     </div>
                     <div>
-                      <div className="text-label sm:text-body-sm font-bold text-ink">WhatsApp Business CS</div>
+                      <div className="text-label sm:text-body-sm font-semibold text-ink">WhatsApp Business CS</div>
                       <div className="text-micro sm:text-caption text-success-600">● Online 24 Jam Nonstop</div>
                     </div>
                   </div>
@@ -191,13 +191,13 @@ export default function ScrollAppShowcase() {
                       &quot;Halo kak, mau order Kaos Polos Hitam XL 2 pcs kirim ke Bandung.&quot;
                     </div>
                     <div className="bg-brand-soft text-ink p-3 rounded-xl max-w-[95%] self-end border border-brand/20 shadow-xs">
-                      <div className="font-bold mb-1 flex items-center gap-1.5 text-success-700">
+                      <div className="font-semibold mb-1 flex items-center gap-1.5 text-success-700">
                         <CheckIcon className="w-3.5 h-3.5" />
                         <span>Pesanan Terkonfirmasi:</span>
                       </div>
                       <div>• 2x Kaos Polos Hitam XL (Rp 150.000)</div>
                       <div>• Ongkir J&T Express ke Bandung (Rp 12.000)</div>
-                      <div className="font-bold text-brand mt-1.5 pt-1.5 border-t border-black/10">
+                      <div className="font-semibold text-brand mt-1.5 pt-1.5 border-t border-black/10">
                         Total: Rp 312.000
                       </div>
                     </div>
@@ -210,10 +210,10 @@ export default function ScrollAppShowcase() {
             {activeTab === "ai" && (
               <div key="tab-ai" className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center animate-scale-pop">
                 <div className="lg:col-span-6 flex flex-col gap-3 sm:gap-4">
-                  <span className="text-caption sm:text-label font-bold uppercase tracking-wider text-brand">
+                  <span className="text-caption sm:text-label font-semibold text-brand">
                     Tahap 2: Speech-To-Text & Audio AI
                   </span>
-                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-bold text-ink leading-tight">
+                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-semibold text-ink leading-tight">
                     Paham pesan suara pelanggan dalam bahasa Indonesia
                   </h3>
                   <p className="text-body-sm sm:text-body text-fg-muted leading-relaxed">
@@ -226,7 +226,7 @@ export default function ScrollAppShowcase() {
                 </div>
 
                 <div className="lg:col-span-6 bg-canvas p-4 sm:p-5 rounded-2xl border border-line">
-                  <div className="text-label sm:text-body-sm font-bold text-ink mb-2.5">Simulasi Audio Voice Note Masuk:</div>
+                  <div className="text-label sm:text-body-sm font-semibold text-ink mb-2.5">Simulasi Audio Voice Note Masuk:</div>
                   <div className="bg-white p-3.5 rounded-xl border border-line flex items-center gap-3 shadow-sm mb-3">
                     <button className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center border-none cursor-pointer hover:bg-brand-hover flex-shrink-0">
                       ▶
@@ -244,7 +244,7 @@ export default function ScrollAppShowcase() {
                     </div>
                   </div>
                   <div className="bg-brand-soft p-3 rounded-xl text-label text-ink leading-relaxed">
-                    <span className="font-bold">Hasil Transkripsi AI:</span> &quot;Mbak, saya mau pesan gamis warna maroon size M satu buah, bisa COD ke Surabaya?&quot;
+                    <span className="font-semibold">Hasil Transkripsi AI:</span> &quot;Mbak, saya mau pesan gamis warna maroon size M satu buah, bisa COD ke Surabaya?&quot;
                   </div>
                 </div>
               </div>
@@ -254,10 +254,10 @@ export default function ScrollAppShowcase() {
             {activeTab === "fraud" && (
               <div key="tab-fraud" className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center animate-scale-pop">
                 <div className="lg:col-span-6 flex flex-col gap-3 sm:gap-4">
-                  <span className="text-caption sm:text-label font-bold uppercase tracking-wider text-brand">
+                  <span className="text-caption sm:text-label font-semibold text-brand">
                     Tahap 3: Proteksi Penipuan & Auto Reconcile
                   </span>
-                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-bold text-ink leading-tight">
+                  <h3 className="text-subheading sm:text-heading-sm md:text-heading-md font-semibold text-ink leading-tight">
                     Cegah kerugian akibat bukti transfer editan
                   </h3>
                   <p className="text-body-sm sm:text-body text-fg-muted leading-relaxed">
@@ -265,11 +265,11 @@ export default function ScrollAppShowcase() {
                   </p>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="p-3 bg-white rounded-xl border border-line">
-                      <div className="text-body font-bold text-success-600">100%</div>
+                      <div className="text-body font-semibold text-success-600">100%</div>
                       <div className="text-caption sm:text-label text-fg-muted">Mutasi Bank Valid</div>
                     </div>
                     <div className="p-3 bg-white rounded-xl border border-line">
-                      <div className="text-body font-bold text-brand">0 Detik</div>
+                      <div className="text-body font-semibold text-brand">0 Detik</div>
                       <div className="text-caption sm:text-label text-fg-muted">Verifikasi Otomatis</div>
                     </div>
                   </div>
@@ -278,8 +278,8 @@ export default function ScrollAppShowcase() {
                 <div className="lg:col-span-6 bg-canvas p-4 sm:p-5 rounded-2xl border border-line">
                   <div className="bg-white p-3.5 sm:p-4 rounded-xl border-2 border-success-500 shadow-md">
                     <div className="flex items-center justify-between pb-2.5 border-b border-line mb-2.5">
-                      <span className="text-label sm:text-body-sm font-bold text-ink">Audit Keamanan</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-micro sm:text-caption font-bold bg-success-100 text-success-700 inline-flex items-center gap-1">
+                      <span className="text-label sm:text-body-sm font-semibold text-ink">Audit Keamanan</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-micro sm:text-caption font-semibold bg-success-100 text-success-700 inline-flex items-center gap-1">
                         <CheckIcon className="w-3 h-3" />
                         <span>Terverifikasi Asli</span>
                       </span>
@@ -287,15 +287,15 @@ export default function ScrollAppShowcase() {
                     <div className="flex flex-col gap-1.5 text-caption sm:text-label text-charcoal">
                       <div className="flex justify-between">
                         <span className="text-fg-muted">Nominal Mutasi:</span>
-                        <span className="font-bold text-ink">Rp 450.000</span>
+                        <span className="font-semibold text-ink">Rp 450.000</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-fg-muted">Bank Penerima:</span>
-                        <span className="font-bold text-ink">BCA (8921-xxxx)</span>
+                        <span className="font-semibold text-ink">BCA (8921-xxxx)</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-fg-muted">Waktu Masuk:</span>
-                        <span className="font-bold text-ink">10:23:42 WIB</span>
+                        <span className="font-semibold text-ink">10:23:42 WIB</span>
                       </div>
                     </div>
                   </div>
@@ -308,27 +308,27 @@ export default function ScrollAppShowcase() {
               <div key="tab-analytics" className="flex flex-col gap-4 sm:gap-6 animate-scale-pop">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div className="p-3.5 sm:p-4 rounded-2xl bg-canvas border border-line">
-                    <span className="text-caption sm:text-label font-bold text-fg-muted">Total Interaksi</span>
-                    <div className="text-subheading sm:text-heading-md font-bold text-ink my-1">14,248</div>
-                    <span className="text-micro sm:text-caption font-bold text-success-600">↑ 12.5% vs bulan lalu</span>
+                    <span className="text-caption sm:text-label font-semibold text-fg-muted">Total Interaksi</span>
+                    <div className="text-subheading sm:text-heading-md font-semibold text-ink my-1">14,248</div>
+                    <span className="text-micro sm:text-caption font-semibold text-success-600">↑ 12.5% vs bulan lalu</span>
                   </div>
                   <div className="p-3.5 sm:p-4 rounded-2xl bg-canvas border border-line">
-                    <span className="text-caption sm:text-label font-bold text-fg-muted">Closing Rate</span>
-                    <div className="text-subheading sm:text-heading-md font-bold text-ink my-1">82.4%</div>
-                    <span className="text-micro sm:text-caption font-bold text-success-600">↑ 4.2% dengan QRIS</span>
+                    <span className="text-caption sm:text-label font-semibold text-fg-muted">Closing Rate</span>
+                    <div className="text-subheading sm:text-heading-md font-semibold text-ink my-1">82.4%</div>
+                    <span className="text-micro sm:text-caption font-semibold text-success-600">↑ 4.2% dengan QRIS</span>
                   </div>
                   <div className="p-3.5 sm:p-4 rounded-2xl bg-canvas border border-line">
-                    <span className="text-caption sm:text-label font-bold text-fg-muted">Real ROAS Iklan</span>
-                    <div className="text-subheading sm:text-heading-md font-bold text-ink my-1">19.2x</div>
-                    <span className="text-micro sm:text-caption font-bold text-success-600">Lacak via Meta CAPI</span>
+                    <span className="text-caption sm:text-label font-semibold text-fg-muted">Real ROAS Iklan</span>
+                    <div className="text-subheading sm:text-heading-md font-semibold text-ink my-1">19.2x</div>
+                    <span className="text-micro sm:text-caption font-semibold text-success-600">Lacak via Meta CAPI</span>
                   </div>
                 </div>
 
                 {/* Volume Bar Chart */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-canvas border border-line">
                   <div className="flex items-center justify-between mb-2 sm:mb-3">
-                    <span className="text-label sm:text-body-sm font-bold text-ink">Volume Interaksi Harian</span>
-                    <span className="text-micro sm:text-caption font-bold text-brand">Aktif & Lunas</span>
+                    <span className="text-label sm:text-body-sm font-semibold text-ink">Volume Interaksi Harian</span>
+                    <span className="text-micro sm:text-caption font-semibold text-brand">Aktif & Lunas</span>
                   </div>
                   <div className="flex items-end justify-between gap-2 sm:gap-3 h-[110px] sm:h-[130px] pt-3 px-1 sm:px-2">
                     {[
@@ -344,12 +344,12 @@ export default function ScrollAppShowcase() {
                         <div className="w-full bg-brand-soft rounded-t-lg h-[80px] sm:h-[95px] flex items-end overflow-hidden">
                           <div
                             style={{ height: `${bar.val}%` }}
-                            className={`w-full rounded-t-lg transition-all duration-500 ${
+                            className={`w-full rounded-t-lg transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-500 ${
                               bar.active ? "bg-brand" : "bg-brand/40"
                             }`}
                           />
                         </div>
-                        <span className="text-micro sm:text-caption font-bold text-fg-muted">{bar.d}</span>
+                        <span className="text-micro sm:text-caption font-semibold text-fg-muted">{bar.d}</span>
                       </div>
                     ))}
                   </div>

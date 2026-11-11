@@ -48,7 +48,7 @@ export default function ProblemSolution() {
           {/* Column 1: Cara Lama */}
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-danger-200/80 shadow-sm flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2.5 text-danger-600 font-bold text-title mb-6 pb-4 border-b border-danger-100">
+              <div className="flex items-center gap-2.5 text-danger-600 font-semibold text-title mb-6 pb-4 border-b border-danger-100">
                 <XCircleIcon className="w-6 h-6 text-danger-500 flex-shrink-0" />
                 <span>Cara Lama yang Melelahkan</span>
               </div>
@@ -65,7 +65,7 @@ export default function ProblemSolution() {
               </ul>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-danger-100 text-body-sm font-bold text-danger-600 text-center">
+            <div className="mt-8 pt-4 border-t border-danger-100 text-body-sm font-semibold text-danger-600 text-center">
               Hasil: Biaya CS membengkak & banyak chat batal beli
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function ProblemSolution() {
           {/* Column 2: Bersama Klozer */}
           <div className="bg-ink text-white rounded-2xl p-6 sm:p-8 border-2 border-brand shadow-xl flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2.5 text-success-400 font-bold text-title mb-6 pb-4 border-b border-white/15">
+              <div className="flex items-center gap-2.5 text-success-400 font-semibold text-title mb-6 pb-4 border-b border-white/15">
                 <CheckCircleIcon className="w-6 h-6 text-success-400 flex-shrink-0" />
                 <span>Bersama Klozer (Serba Otomatis)</span>
               </div>
@@ -90,7 +90,7 @@ export default function ProblemSolution() {
               </ul>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-white/15 text-body-sm font-bold text-success-400 text-center">
+            <div className="mt-8 pt-4 border-t border-white/15 text-body-sm font-semibold text-success-400 text-center">
               Hasil: Closing meningkat pesat & hemat waktu hingga 80%
             </div>
           </div>

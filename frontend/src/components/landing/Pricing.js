@@ -104,7 +104,7 @@ export default function Pricing() {
           <div className="inline-flex items-center gap-3 p-1.5 rounded-full bg-white border border-line shadow-sm mt-6">
             <button
               onClick={() => setIsAnnual(false)}
-              className={`px-4 py-2 rounded-full text-body-sm font-bold transition-all border-none cursor-pointer ${
+              className={`px-4 py-2 rounded-full text-body-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer ${
                 !isAnnual
                   ? "bg-brand text-white shadow-sm"
                   : "bg-transparent text-fg hover:text-ink"
@@ -114,7 +114,7 @@ export default function Pricing() {
             </button>
             <button
               onClick={() => setIsAnnual(true)}
-              className={`px-4 py-2 rounded-full text-body-sm font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-full text-body-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none cursor-pointer flex items-center gap-1.5 ${
                 isAnnual
                   ? "bg-brand text-white shadow-sm"
                   : "bg-transparent text-fg hover:text-ink"
@@ -130,7 +130,7 @@ export default function Pricing() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`rounded-2xl p-7 sm:p-8 flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 ${
+              className={`rounded-2xl p-7 sm:p-8 flex flex-col justify-between transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 hover:-translate-y-2 ${
                 plan.highlight
                   ? "bg-ink text-white border-2 border-brand shadow-brand-lg lg:-translate-y-2"
                   : "bg-white text-fg border border-line shadow-sm hover:shadow-md"
@@ -140,7 +140,7 @@ export default function Pricing() {
               {/* Plan Header */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`text-caption font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
+                  <span className={`text-caption font-semibold px-3 py-1 rounded-full ${
                     plan.highlight 
                       ? "bg-brand text-white" 
                       : "bg-brand-soft text-brand"
@@ -149,7 +149,7 @@ export default function Pricing() {
                   </span>
                 </div>
 
-                <h3 className={`text-subheading font-bold mb-2 ${plan.highlight ? "text-white" : "text-ink"}`}>
+                <h3 className={`text-subheading font-semibold mb-2 ${plan.highlight ? "text-white" : "text-ink"}`}>
                   {plan.name}
                 </h3>
 
@@ -167,7 +167,7 @@ export default function Pricing() {
                 }`}>
                   {plan.original && (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3">
-                      <span className="text-caption font-bold bg-success-500 text-white px-2.5 py-1 rounded-full">
+                      <span className="text-caption font-semibold bg-success-500 text-white px-2.5 py-1 rounded-full">
                         Diskon {plan.promoPercent}%
                       </span>
                       <span className={`text-body-sm font-medium line-through tabular-nums ${plan.highlight ? "text-line-strong" : "text-fg-subtle"}`}>
@@ -177,11 +177,11 @@ export default function Pricing() {
                   )}
                   <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                     {plan.price !== "Kustom" && (
-                      <span className={`text-body font-bold ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
+                      <span className={`text-body font-semibold ${plan.highlight ? "text-line-strong" : "text-fg-muted"}`}>
                         Rp
                       </span>
                     )}
-                    <span className={`text-heading-lg font-bold tracking-tight leading-none tabular-nums ${
+                    <span className={`text-heading-lg font-semibold tracking-tight leading-none tabular-nums ${
                       plan.highlight ? "text-white" : "text-ink"
                     }`}>
                       {plan.price}
@@ -236,7 +236,7 @@ export default function Pricing() {
                 <Link
                   href={plan.name === "Enterprise" ? whatsappUrl("Halo tim Klozer, saya tertarik dengan paket Enterprise.") || "/kontak" : "/register"}
                   {...(plan.name === "Enterprise" && whatsappUrl() ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className={`w-full text-center py-3.5 px-6 rounded-full font-bold text-body-sm sm:text-body transition-all no-underline block justify-center ${
+                  className={`w-full text-center py-3.5 px-6 rounded-full font-semibold text-body-sm sm:text-body transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline block justify-center ${
                     plan.highlight
                       ? "btn-primary !shadow-brand-lg"
                       : "btn-secondary hover:!bg-brand hover:!text-white hover:!border-brand"
@@ -267,7 +267,7 @@ export default function Pricing() {
 
         {/* Add-on Summary Card */}
         <div className="mt-10 p-5 sm:p-6 rounded-2xl bg-white border border-line max-w-[800px] mx-auto text-center shadow-sm">
-          <div className="text-body-sm font-bold text-ink uppercase tracking-wider mb-2">
+          <div className="text-body-sm font-semibold text-ink mb-2">
             Biaya Transaksi Payment Gateway Resmi
           </div>
           <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 text-body-sm text-fg">

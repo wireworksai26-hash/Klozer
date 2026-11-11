@@ -92,18 +92,18 @@ export default function DeepDive() {
                   setPaidStep2(false);
                   setPrintedStep3(false);
                 }}
-                className={`text-body-sm sm:text-body font-semibold flex items-center gap-2.5 pb-2 transition-all border-none bg-transparent cursor-pointer whitespace-nowrap relative ${
+                className={`text-body-sm sm:text-body font-semibold flex items-center gap-2.5 pb-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] border-none bg-transparent cursor-pointer whitespace-nowrap relative ${
                   isActive ? "text-brand" : "text-fg-subtle hover:text-charcoal"
                 }`}
               >
                 <span
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  className={`w-2.5 h-2.5 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 ${
                     isActive ? "bg-brand scale-125 ring-4 ring-brand/20" : "bg-line-strong"
                   }`}
                 />
                 <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand transition-all" />
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand transition-[color,background-color,border-color,box-shadow,opacity,transform]" />
                 )}
               </button>
             );
@@ -149,19 +149,19 @@ export default function DeepDive() {
 
           {/* Right Column: Royal Blue Card Container */}
           <div className="lg:col-span-6 flex justify-center">
-            <div className="w-full max-w-[480px] bg-brand-hover rounded-3xl p-6 sm:p-8 shadow-brand-lg text-white relative transition-all duration-300">
+            <div className="w-full max-w-[480px] bg-brand-hover rounded-3xl p-6 sm:p-8 shadow-brand-lg text-white relative transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300">
               
               {/* WhatsApp Pulse Notification Badge */}
-              <div className="bg-white text-charcoal rounded-xl p-3 shadow-md inline-flex items-center gap-2.5 mb-5 animate-pulse-glow">
-                <div className="w-6 h-6 rounded-md bg-brand text-white flex items-center justify-center font-bold text-caption">
+              <div className="bg-white text-charcoal rounded-xl p-3 shadow-md inline-flex items-center gap-2.5 mb-5">
+                <div className="w-6 h-6 rounded-md bg-brand text-white flex items-center justify-center font-semibold text-caption">
                   WA
                 </div>
-                <span className="text-body-sm font-bold">{current.badgeText}</span>
+                <span className="text-body-sm font-semibold">{current.badgeText}</span>
               </div>
 
               {/* Chat Container Card with Pop Animation on tab switch */}
-              <div key={`card-${activeStep}`} className="bg-white text-charcoal rounded-2xl p-5 shadow-lg animate-scale-pop">
-                <div className="text-body-sm font-bold text-charcoal mb-2">
+              <div key={`card-${activeStep}`} className="bg-white text-charcoal rounded-2xl p-5 shadow-card animate-scale-pop">
+                <div className="text-body-sm font-semibold text-charcoal mb-2">
                   {current.cardHeader}
                 </div>
                 
@@ -177,10 +177,10 @@ export default function DeepDive() {
                   <div className="p-3.5 bg-canvas rounded-xl border border-line mb-4 text-center">
                     {paidStep2 ? (
                       <div className="py-2 animate-scale-pop">
-                        <div className="w-10 h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center mx-auto mb-1.5 font-bold">
+                        <div className="w-10 h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center mx-auto mb-1.5 font-semibold">
                           <CheckIcon className="w-5 h-5" />
                         </div>
-                        <div className="text-body-sm font-bold text-success-700">Pembayaran Rp 312.000 Lunas!</div>
+                        <div className="text-body-sm font-semibold text-success-700">Pembayaran Rp 312.000 Lunas!</div>
                         <div className="text-caption text-fg-subtle">Mutasi rekening BCA cocok 100%</div>
                       </div>
                     ) : (
@@ -188,7 +188,7 @@ export default function DeepDive() {
                         <div className="w-24 h-24 bg-white p-2 rounded-xl border border-line flex items-center justify-center mb-2 shadow-sm">
                           <QrIcon className="w-16 h-16 text-ink" />
                         </div>
-                        <span className="text-body-sm font-bold text-ink">Rp 312.000</span>
+                        <span className="text-body-sm font-semibold text-ink">Rp 312.000</span>
                         <span className="text-micro text-fg-subtle">Scan via BCA, GoPay, OVO, ShopeePay</span>
                       </div>
                     )}
@@ -200,7 +200,7 @@ export default function DeepDive() {
                   <div className="p-3.5 bg-canvas rounded-xl border border-line mb-4">
                     {printedStep3 ? (
                       <div className="py-2 text-center animate-scale-pop">
-                        <div className="text-body-sm font-bold text-success-700">Resi Berhasil Dicetak & Dikirim ke WA</div>
+                        <div className="text-body-sm font-semibold text-success-700">Resi Berhasil Dicetak & Dikirim ke WA</div>
                         <div className="text-caption text-fg-subtle mt-1">Kurir J&T dijadwalkan pick-up jam 14.00 WIB</div>
                       </div>
                     ) : (
@@ -209,8 +209,8 @@ export default function DeepDive() {
                           <TruckIcon className="w-6 h-6" />
                         </div>
                         <div className="text-label text-charcoal">
-                          <div className="font-bold text-ink">J&T Express (Cashback 20%)</div>
-                          <div className="text-fg-subtle">Resi: <span className="font-mono font-bold text-charcoal">JX1829482910</span></div>
+                          <div className="font-semibold text-ink">J&T Express (Cashback 20%)</div>
+                          <div className="text-fg-subtle">Resi: <span className="font-mono font-semibold text-charcoal">JX1829482910</span></div>
                           <div className="text-fg-subtle">Penerima: Budi (Tebet, Jaksel)</div>
                         </div>
                       </div>

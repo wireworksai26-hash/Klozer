@@ -99,27 +99,27 @@ export default function ChatWidget() {
           {/* Mobile Floating Button */}
           <button
             onClick={() => setIsOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-brand text-white shadow-brand-lg flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 border-2 border-white"
+            className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-brand text-white shadow-brand-lg flex items-center justify-center cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] border-2 border-white"
             title="Tanya AI Klozer"
             aria-label="Buka Chat AI"
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-success-400 animate-ping absolute top-1 right-1" />
+            <span className="w-2.5 h-2.5 rounded-full bg-success-400 absolute top-1 right-1" />
             <KlozerIcon className="w-7 h-7 rounded-full" />
           </button>
 
           {/* Desktop Right-Edge Vertical Tab */}
           <button
             onClick={() => setIsOpen(true)}
-            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-ink hover:bg-brand text-white py-3 px-2.5 rounded-l-2xl shadow-float flex-col items-center gap-2 cursor-pointer transition-all duration-300 hover:pl-3.5 group border-none"
+            className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-ink hover:bg-brand text-white py-3 px-2.5 rounded-l-2xl shadow-float flex-col items-center gap-2 cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 hover:pl-3.5 group border-none"
             title="Buka Tanya Asisten AI Klozer"
             aria-label="Buka Asisten AI"
           >
             <div className="relative">
-              <span className="w-2.5 h-2.5 rounded-full bg-success-400 animate-ping absolute -top-0.5 -right-0.5" />
-              <KlozerIcon className="w-6 h-6 rounded-lg group-hover:scale-105 transition-transform" />
+              <span className="w-2.5 h-2.5 rounded-full bg-success-400 absolute -top-0.5 -right-0.5" />
+              <KlozerIcon className="w-6 h-6 rounded-lg transition-transform" />
             </div>
             <span
-              className="text-label font-bold tracking-wider uppercase text-white/90"
+              className="text-label font-semibold text-white/90"
               style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
             >
               Tanya AI Klozer
@@ -138,13 +138,13 @@ export default function ChatWidget() {
               <KlozerIcon className="w-8 h-8 rounded-xl shadow-sm flex-shrink-0" />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-body-sm">Asisten AI Klozer</span>
-                  <span className="text-micro font-bold bg-brand text-white px-1.5 py-0.5 rounded-full">
+                  <span className="font-semibold text-body-sm">Asisten AI Klozer</span>
+                  <span className="text-micro font-semibold bg-brand text-white px-1.5 py-0.5 rounded-full">
                     24/7
                   </span>
                 </div>
                 <div className="text-caption text-success-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-success-400" />
                   <span>Online Siap Menjawab</span>
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function ChatWidget() {
                 e.stopPropagation();
                 setIsOpen(false);
               }}
-              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white border-none cursor-pointer transition-colors active:scale-90"
+              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white border-none cursor-pointer transition-colors"
               aria-label="Tutup panel chat"
               title="Tutup Chat"
             >
@@ -174,7 +174,7 @@ export default function ChatWidget() {
                   key={idx}
                   type="button"
                   onClick={() => handleSend(chip)}
-                  className="px-2.5 py-1 rounded-full bg-white hover:bg-brand-soft hover:text-brand text-charcoal text-caption font-medium border border-line cursor-pointer transition-all hover:scale-105"
+                  className="px-2.5 py-1 rounded-full bg-white hover:bg-brand-soft hover:text-brand text-charcoal text-caption font-medium border border-line cursor-pointer transition-[color,background-color,border-color,box-shadow,opacity,transform]"
                 >
                   {chip}
                 </button>
@@ -222,7 +222,7 @@ export default function ChatWidget() {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-1.5 focus-within:border-brand focus-within:bg-white transition-all shadow-xs"
+              className="flex items-center gap-2 bg-canvas border border-line rounded-full px-3.5 py-1.5 focus-within:border-brand focus-within:bg-white transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-xs"
             >
               <input
                 type="text"
@@ -233,7 +233,7 @@ export default function ChatWidget() {
               />
               <button
                 type="submit"
-                className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center flex-shrink-0 border-none cursor-pointer hover:bg-brand-hover hover:scale-105 active:scale-95 transition-all shadow-xs"
+                className="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center flex-shrink-0 border-none cursor-pointer hover:bg-brand-hover transition-[color,background-color,border-color,box-shadow,opacity,transform] shadow-xs"
                 aria-label="Kirim pertanyaan"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

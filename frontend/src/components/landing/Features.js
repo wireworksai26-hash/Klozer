@@ -80,7 +80,7 @@ export default function Features() {
           {features.map((f) => (
             <div
               key={f.num}
-              className={`rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 ${
+              className={`rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 ${
                 f.isDark
                   ? "bg-ink text-white border border-line shadow-md"
                   : "bg-white text-fg border border-line shadow-sm hover:border-brand/40 hover:shadow-md"
@@ -89,12 +89,12 @@ export default function Features() {
               <div>
                 {/* Top Number & Tag */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-body-sm ${
+                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-body-sm ${
                     f.isDark ? "bg-brand text-white" : "bg-brand/10 text-brand"
                   }`}>
                     {f.num}
                   </span>
-                  <span className={`text-caption font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                  <span className={`text-caption font-semibold px-2.5 py-0.5 rounded-full ${
                     f.isDark ? "bg-white/10 text-line-strong" : "bg-brand-soft text-brand"
                   }`}>
                     {f.tag}
@@ -106,7 +106,7 @@ export default function Features() {
                   {f.icon}
                 </div>
 
-                <h3 className="text-title font-bold mb-2.5 leading-snug">
+                <h3 className="text-title font-semibold mb-2.5 leading-snug">
                   {f.title}
                 </h3>
 
@@ -133,14 +133,14 @@ export default function Features() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             <div className="md:col-span-8">
               <div className="flex items-center gap-3 mb-3">
-                <span className="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center font-bold text-body-sm">
+                <span className="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center font-semibold text-body-sm">
                   07
                 </span>
-                <span className="text-caption font-bold bg-brand-soft text-brand uppercase px-3 py-1 rounded-full">
+                <span className="text-caption font-semibold bg-brand-soft text-brand px-3 py-1 rounded-full">
                   Kelola Tim CS & Sales
                 </span>
               </div>
-              <h3 className="text-subheading font-bold text-ink mb-2">
+              <h3 className="text-subheading font-semibold text-ink mb-2">
                 Bagi Chat ke Seluruh Tim CS Secara Adil & Hitung Komisi Otomatis
               </h3>
               <p className="text-body-sm sm:text-body text-fg leading-relaxed">
@@ -149,7 +149,7 @@ export default function Features() {
             </div>
             <div className="md:col-span-4 flex flex-col md:items-end justify-center">
               <div className="p-3 rounded-xl bg-canvas border border-line w-full max-w-[260px] text-center">
-                <div className="text-label font-bold text-ink">Pantau Kinerja CS</div>
+                <div className="text-label font-semibold text-ink">Pantau Kinerja CS</div>
                 <div className="text-caption text-fg-muted mt-0.5">Kecepatan balas & total omzet per CS</div>
               </div>
             </div>

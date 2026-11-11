@@ -92,7 +92,7 @@ export default function IndustryCarousel() {
       <div className="container-page mb-6 md:mb-8 flex items-end justify-between">
         <div>
           <span className="eyebrow-label text-brand block mb-1.5 sm:mb-2">
-            SEKTOR INDUSTRI
+            Sektor industri
           </span>
           <h2 className="section-title">
             Cocok untuk <span className="italic-signature">Berbagai Bisnis</span>
@@ -106,7 +106,7 @@ export default function IndustryCarousel() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleManualScroll("left")}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white border border-line flex items-center justify-center text-charcoal hover:bg-brand-soft hover:text-brand transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white border border-line flex items-center justify-center text-charcoal hover:bg-brand-soft hover:text-brand transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer shadow-sm"
             aria-label="Scroll left"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -115,7 +115,7 @@ export default function IndustryCarousel() {
           </button>
           <button
             onClick={() => handleManualScroll("right")}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white border border-line flex items-center justify-center text-charcoal hover:bg-brand-soft hover:text-brand transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white border border-line flex items-center justify-center text-charcoal hover:bg-brand-soft hover:text-brand transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer shadow-sm"
             aria-label="Scroll right"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -137,7 +137,7 @@ export default function IndustryCarousel() {
           {industries.map((ind, idx) => (
             <div
               key={idx}
-              className="industry-card-item w-[280px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[480px] rounded-3xl bg-white border border-line p-3.5 sm:p-4 flex flex-col justify-between shadow-card hover:shadow-lift transition-all duration-300 group cursor-pointer flex-shrink-0 snap-start"
+              className="industry-card-item w-[280px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[480px] rounded-3xl bg-white border border-line p-3.5 sm:p-4 flex flex-col justify-between shadow-card hover:shadow-lift transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 group cursor-pointer flex-shrink-0 snap-start"
             >
               {/* Photo Area */}
               <div className="w-full h-[210px] sm:h-[230px] rounded-2xl sm:rounded-2xl overflow-hidden relative border border-line">
@@ -145,12 +145,12 @@ export default function IndustryCarousel() {
                   src={ind.image}
                   alt={ind.title}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-700"
                   sizes="340px"
                   priority={idx < 2}
                 />
                 <div className="absolute top-2.5 left-2.5 z-10">
-                  <span className="text-micro sm:text-caption font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-ink px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-line shadow-xs">
+                  <span className="text-micro sm:text-caption font-semibold bg-white/90 backdrop-blur-md text-ink px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-line shadow-xs">
                     {ind.badge}
                   </span>
                 </div>
@@ -159,7 +159,7 @@ export default function IndustryCarousel() {
               {/* Text Description Area */}
               <div className="p-1 sm:p-2 flex flex-col justify-between flex-1 mt-2.5 sm:mt-3">
                 <div>
-                  <h3 className="text-title sm:text-subheading font-bold text-ink mb-1.5 sm:mb-2 leading-snug">
+                  <h3 className="text-title sm:text-subheading font-semibold text-ink mb-1.5 sm:mb-2 leading-snug">
                     {ind.title}
                   </h3>
                   <p className="text-label sm:text-body-sm text-fg-muted leading-relaxed line-clamp-3">
@@ -168,7 +168,7 @@ export default function IndustryCarousel() {
                 </div>
 
                 <div className="flex items-center justify-between pt-2.5 sm:pt-3 border-t border-line mt-2">
-                  <span className="text-label sm:text-body-sm font-bold text-brand group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                  <span className="text-label sm:text-body-sm font-semibold text-brand group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                     <span>Pelajari Solusi</span>
                     <span>→</span>
                   </span>

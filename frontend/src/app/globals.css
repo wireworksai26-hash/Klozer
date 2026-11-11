@@ -361,11 +361,9 @@
 
 .eyebrow-label {
   font-family: var(--font-body);
-  font-size: var(--text-caption);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--color-charcoal);
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--color-fg-muted);
 }
 
 /* ========== BUTTONS ========== */
@@ -379,25 +377,23 @@
     padding: 11px 24px;
     font-family: var(--font-body);
     font-size: var(--text-body-sm);
-    font-weight: 600;
+    font-weight: 500;
     color: #ffffff;
     background-color: var(--color-brand);
     border: none;
     border-radius: 100px;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     text-decoration: none;
     white-space: nowrap;
   }
 
   .btn-primary:hover {
     background-color: var(--color-brand-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 69, 255, 0.28);
   }
 
   .btn-primary:active {
-    transform: translateY(0);
+    transform: scale(0.98);
   }
 
   .btn-outline {
@@ -650,12 +646,10 @@ tbody tr:hover {
   }
 }
 
-.animate-float-subtle {
-  animation: floatSubtle 4s ease-in-out infinite;
-}
-
+/* Looping float/glow animations were removed: nothing on the landing page is live enough to earn them. */
+.animate-float-subtle,
 .animate-pulse-glow {
-  animation: pulseGlow 2s ease-in-out infinite;
+  animation: none;
 }
 
 .animate-scale-pop {

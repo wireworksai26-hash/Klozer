@@ -116,11 +116,11 @@ export default function Testimonials() {
           {testimonials.map((t, idx) => (
             <div
               key={idx}
-              className={`pastel-card-item pastel-card-${idx} ${t.bg} rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-sm min-h-[310px] transition-all duration-300 hover:-translate-y-2 hover:shadow-md cursor-default will-change-transform`}
+              className={`pastel-card-item pastel-card-${idx} ${t.bg} rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-sm min-h-[310px] transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 hover:-translate-y-2 hover:shadow-md cursor-default will-change-transform`}
             >
               <div>
                 {/* Rating score header */}
-                <div className="flex items-center gap-1.5 font-bold text-body-sm text-charcoal mb-4">
+                <div className="flex items-center gap-1.5 font-semibold text-body-sm text-charcoal mb-4">
                   <StarIcon className="w-4 h-4 text-warning-500 fill-warning-500" />
                   <span>{t.score}</span>
                 </div>
@@ -133,7 +133,7 @@ export default function Testimonials() {
 
               {/* Author Info */}
               <div className="pt-4 border-t border-black/10">
-                <div className="text-body-sm font-bold text-charcoal">
+                <div className="text-body-sm font-semibold text-charcoal">
                   — {t.author}
                 </div>
                 <div className="text-caption text-charcoal/70 mt-0.5">

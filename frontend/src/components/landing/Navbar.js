@@ -21,7 +21,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 ${
         scrolled
           ? "bg-canvas/95 backdrop-blur-md border-b border-line py-3.5"
           : "bg-transparent py-4 md:py-6"
@@ -67,7 +67,7 @@ export default function Navbar() {
           {isLoggedIn ? (
             <Link
               href="/dashboard"
-              className="btn-primary text-body-sm !py-2.5 !px-5 font-bold shadow-sm hover:shadow-md flex items-center gap-2"
+              className="btn-primary text-body-sm !py-2.5 !px-5 font-semibold shadow-sm hover:shadow-md flex items-center gap-2"
             >
               <span>Dashboard</span>
               <span>→</span>
@@ -76,7 +76,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="px-4 py-2.5 rounded-full text-body-sm font-bold text-charcoal hover:text-brand hover:bg-white/60 transition-all no-underline"
+                className="px-4 py-2.5 rounded-full text-body-sm font-semibold text-charcoal hover:text-brand hover:bg-white/60 transition-[color,background-color,border-color,box-shadow,opacity,transform] no-underline"
               >
                 Masuk
               </Link>
@@ -88,7 +88,7 @@ export default function Navbar() {
               </a>
               <Link
                 href="/register"
-                className="btn-primary text-body-sm !py-2.5 !px-5 font-bold shadow-sm hover:shadow-md"
+                className="btn-primary text-body-sm !py-2.5 !px-5 font-semibold shadow-sm hover:shadow-md"
               >
                 Coba Gratis
               </Link>
@@ -113,7 +113,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="lg:hidden bg-canvas border-b border-line px-6 py-6 flex flex-col gap-3 shadow-lg">
+        <div className="lg:hidden bg-canvas border-b border-line px-6 py-6 flex flex-col gap-3 shadow-card">
           <a
             href="#fitur"
             onClick={() => setMobileOpen(false)}
@@ -147,7 +147,7 @@ export default function Navbar() {
               <Link
                 href="/dashboard"
                 onClick={() => setMobileOpen(false)}
-                className="btn-primary w-full text-center text-body-sm font-bold"
+                className="btn-primary w-full text-center text-body-sm font-semibold"
               >
                 Buka Dashboard →
               </Link>
@@ -156,14 +156,14 @@ export default function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="btn-outline w-full text-center text-body-sm font-bold"
+                  className="btn-outline w-full text-center text-body-sm font-semibold"
                 >
                   Masuk
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="btn-primary w-full text-center text-body-sm font-bold"
+                  className="btn-primary w-full text-center text-body-sm font-semibold"
                 >
                   Coba Gratis Sekarang
                 </Link>

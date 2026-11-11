@@ -58,7 +58,7 @@ export default function LiveDemo() {
               <button
                 key={tab.id}
                 onClick={() => setActiveSimulator(tab.id)}
-                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-body-sm font-bold transition-all cursor-pointer border-none flex items-center gap-2 ${
+                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-body-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer border-none flex items-center gap-2 ${
                   activeSimulator === tab.id
                     ? "bg-brand text-white shadow-md"
                     : "bg-transparent text-fg hover:text-ink"
@@ -78,10 +78,10 @@ export default function LiveDemo() {
           {activeSimulator === "qris" && (
             <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-label font-bold text-brand uppercase tracking-wider mb-2">
+                <div className="text-label font-semibold text-brand mb-2">
                   Fitur Pembayaran Instan
                 </div>
-                <h3 className="text-subheading font-bold text-ink mb-3">
+                <h3 className="text-subheading font-semibold text-ink mb-3">
                   Simulasi Bayar QRIS Otomatis
                 </h3>
                 <p className="text-body-sm text-fg leading-relaxed mb-5">
@@ -89,7 +89,7 @@ export default function LiveDemo() {
                 </p>
 
                 <div className="mb-5">
-                  <label className="text-body-sm font-bold text-fg block mb-2">
+                  <label className="text-body-sm font-semibold text-fg block mb-2">
                     Pilih Contoh Nominal Belanja:
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export default function LiveDemo() {
                           setQrisAmount(amt);
                           setIsPaid(false);
                         }}
-                        className={`px-3.5 py-2 rounded-xl text-body-sm font-semibold border transition-all cursor-pointer ${
+                        className={`px-3.5 py-2 rounded-xl text-body-sm font-semibold border transition-[color,background-color,border-color,box-shadow,opacity,transform] cursor-pointer ${
                           qrisAmount === amt
                             ? "bg-brand text-white border-brand"
                             : "bg-canvas text-fg border-line hover:border-brand"
@@ -141,7 +141,7 @@ export default function LiveDemo() {
                     <div className="w-14 h-14 rounded-full bg-success-100 text-success-600 flex items-center justify-center mx-auto mb-2 shadow-inner">
                       <CheckCircleIcon className="w-8 h-8" />
                     </div>
-                    <div className="text-title font-bold text-success-700 mb-1">
+                    <div className="text-title font-semibold text-success-700 mb-1">
                       Pembayaran Rp {qrisAmount.toLocaleString("id-ID")} LUNAS!
                     </div>
                     <p className="text-body-sm text-fg">
@@ -150,10 +150,10 @@ export default function LiveDemo() {
                   </div>
                 ) : (
                   <div>
-                    <div className="text-caption font-bold text-fg-muted uppercase tracking-wider mb-1">
+                    <div className="text-caption font-semibold text-fg-muted mb-1">
                       QRIS Berlaku 15 Menit
                     </div>
-                    <div className="text-subheading font-bold text-ink mb-3">
+                    <div className="text-subheading font-semibold text-ink mb-3">
                       Rp {qrisAmount.toLocaleString("id-ID")}
                     </div>
                     
@@ -173,10 +173,10 @@ export default function LiveDemo() {
           {activeSimulator === "fraud" && (
             <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-label font-bold text-danger-600 uppercase tracking-wider mb-2">
+                <div className="text-label font-semibold text-danger-600 mb-2">
                   Proteksi Bukti Transfer Palsu
                 </div>
-                <h3 className="text-subheading font-bold text-ink mb-3">
+                <h3 className="text-subheading font-semibold text-ink mb-3">
                   Verifikasi Keaslian Struk Otomatis
                 </h3>
                 <p className="text-body-sm text-fg leading-relaxed mb-5">
@@ -195,8 +195,8 @@ export default function LiveDemo() {
 
               <div className="bg-canvas p-6 rounded-2xl border border-line flex flex-col items-center justify-center text-center">
                 <div className="w-full bg-white rounded-xl p-4 border border-line mb-4">
-                  <div className="text-caption font-bold text-fg-muted uppercase mb-1">Status Verifikasi Rekening</div>
-                  <div className="text-heading font-bold text-success-600 leading-tight">
+                  <div className="text-caption font-semibold text-fg-muted mb-1">Status Verifikasi Rekening</div>
+                  <div className="text-heading font-semibold text-success-600 leading-tight">
                     {analyzing ? "..." : "Terverifikasi Asli"}
                   </div>
                   <div className="text-label font-semibold text-success-700 bg-success-50 px-3 py-1 rounded-full inline-block mt-2">
@@ -217,10 +217,10 @@ export default function LiveDemo() {
           {activeSimulator === "voice" && (
             <div className="bg-white rounded-2xl p-6 sm:p-9 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <div className="text-label font-bold text-brand uppercase tracking-wider mb-2">
+                <div className="text-label font-semibold text-brand mb-2">
                   Teknologi Suara AI
                 </div>
-                <h3 className="text-subheading font-bold text-ink mb-3">
+                <h3 className="text-subheading font-semibold text-ink mb-3">
                   Transkripsi Voice Note Bahasa Indonesia
                 </h3>
                 <p className="text-body-sm text-fg leading-relaxed mb-4">
@@ -233,7 +233,7 @@ export default function LiveDemo() {
               </div>
 
               <div className="bg-canvas p-6 rounded-2xl border border-line">
-                <div className="text-caption font-bold text-brand uppercase mb-2">
+                <div className="text-caption font-semibold text-brand mb-2">
                   Balasan Otomatis AI (Teks & Suara):
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-line text-body-sm text-fg leading-relaxed">
@@ -241,7 +241,7 @@ export default function LiveDemo() {
                 </div>
                 <div className="flex justify-between items-center text-caption text-fg-muted mt-3">
                   <span>Waktu Balas: 1.4 detik</span>
-                  <span className="text-success-700 font-bold">Siap Closing</span>
+                  <span className="text-success-700 font-semibold">Siap Closing</span>
                 </div>
               </div>
             </div>
