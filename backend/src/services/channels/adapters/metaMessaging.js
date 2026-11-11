@@ -62,6 +62,30 @@ export function createMetaMessagingAdapter({ type, label, maxTextLength, account
       }
     },
 
+    /** A picture by its public address. Meta fetches the URL itself. */
+    async sendImage({ channel, to, url, caption = "" }) {
+      if (!url) return { success: false, error: `${label} membutuhkan URL gambar publik.` };
+      try {
+        const message = { attachment: { type: "image", payload: { url, is_reusable: false } } };
+        if (caption) message.text = caption;
+        const response = await fetch(`${graphUrl(channel.externalId)}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...auth(channel.accessToken) },
+          body: JSON.stringify({ recipient: { id: to }, messaging_type: "RESPONSE", message }),
+          signal: AbortSignal.timeout(15000),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          logger.error({ channel: channel.id, error: data?.error }, `${label} API rejected image`);
+          return { success: false, error: explain(data?.error) };
+        }
+        return { success: true, to, messageId: data?.message_id ?? null };
+      } catch (err) {
+        logger.error({ err: err.message, channel: channel.id }, `${label} image send failed`);
+        return { success: false, error: `Gagal menghubungi ${label}.` };
+      }
+    },
+
     /** A customer's file: the webhook carries its CDN address, which is fetched without credentials. */
     downloadMedia({ mediaId }) {
       return fetchMedia({ url: mediaId, allowedHosts: MEDIA_HOSTS });

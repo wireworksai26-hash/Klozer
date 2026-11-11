@@ -53,6 +53,25 @@ export const whatsappAdapter = {
     }
   },
 
+  /** Send a picture by its public HTTPS address (Meta fetches it itself). */
+  async sendImage({ channel, to, url, caption = "" }) {
+    const recipient = normalizePhone(to);
+    if (!recipient) return { success: false, error: "Nomor tujuan tidak valid." };
+    if (!url) return { success: false, error: "WhatsApp Cloud API membutuhkan URL gambar publik." };
+    try {
+      const image = { link: url, ...(caption ? { caption } : {}) };
+      const { ok, data } = await graphPost(channel, { recipient_type: "individual", to: recipient, type: "image", image });
+      if (!ok) {
+        logger.error({ channel: channel.id, error: data?.error }, "WhatsApp Cloud API rejected image");
+        return { success: false, error: data?.error?.message || "Ditolak oleh WhatsApp Cloud API.", errorCode: data?.error?.code ?? null };
+      }
+      return { success: true, to: recipient, messageId: data?.messages?.[0]?.id ?? null };
+    } catch (err) {
+      logger.error({ err: err.message, channel: channel.id }, "WhatsApp image send failed");
+      return { success: false, error: "Gagal menghubungi WhatsApp Cloud API." };
+    }
+  },
+
   /**
    * Send an approved template: the only message a business may start a conversation with, or send outside the
    * customer's 24-hour window. `errorCode` is Meta's, so callers can tell a rate limit from a bad number.

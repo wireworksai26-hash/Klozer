@@ -6,7 +6,7 @@ import { sanitizeXss } from "../utils/sanitize.js";
 import { emitToTenant } from "../realtime.js";
 import { generateAiCsResponse } from "./aiBrainService.js";
 import { getAdapter } from "./channels/adapters/index.js";
-import { downloadMedia, lookupProfileName, markRead, sendText } from "./channels/channelService.js";
+import { downloadMedia, lookupProfileName, markRead, sendImage, sendText } from "./channels/channelService.js";
 import { detectHandoff, handoffReply, isHumanHolding } from "./handoff/handoffPolicy.js";
 import { handBack, startHandoff } from "./handoff/handoffService.js";
 import { handleCustomerPaymentProof } from "./paymentProofService.js";

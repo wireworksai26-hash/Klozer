@@ -15,6 +15,10 @@ export const whatsappWebAdapter = {
     return getWhatsAppWebManager().send({ channel, to, text });
   },
 
+  async sendImage({ channel, to, buffer, mimeType, caption }) {
+    return getWhatsAppWebManager().sendImage({ channel, to, buffer, mimeType, caption });
+  },
+
   async markRead({ channel, messageId }) {
     return getWhatsAppWebManager().markRead(channel.id, messageId);
   },

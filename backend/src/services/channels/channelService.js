@@ -66,6 +66,35 @@ export async function sendText({ institutionId, channelId = null, type = "whatsa
   return first ?? { success: false, error: "Teks kosong." };
 }
 
+/**
+ * Send a picture to a contact (the tenant's QRIS merchant code, for example).
+ * `url` is the public address of the same picture, for platforms that fetch media themselves.
+ * @returns {Promise<{ success: boolean, messageId?: string|null, error?: string, mode?: string }>}
+ */
+export async function sendImage({ institutionId, channelId = null, type = "whatsapp", to, buffer = null, mimeType = null, caption = "", url = null }) {
+  const adapter = getAdapter(type);
+  const recipient = adapter.normalizeContactId(to);
+  if (!recipient) return { success: false, error: "Nomor tujuan tidak valid." };
+  if (!buffer && !url) return { success: false, error: "Gambar tidak tersedia." };
+  if (!adapter.sendImage) return { success: false, error: "Kanal ini belum mendukung pengiriman gambar." };
+
+  let channel;
+  try {
+    channel = await resolveChannel({ institutionId, channelId, type });
+  } catch (err) {
+    logger.error({ err: err.message, institutionId }, "Cannot read channel credentials");
+    return { success: false, error: "Kredensial kanal tidak dapat dibaca." };
+  }
+
+  if (!channel) {
+    if (config.isProduction) return { success: false, error: NOT_CONFIGURED[type] || "Kanal belum dikonfigurasi untuk instansi ini." };
+    logger.info({ to: recipient }, "[sandbox] image not sent (no channel configured)");
+    return { success: true, mode: "sandbox_simulated", to: recipient, messageId: null };
+  }
+
+  return adapter.sendImage({ channel, to: recipient, buffer, mimeType, caption, url });
+}
+
 /** Tell the customer's app the message was read. Best effort, never throws. */
 export async function markRead({ institutionId, channelId = null, type = "whatsapp", messageId }) {
   try {

@@ -28,6 +28,11 @@ export const webchatAdapter = {
     return { success: true, to, messageId: null };
   },
 
+  /** The visitor sees the caption in the stored text message; the widget has no picture bubble. */
+  async sendImage({ to }) {
+    return { success: true, to, messageId: null };
+  },
+
   async downloadMedia() {
     return null; // visitors send text only
   },

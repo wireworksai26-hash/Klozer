@@ -401,6 +401,21 @@ export function createWhatsAppWebManager({
     }
   }
 
+  async function sendImage({ channel, to, buffer, mimeType, caption = "" }) {
+    const contactId = normalizeContactId(to);
+    const jid = contactIdToJid(contactId);
+    if (!jid || !buffer) return { success: false, error: "Gambar atau nomor tujuan tidak valid." };
+    const session = await ensureOpen(channel);
+    if (!session) return { success: false, error: "WhatsApp belum terhubung. Buka halaman Saluran dan pindai kode QR." };
+    try {
+      const result = await session.socket.sendMessage(jid, { image: buffer, mimetype: mimeType || "image/png", caption });
+      return { success: true, to: contactId, messageId: messageIdFor(result?.key) };
+    } catch (err) {
+      log.error({ err: err.message, channelId: channel.id }, "WhatsApp Web image send failed");
+      return { success: false, error: "Gagal mengirim gambar WhatsApp." };
+    }
+  }
+
   async function markRead(channelId, messageId) {
     const session = sessions.get(channelId);
     const entry = session?.messages.get(messageId);
@@ -442,7 +457,7 @@ export function createWhatsAppWebManager({
     return { ok: true, displayPhone: session.me?.phone ?? null, verifiedName: session.me?.name ?? null };
   }
 
-  return { start, stop, stopAll, logout, getStatus, hasAuth, send, markRead, downloadMedia, verify };
+  return { start, stop, stopAll, logout, getStatus, hasAuth, send, sendImage, markRead, downloadMedia, verify };
 }
 
 async function deliverInbound(payload) {

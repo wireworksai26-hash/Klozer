@@ -54,6 +54,22 @@ export const telegramAdapter = {
     }
   },
 
+  /** Send a picture by its public address. Telegram fetches the URL itself. */
+  async sendImage({ channel, to, url, caption = "" }) {
+    if (!url) return { success: false, error: "Telegram membutuhkan URL gambar publik." };
+    try {
+      const { ok, data } = await call(channel.accessToken, "sendPhoto", { chat_id: to, photo: url, ...(caption ? { caption } : {}) });
+      if (!ok) {
+        logger.error({ channel: channel.id, code: data?.error_code }, "Telegram rejected image");
+        return { success: false, error: data?.description || "Ditolak oleh Telegram." };
+      }
+      return { success: true, to, messageId: telegramMessageId(channel.externalId, to, data.result?.message_id) };
+    } catch (err) {
+      logger.error({ err: err.message, channel: channel.id }, "Telegram image send failed");
+      return { success: false, error: "Gagal menghubungi Telegram." };
+    }
+  },
+
   /** A file the customer sent: ask for its path, then fetch it from Telegram's file host. */
   async downloadMedia({ channel, mediaId }) {
     if (!mediaId) return null;
