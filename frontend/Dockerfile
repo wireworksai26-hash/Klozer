@@ -11,8 +11,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Leave them empty to use same-origin /api/v1 (the default behind the reverse proxy).
 ARG NEXT_PUBLIC_API_URL=""
 ARG NEXT_PUBLIC_SOCKET_URL=""
+# Where next.config.mjs rewrites /api and /socket.io to. The rewrite is fixed at build time, so on Railway (no Caddy)
+# this is the backend's private address. Left empty, the default applies, which the compose stack never uses (Caddy routes).
+ARG BACKEND_INTERNAL_URL=""
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-    NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
+    NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL \
+    BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
